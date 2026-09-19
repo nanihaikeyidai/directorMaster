@@ -1,0 +1,282 @@
+{
+  "1": {
+    "inputs": {
+      "unet_name": "minimax_h3_fl2va_pruned_int8_convrot.safetensors",
+      "weight_dtype": "default"
+    },
+    "class_type": "UNETLoader",
+    "_meta": {
+      "title": "MiniMax H3 UNET"
+    }
+  },
+  "2": {
+    "inputs": {
+      "clip_name": "qwen3vl_32b_minimax_h3_nvfp4_awq.safetensors",
+      "type": "minimax",
+      "device": "default"
+    },
+    "class_type": "CLIPLoader",
+    "_meta": {
+      "title": "CLIP (minimax / Qwen3-VL)"
+    }
+  },
+  "3": {
+    "inputs": {
+      "vae_name": "minimax_h3_video_vae_fp16.safetensors"
+    },
+    "class_type": "VAELoader",
+    "_meta": {
+      "title": "Video VAE"
+    }
+  },
+  "4": {
+    "inputs": {
+      "vae_name": "minimax_h3_audio_vae_fp32.safetensors"
+    },
+    "class_type": "VAELoader",
+    "_meta": {
+      "title": "Audio VAE"
+    }
+  },
+  "6": {
+    "inputs": {
+      "fps": [
+        "12",
+        2
+      ],
+      "bit_depth": 8,
+      "images": [
+        "12",
+        0
+      ],
+      "audio": [
+        "12",
+        1
+      ]
+    },
+    "class_type": "CreateVideo",
+    "_meta": {
+      "title": "Create Video"
+    }
+  },
+  "7": {
+    "inputs": {
+      "filename_prefix": "video/MiniMaxH3_Director_t2v",
+      "format": "auto",
+      "codec": "auto",
+      "fw_video_preview": "",
+      "video": [
+        "6",
+        0
+      ]
+    },
+    "class_type": "SaveVideo",
+    "_meta": {
+      "title": "💾 Save Video"
+    }
+  },
+  "8": {
+    "inputs": {
+      "preview": "",
+      "source": [
+        "12",
+        5
+      ]
+    },
+    "class_type": "PreviewAny",
+    "_meta": {
+      "title": "Director 运行报告"
+    }
+  },
+  "12": {
+    "inputs": {
+      "task_type": "r2v — 参考主体生视频(Reference to Video)",
+      "global_prompt": "subject_definitions:\n\n\n【参考图固定定义】本段只使用4张参考图：<Picture 1>  为陆沉的人设，锁定他高挑偏瘦的男高中生身份、黑色短碎发、白色校服衬衫与深色长裤；<Picture 2>  为林晓的人设，锁定她的五官、高马尾、白蓝校服与右手腕红色细绳；<Picture 3> 为王老师的人设，锁定她30岁漂亮女性班主任兼语文教师的眼镜、及肩深棕发、米色职业套装与端庄教师气质；\n\n<Picture 4> 为安娜，冷静，冰山美人角色，\n\n<Picture 5> 苏婉，17–18岁，栗棕齐肩短发，温暖外向，白蓝校服\n<Picture 6> 怪兽袭击后的教室场景\n\n锁定雨天教室、讲台、黑板、靠窗侧、约24–30名同学的群像密度，以及陆沉站在讲台左侧、王老师站在讲台右侧介绍转校生的初始构图。后续镜头只继承以上身份与空间状态，不再重复引用任何图片编号或文件路径。\n\n\n\n参考音色：\n声音1为陆沉\n声音2为林晓\n声音3为 王老师\n\n\n",
+      "bd_grp_sample": "采样设置",
+      "cfg": 1,
+      "seed": 666,
+      "frame_rate": 24,
+      "width": 1056,
+      "height": 608,
+      "ref_max_size": 1056,
+      "total_frames": 1278,
+      "timeline_data": "{\"version\":5,\"editMode\":\"segment\",\"totalFrames\":1278,\"frameRate\":24,\"video\":{\"fileName\":\"\",\"videoFile\":\"\",\"subfolder\":\"\",\"type\":\"input\",\"frames\":[],\"frameMap\":[],\"deletedSourceRanges\":[],\"sourceFrameCount\":1086,\"width\":0,\"height\":0},\"videoClips\":[],\"global\":{\"taskType\":\"r2v — 参考主体生视频(Reference to Video)\",\"prompt\":\"subject_definitions:\\n\\n\\n【参考图固定定义】本段只使用4张参考图：<Picture 1>  为陆沉的人设，锁定他高挑偏瘦的男高中生身份、黑色短碎发、白色校服衬衫与深色长裤；<Picture 2>  为林晓的人设，锁定她的五官、高马尾、白蓝校服与右手腕红色细绳；<Picture 3> 为王老师的人设，锁定她30岁漂亮女性班主任兼语文教师的眼镜、及肩深棕发、米色职业套装与端庄教师气质；\\n\\n<Picture 4> 为安娜，冷静，冰山美人角色，\\n\\n<Picture 5> 苏婉，17–18岁，栗棕齐肩短发，温暖外向，白蓝校服\\n<Picture 6> 怪兽袭击后的教室场景\\n\\n锁定雨天教室、讲台、黑板、靠窗侧、约24–30名同学的群像密度，以及陆沉站在讲台左侧、王老师站在讲台右侧介绍转校生的初始构图。后续镜头只继承以上身份与空间状态，不再重复引用任何图片编号或文件路径。\\n\\n\\n\\n参考音色：\\n声音1为陆沉\\n声音2为林晓\\n声音3为 王老师\\n\\n\\n\",\"refs\":[{\"index\":2,\"imageFile\":\"4b705b575e242ad758ae6a741574b7a3d1b42b573873d44f29f78a4fcecca3d6.png\",\"fileName\":\"\",\"type\":\"input\",\"subfolder\":\"\"},{\"index\":3,\"imageFile\":\"acfe578afcffe0cd3a381a6a2d6cf07a9dfa32b8e4ccc0474e780da9f62dbf30.png\",\"fileName\":\"\",\"type\":\"input\",\"subfolder\":\"\"},{\"index\":0,\"imageFile\":\"bd14969a06fe4427e8d1364b651fce511296a23290ebaa88944bac8256290407.png\",\"fileName\":\"\",\"type\":\"input\",\"subfolder\":\"\"},{\"index\":1,\"imageFile\":\"11d6c04ae39d3a9cd39ac9745d3e542ba9d4c86726177a0772d743bc9064cbf4.png\",\"fileName\":\"\",\"type\":\"input\",\"subfolder\":\"\"},{\"index\":5,\"imageFile\":\"2695aa48b8174a0e22cb774359cde388557750fc6e7b0e73d5dddd2bc28ce593.png\",\"fileName\":\"\",\"type\":\"input\",\"subfolder\":\"\"},{\"index\":4,\"imageFile\":\"34c96093f184184025239754d9018dde0ede8b5ce84b62eb2d0c6d71c26eb9f7.png\",\"fileName\":\"\",\"type\":\"input\",\"subfolder\":\"\"}],\"referenceVideo\":{\"videoFile\":\"\",\"fileName\":\"\",\"type\":\"input\",\"subfolder\":\"\"},\"continuousReference\":false,\"genImage\":{\"imageFile\":\"\"},\"sourceWidth\":768,\"sourceHeight\":1024,\"refAudios\":[{\"index\":0,\"audioFile\":\"50021f8e3d6432e746916f522e674802fe23a9ed92890b165a047256d9c9909d.wav\",\"fileName\":\"50021f8e3d6432e746916f522e674802fe23a9ed92890b165a047256d9c9909d.wav\",\"type\":\"input\",\"subfolder\":\"\",\"durationSec\":3.680917},{\"index\":1,\"audioFile\":\"4abfbc9aff2fdbb62a23e01ff19348361b413105bc8e8aff00d8bbd0f8cc055d.wav\",\"fileName\":\"4abfbc9aff2fdbb62a23e01ff19348361b413105bc8e8aff00d8bbd0f8cc055d.wav\",\"type\":\"input\",\"subfolder\":\"\",\"durationSec\":4.014792}],\"refVideos\":[],\"commonEnabled\":false,\"commonCollapsed\":true},\"output\":{\"mode\":\"fixed\",\"aspectRatio\":\"16:9 (宽屏)\",\"megapixels\":0.6,\"multiple\":32,\"longEdge\":1056,\"width\":1056,\"height\":608,\"maxExportFrames\":0,\"exportMode\":\"all\",\"audioMode\":\"generate\",\"exportSourceImages\":false,\"refImageSize\":\"match\",\"continuityEnabled\":true,\"continuityOverlapFrames\":5},\"runSelectEnabled\":true,\"runSelection\":[0,1,2,3],\"segments\":[{\"id\":\"mt0slveqtpanc\",\"start\":0,\"length\":192,\"frameCount\":192,\"durationSec\":8,\"prompt\":\"subject_definitions:\\n<Subject 1> 是来自 <Picture 1> 的校长，约52岁，黑灰短发、矩形眼镜、深炭灰西装，成年男性学校管理者。人物图锁定身份、五官、发型、年龄感、体型和服装；本段新增满头大汗、领口微湿的紧张状态，不继承参考图背景或原姿势。<Subject 1> 是本段第一说话人 (S1)。电话里的成年男人是第二说话人 (S2)，仅以电话画外声存在。\\n<Subject 2> 是来自 <Picture 2>  雨天校长办公室，锁定监控桌、固定电话、档案柜、雨窗、空间布局、材质和冷蓝灰雨天光线；\\n<Audio 3> 校长说话的声音参考\\n\\n人物站位：雨天校长办公室，Principal 坐在办公桌后的黑色办公椅上，位于画面中部偏左，身体朝向桌面与固定电话；右手距电话听筒约二十厘米，左手平放桌沿。雨窗位于画面右后方，雨滴沿玻璃下滑；办公室内无其他可见人物，画面无可读文字。\\n\\n[Shot 1]\\n中景。Principal 坐直又停住，衬衫领口微湿，视线落在桌面固定电话上。办公室外的雨声持续。\\n\\n[Shot 2]\\n电话与Principal手部近景。固定电话响起；校长右手立即伸向听筒，手指扣住听筒柄。\\n\\n[Shot 3]\\n校长侧面中近景。他将听筒贴到右耳，肩膀先绷紧后稳定下来，嘴唇闭合等待。末帧保持Principal坐在桌后、右手持听筒贴耳、左手压桌沿、视线朝前下方、雨窗持续落雨的姿态。\\n\\n【禁止项】\\n\\n文字/UI/水印/Logo/角标/可读文字/真实UI\\n\\n【强制声明】\\n\\n无背景音乐,仅保留环境音与人声和音效;画面禁字幕/文字/水印/Logo;禁止可读文字(指画面字幕文字,不含人声台词)\\n\\n\",\"negativePrompt\":\"\",\"taskType\":\"\",\"refs\":[{\"index\":0,\"imageFile\":\"9fcfd4e1f274300e953268d0c7754281965be120b40347904ef5f4084df4d339.png\",\"fileName\":\"\",\"type\":\"input\",\"subfolder\":\"\"},{\"index\":1,\"imageFile\":\"9b2be3c1635f17072ed726da3a1f4cec4a31356c59e2e5b2c09f4228f312a198.png\",\"fileName\":\"\",\"type\":\"input\",\"subfolder\":\"\"}],\"refAudios\":[{\"index\":2,\"audioFile\":\"319b58962792ba49e9e03103b7d99bc8cb393ef7baeccf6e17a9829d7245f3bb.wav\",\"fileName\":\"319b58962792ba49e9e03103b7d99bc8cb393ef7baeccf6e17a9829d7245f3bb.wav\",\"type\":\"input\",\"subfolder\":\"\",\"durationSec\":6.433}],\"refVideos\":[],\"genImage\":{\"imageFile\":\"\",\"fileName\":\"\"},\"continuityFromPrev\":false,\"refImageSize\":\"match\"},{\"id\":\"mtbn0liyptiv8\",\"start\":192,\"length\":362,\"frameCount\":362,\"durationSec\":15,\"prompt\":\"<Subject1> Principal 是 <Picture 1> 中的中年男性校长，黑灰短发、矩形眼镜、深炭灰西装、浅蓝衬衫与深蓝领带；保留参考图中的面部特征、发型、眼镜、服装与身材比例。Principal 全程可见，右手持听筒贴右耳，领口微湿。\\n<Subject2> ND Duty Officer 是电话另一端的成年男性，只以声音存在，永不入画、没有口型、没有视频通话头像。<Subject2>，S2 永远是说话人。S2始终使用成年男性低音、平直冷静、吐字清晰的声线；语速平稳偏慢、音量适中、句尾无情绪起伏。禁止播音腔、威吓咆哮、气泡音和机械合成音。\\n\\n<Subject 3> 是 <Picture 2> 中的雨天校长办公室场景，保留深木办公桌、黑色办公椅、固定电话、档案柜、雨窗与冷蓝灰环境光；所有墙面标识、奖杯、证书、书脊和文件夹均无可读文字。\\n\\n人物站位：承接P01末帧。Principal 坐在画面中部偏左的办公椅上，右手持听筒贴右耳，左手压桌沿，身体朝向桌面；ND Duty Officer 仅从听筒传出声音，不占据可见空间。Principal 与电话保持固定180度轴线，雨窗在右后方。\\n\\n[Shot 1]\\nPrincipal正面中近景。他闭口倾听，眉间皱纹加深，右手指节在听筒上收紧。\\n\\n\\n电话里声音\\n<Subject 2> (S2) says:\\n<d>[Chinese]这里是ND自然灾害研究所，应急处置组。</d>\\n\\n[Shot 2]\\nPrincipal侧面近景。听筒贴在右耳\\n\\n电话里声音\\n<Subject 2> (S2) says:<d>[Chinese]我们已了解贵校遭遇不明生物袭击，现在需要了解一下现场的情况</d>\\n\\n[Shot 3]\\nPrincipal手部与半身中景。他的左手从桌沿缓慢攥紧，身体微微前倾后停止。末帧保持右手持听筒、左手半握、嘴唇闭合、视线落向桌面、雨窗落雨不变的稳定姿态。\\n\\n【禁止项】\\n\\n文字/UI/水印/Logo/角标/可读文字/真实UI\\n\\n【强制声明】\\n\\n无背景音乐,仅保留环境音与人声和音效;画面禁字幕/文字/水印/Logo;禁止可读文字(指画面字幕文字,不含人声台词)\",\"negativePrompt\":\"\",\"taskType\":\"\",\"refs\":[],\"refAudios\":[{\"index\":2,\"audioFile\":\"abf3d8b24c0c6e45b02724420af6cb99656c87afe9b79806a0487294ca9816eb.wav\",\"fileName\":\"abf3d8b24c0c6e45b02724420af6cb99656c87afe9b79806a0487294ca9816eb.wav\",\"type\":\"input\",\"subfolder\":\"\",\"durationSec\":3.499979}],\"refVideos\":[],\"genImage\":{\"imageFile\":\"\",\"fileName\":\"\"},\"continuityFromPrev\":true,\"refImageSize\":\"match\"},{\"id\":\"mtbn847u34c93\",\"start\":554,\"length\":362,\"frameCount\":362,\"durationSec\":15,\"prompt\":\"<Subject1> Principal 是 <Picture 1> 中的中年男性校长，黑灰短发、矩形眼镜、深炭灰西装、浅蓝衬衫与深蓝领带；保留参考图外观。Principal 是 S1，保持中低音、略干涩、语速在紧张时偏快但字句清楚；禁止播音腔和失控喊叫。\\n<Subject2> ND Duty Officer 是电话另一端的成年男性，只以声音存在，永不入画、没有口型、没有视频通话头像。<Subject2>，S2 永远是说话人。S2始终使用成年男性低音、平直冷静、吐字清晰的声线；语速平稳偏慢、音量适中、句尾无情绪起伏。禁止播音腔、威吓咆哮、气泡音和机械合成音。\\n\\n<Subject 3> 是 <Picture 2> 中的雨天校长办公室场景，保留深木办公桌、固定电话、档案柜、雨窗和冷蓝灰雨天光线；无可读文字。\\n\\n人物站位：承接P02末帧。Principal 坐在画面中部偏左，右手持听筒贴右耳，左手半握停在桌沿，身体微前倾；ND Duty Officer 只经听筒发声。固定电话、桌面文件和雨窗位置不变。\\n\\n[Shot 1]\\nPrincipal正面近景。他听到问句后抬眼，仍闭口。\\n电话里声音\\n<Subject 2> (S2) says:\\n<d>[Chinese]现场有无人员伤亡？</d>\\n\\n[Shot 2]\\nPrincipal中近景。他立即坐直，口型清晰，右手始终不离听筒：\\n<Subject 1> (S1) says:\\n<d>[Chinese]没有。学生都撤出来了。</d>\\n\\n[Shot 3]\\nPrincipal近景。他的视线从电话落向雨窗又回到桌面，语速更急，音调升高：\\n<Subject 1> (S1) says:\\n<d>[Chinese]那是什么？它撞进教室，差点伤到孩子。</d>\\n\\n[Shot 4]\\nPrincipal侧面中近景。他被对方打断，嘴唇合拢，前倾姿态自然减速并停止。\\n电话里声音\\n<Subject 2> (S2) says:\\n<d>[Chinese]我们会到现场调查清楚。</d>\\n末帧保持Principal右手持听筒、左手压桌沿、身体微前倾、闭口等待的稳定姿态。\\n\\n【禁止项】\\n\\n文字/UI/水印/Logo/角标/可读文字/真实UI\\n\\n【强制声明】\\n\\n无背景音乐,仅保留环境音与人声和音效;画面禁字幕/文字/水印/Logo;禁止可读文字(指画面字幕文字,不含人声台词)\",\"negativePrompt\":\"\",\"taskType\":\"\",\"refs\":[],\"refAudios\":[],\"refVideos\":[],\"genImage\":{\"imageFile\":\"\",\"fileName\":\"\"},\"continuityFromPrev\":true,\"refImageSize\":\"match\"},{\"id\":\"mtn0teuxqcbzn\",\"start\":916,\"length\":362,\"frameCount\":362,\"durationSec\":15,\"prompt\":\"<Subject1> Principal 是 <Picture 1> 中的中年男性校长，保留黑灰短发、矩形眼镜、深炭灰西装、浅蓝衬衫与深蓝领带。Principal 是 S1，声音中低、略干涩，紧张时语速稍快，禁止失控喊叫。\\n<Subject2> ND Duty Officer 是电话另一端的成年男性，只以声音存在，永不入画、没有口型、没有视频通话头像。<Subject2>，S2 永远是说话人。S2始终使用成年男性低音、平直冷静、吐字清晰的声线；语速平稳偏慢、音量适中、句尾无情绪起伏。禁止播音腔、威吓咆哮、气泡音和机械合成音。\\n<Subject 3> 是 <Picture 2> 中的雨天校长办公室场景，保留深木办公桌、固定电话、档案柜、雨窗和冷蓝灰光线；无可读文字。\\n\\n人物站位：承接P03末帧。Principal 坐在桌后，身体微前倾，右手持听筒贴右耳，左手压在桌沿；电话线自然垂落，雨窗位于画面右后方。ND Duty Officer 始终不可见。\\n\\n[Shot 1]\\nPrincipal正面中近景。他吞咽一次，眉头不松，口型同步：\\n<Subject 1> (S1) says:\\n<d>[Chinese]可几十个学生都看见了，还有人拍了视频。</d>\\n\\n[Shot 2]\\nPrincipal手部近景。左手压住桌沿，右手持听筒不动，指节发白。\\n画外音\\n<Subject 2> (S2) says:\\n<d>[Chinese]封锁事故教室，保留现场</d>\\n\\n[Shot 3]\\nPrincipal侧面中近景。他闭口，肩膀下沉半寸后稳定。末帧保持听筒贴耳、左手压桌、身体仍朝桌面、视线前下方的姿态。\\n\\n【禁止项】\\n\\n文字/UI/水印/Logo/角标/可读文字/真实UI\\n\\n【强制声明】\\n\\n无背景音乐,仅保留环境音与人声和音效;画面禁字幕/文字/水印/Logo;禁止可读文字(指画面字幕文字,不含人声台词)\",\"negativePrompt\":\"\",\"taskType\":\"\",\"refs\":[],\"refAudios\":[],\"refVideos\":[],\"genImage\":{\"imageFile\":\"\",\"fileName\":\"\"},\"continuityFromPrev\":true,\"refImageSize\":\"match\"}],\"timelineMode\":\"prompt_batch\",\"width\":1056,\"height\":608,\"refMaxSize\":1056,\"gen\":{\"defaultFrameCount\":124},\"keyframes\":[{\"id\":\"msdtx3zi62ktv_s\",\"imageFile\":\"d47f7c7c243b746a437dd33ac21ed163192540329ac0784ed7e6bd83b440065a.png\",\"width\":768,\"height\":1024,\"start\":0,\"length\":62,\"frameCount\":62,\"durationSec\":5,\"prompt\":\"一个猴子在极速奔跑，跑的过程中裤子掉在地上，但他仍然继续奔跑。过程中伴随自然的跑步声\",\"negativePrompt\":\"bad video\",\"isStartFrame\":true,\"isEndFrame\":false},{\"id\":\"msdtx3zi62ktv_e\",\"imageFile\":\"a1f4b9c98491d696b06b022b2588bf82b966a69356edc0fde952ce335820f26c.png\",\"width\":512,\"height\":682,\"start\":62,\"length\":62,\"frameCount\":62,\"durationSec\":5,\"prompt\":\"\",\"negativePrompt\":\"bad video\",\"isStartFrame\":false,\"isEndFrame\":true},{\"id\":\"msdtx87njf33g_s\",\"imageFile\":\"a1f4b9c98491d696b06b022b2588bf82b966a69356edc0fde952ce335820f26c.png\",\"width\":512,\"height\":682,\"start\":124,\"length\":62,\"frameCount\":62,\"durationSec\":5,\"prompt\":\"猴子在快速奔跑，双臂自然摆动，跑到一个岩石旁，慢慢的坐下，随着时间的流逝，沙尘慢慢消失，漏出蓝天背景。过程中伴随自然的跑步、坐下时候产生的声音\",\"negativePrompt\":\"bad video\",\"isStartFrame\":true,\"isEndFrame\":false},{\"id\":\"msdtx87njf33g_e\",\"imageFile\":\"aad0afcc1907dd5d8ce4f0c4e14f6511bde9cab23dde1da0311827d4ae4170d0.png\",\"width\":768,\"height\":1024,\"start\":186,\"length\":62,\"frameCount\":62,\"durationSec\":5,\"prompt\":\"\",\"negativePrompt\":\"bad video\",\"isStartFrame\":false,\"isEndFrame\":true},{\"id\":\"msdtwxyuscavj_s\",\"imageFile\":\"aad0afcc1907dd5d8ce4f0c4e14f6511bde9cab23dde1da0311827d4ae4170d0.png\",\"width\":768,\"height\":1024,\"start\":248,\"length\":62,\"frameCount\":62,\"durationSec\":5,\"prompt\":\"猴子从岩石上起身，起身后穿上衣服，背上书包，去教室上课，慢慢走到教室里，过程中伴随穿衣、背书包、走路的背景音\",\"negativePrompt\":\"bad video\",\"isStartFrame\":true,\"isEndFrame\":false},{\"id\":\"msdtwxyuscavj_e\",\"imageFile\":\"837b4f3722830bcbeabc138facc53c0e8fa90308543d98c2dde7e797b4a17cd4.png\",\"width\":768,\"height\":1024,\"start\":310,\"length\":62,\"frameCount\":62,\"durationSec\":5,\"prompt\":\"\",\"negativePrompt\":\"bad video\",\"isStartFrame\":false,\"isEndFrame\":true}],\"durationSec\":15,\"shots\":[{\"id\":\"msdtx3zi62ktv\",\"durationSec\":5,\"prompt\":\"一个猴子在极速奔跑，跑的过程中裤子掉在地上，但他仍然继续奔跑。过程中伴随自然的跑步声\",\"negativePrompt\":\"bad video\",\"startImage\":{\"imageFile\":\"d47f7c7c243b746a437dd33ac21ed163192540329ac0784ed7e6bd83b440065a.png\",\"width\":768,\"height\":1024},\"endImage\":{\"imageFile\":\"a1f4b9c98491d696b06b022b2588bf82b966a69356edc0fde952ce335820f26c.png\",\"width\":512,\"height\":682}},{\"id\":\"msdtx87njf33g\",\"durationSec\":5,\"prompt\":\"猴子在快速奔跑，双臂自然摆动，跑到一个岩石旁，慢慢的坐下，随着时间的流逝，沙尘慢慢消失，漏出蓝天背景。过程中伴随自然的跑步、坐下时候产生的声音\",\"negativePrompt\":\"bad video\",\"startImage\":{\"imageFile\":\"a1f4b9c98491d696b06b022b2588bf82b966a69356edc0fde952ce335820f26c.png\",\"width\":512,\"height\":682},\"endImage\":{\"imageFile\":\"aad0afcc1907dd5d8ce4f0c4e14f6511bde9cab23dde1da0311827d4ae4170d0.png\",\"width\":768,\"height\":1024}},{\"id\":\"msdtwxyuscavj\",\"durationSec\":5,\"prompt\":\"猴子从岩石上起身，起身后穿上衣服，背上书包，去教室上课，慢慢走到教室里，过程中伴随穿衣、背书包、走路的背景音\",\"negativePrompt\":\"bad video\",\"startImage\":{\"imageFile\":\"aad0afcc1907dd5d8ce4f0c4e14f6511bde9cab23dde1da0311827d4ae4170d0.png\",\"width\":768,\"height\":1024},\"endImage\":{\"imageFile\":\"837b4f3722830bcbeabc138facc53c0e8fa90308543d98c2dde7e797b4a17cd4.png\",\"width\":768,\"height\":1024}}],\"liveTaePreview\":false,\"batchDetailMode\":\"all\",\"batchWorkspaces\":{\"r2v\":{\"selectedIndex\":0,\"editMode\":\"segment\",\"runSelectEnabled\":true,\"runSelection\":[0,1,2,3],\"segments\":[{\"id\":\"mt0slveqtpanc\",\"start\":0,\"length\":192,\"frameCount\":192,\"durationSec\":8,\"prompt\":\"subject_definitions:\\n<Subject 1> 是来自 <Picture 1> 的校长，约52岁，黑灰短发、矩形眼镜、深炭灰西装，成年男性学校管理者。人物图锁定身份、五官、发型、年龄感、体型和服装；本段新增满头大汗、领口微湿的紧张状态，不继承参考图背景或原姿势。<Subject 1> 是本段第一说话人 (S1)。电话里的成年男人是第二说话人 (S2)，仅以电话画外声存在。\\n<Subject 2> 是来自 <Picture 2>  雨天校长办公室，锁定监控桌、固定电话、档案柜、雨窗、空间布局、材质和冷蓝灰雨天光线；\\n<Audio 3> 校长说话的声音参考\\n\\n人物站位：雨天校长办公室，Principal 坐在办公桌后的黑色办公椅上，位于画面中部偏左，身体朝向桌面与固定电话；右手距电话听筒约二十厘米，左手平放桌沿。雨窗位于画面右后方，雨滴沿玻璃下滑；办公室内无其他可见人物，画面无可读文字。\\n\\n[Shot 1]\\n中景。Principal 坐直又停住，衬衫领口微湿，视线落在桌面固定电话上。办公室外的雨声持续。\\n\\n[Shot 2]\\n电话与Principal手部近景。固定电话响起；校长右手立即伸向听筒，手指扣住听筒柄。\\n\\n[Shot 3]\\n校长侧面中近景。他将听筒贴到右耳，肩膀先绷紧后稳定下来，嘴唇闭合等待。末帧保持Principal坐在桌后、右手持听筒贴耳、左手压桌沿、视线朝前下方、雨窗持续落雨的姿态。\\n\\n【禁止项】\\n\\n文字/UI/水印/Logo/角标/可读文字/真实UI\\n\\n【强制声明】\\n\\n无背景音乐,仅保留环境音与人声和音效;画面禁字幕/文字/水印/Logo;禁止可读文字(指画面字幕文字,不含人声台词)\\n\\n\",\"negativePrompt\":\"\",\"taskType\":\"\",\"refs\":[{\"index\":0,\"imageFile\":\"9fcfd4e1f274300e953268d0c7754281965be120b40347904ef5f4084df4d339.png\",\"fileName\":\"\",\"type\":\"input\",\"subfolder\":\"\"},{\"index\":1,\"imageFile\":\"9b2be3c1635f17072ed726da3a1f4cec4a31356c59e2e5b2c09f4228f312a198.png\",\"fileName\":\"\",\"type\":\"input\",\"subfolder\":\"\"}],\"refAudios\":[{\"index\":2,\"audioFile\":\"319b58962792ba49e9e03103b7d99bc8cb393ef7baeccf6e17a9829d7245f3bb.wav\",\"fileName\":\"319b58962792ba49e9e03103b7d99bc8cb393ef7baeccf6e17a9829d7245f3bb.wav\",\"type\":\"input\",\"subfolder\":\"\",\"durationSec\":6.433}],\"refVideos\":[],\"genImage\":{\"imageFile\":\"\",\"fileName\":\"\"},\"continuityFromPrev\":false,\"refImageSize\":\"match\",\"referenceVideo\":{\"videoFile\":\"\",\"fileName\":\"\",\"type\":\"input\",\"subfolder\":\"\"},\"_videoFrameCount\":192,\"previewFps\":24},{\"id\":\"mtbn0liyptiv8\",\"start\":192,\"length\":362,\"frameCount\":362,\"durationSec\":15,\"prompt\":\"<Subject1> Principal 是 <Picture 1> 中的中年男性校长，黑灰短发、矩形眼镜、深炭灰西装、浅蓝衬衫与深蓝领带；保留参考图中的面部特征、发型、眼镜、服装与身材比例。Principal 全程可见，右手持听筒贴右耳，领口微湿。\\n<Subject2> ND Duty Officer 是电话另一端的成年男性，只以声音存在，永不入画、没有口型、没有视频通话头像。<Subject2>，S2 永远是说话人。S2始终使用成年男性低音、平直冷静、吐字清晰的声线；语速平稳偏慢、音量适中、句尾无情绪起伏。禁止播音腔、威吓咆哮、气泡音和机械合成音。\\n\\n<Subject 3> 是 <Picture 2> 中的雨天校长办公室场景，保留深木办公桌、黑色办公椅、固定电话、档案柜、雨窗与冷蓝灰环境光；所有墙面标识、奖杯、证书、书脊和文件夹均无可读文字。\\n\\n人物站位：承接P01末帧。Principal 坐在画面中部偏左的办公椅上，右手持听筒贴右耳，左手压桌沿，身体朝向桌面；ND Duty Officer 仅从听筒传出声音，不占据可见空间。Principal 与电话保持固定180度轴线，雨窗在右后方。\\n\\n[Shot 1]\\nPrincipal正面中近景。他闭口倾听，眉间皱纹加深，右手指节在听筒上收紧。\\n\\n\\n电话里声音\\n<Subject 2> (S2) says:\\n<d>[Chinese]这里是ND自然灾害研究所，应急处置组。</d>\\n\\n[Shot 2]\\nPrincipal侧面近景。听筒贴在右耳\\n\\n电话里声音\\n<Subject 2> (S2) says:<d>[Chinese]我们已了解贵校遭遇不明生物袭击，现在需要了解一下现场的情况</d>\\n\\n[Shot 3]\\nPrincipal手部与半身中景。他的左手从桌沿缓慢攥紧，身体微微前倾后停止。末帧保持右手持听筒、左手半握、嘴唇闭合、视线落向桌面、雨窗落雨不变的稳定姿态。\\n\\n【禁止项】\\n\\n文字/UI/水印/Logo/角标/可读文字/真实UI\\n\\n【强制声明】\\n\\n无背景音乐,仅保留环境音与人声和音效;画面禁字幕/文字/水印/Logo;禁止可读文字(指画面字幕文字,不含人声台词)\",\"negativePrompt\":\"\",\"taskType\":\"\",\"refs\":[],\"refAudios\":[{\"index\":2,\"audioFile\":\"abf3d8b24c0c6e45b02724420af6cb99656c87afe9b79806a0487294ca9816eb.wav\",\"fileName\":\"abf3d8b24c0c6e45b02724420af6cb99656c87afe9b79806a0487294ca9816eb.wav\",\"type\":\"input\",\"subfolder\":\"\",\"durationSec\":3.499979}],\"refVideos\":[],\"genImage\":{\"imageFile\":\"\",\"fileName\":\"\"},\"continuityFromPrev\":true,\"refImageSize\":\"match\",\"referenceVideo\":{\"videoFile\":\"\",\"fileName\":\"\",\"type\":\"input\",\"subfolder\":\"\"},\"_videoFrameCount\":362,\"previewFps\":24},{\"id\":\"mtbn847u34c93\",\"start\":554,\"length\":362,\"frameCount\":362,\"durationSec\":15,\"prompt\":\"<Subject1> Principal 是 <Picture 1> 中的中年男性校长，黑灰短发、矩形眼镜、深炭灰西装、浅蓝衬衫与深蓝领带；保留参考图外观。Principal 是 S1，保持中低音、略干涩、语速在紧张时偏快但字句清楚；禁止播音腔和失控喊叫。\\n<Subject2> ND Duty Officer 是电话另一端的成年男性，只以声音存在，永不入画、没有口型、没有视频通话头像。<Subject2>，S2 永远是说话人。S2始终使用成年男性低音、平直冷静、吐字清晰的声线；语速平稳偏慢、音量适中、句尾无情绪起伏。禁止播音腔、威吓咆哮、气泡音和机械合成音。\\n\\n<Subject 3> 是 <Picture 2> 中的雨天校长办公室场景，保留深木办公桌、固定电话、档案柜、雨窗和冷蓝灰雨天光线；无可读文字。\\n\\n人物站位：承接P02末帧。Principal 坐在画面中部偏左，右手持听筒贴右耳，左手半握停在桌沿，身体微前倾；ND Duty Officer 只经听筒发声。固定电话、桌面文件和雨窗位置不变。\\n\\n[Shot 1]\\nPrincipal正面近景。他听到问句后抬眼，仍闭口。\\n电话里声音\\n<Subject 2> (S2) says:\\n<d>[Chinese]现场有无人员伤亡？</d>\\n\\n[Shot 2]\\nPrincipal中近景。他立即坐直，口型清晰，右手始终不离听筒：\\n<Subject 1> (S1) says:\\n<d>[Chinese]没有。学生都撤出来了。</d>\\n\\n[Shot 3]\\nPrincipal近景。他的视线从电话落向雨窗又回到桌面，语速更急，音调升高：\\n<Subject 1> (S1) says:\\n<d>[Chinese]那是什么？它撞进教室，差点伤到孩子。</d>\\n\\n[Shot 4]\\nPrincipal侧面中近景。他被对方打断，嘴唇合拢，前倾姿态自然减速并停止。\\n电话里声音\\n<Subject 2> (S2) says:\\n<d>[Chinese]我们会到现场调查清楚。</d>\\n末帧保持Principal右手持听筒、左手压桌沿、身体微前倾、闭口等待的稳定姿态。\\n\\n【禁止项】\\n\\n文字/UI/水印/Logo/角标/可读文字/真实UI\\n\\n【强制声明】\\n\\n无背景音乐,仅保留环境音与人声和音效;画面禁字幕/文字/水印/Logo;禁止可读文字(指画面字幕文字,不含人声台词)\",\"negativePrompt\":\"\",\"taskType\":\"\",\"refs\":[],\"refAudios\":[],\"refVideos\":[],\"genImage\":{\"imageFile\":\"\",\"fileName\":\"\"},\"continuityFromPrev\":true,\"refImageSize\":\"match\",\"referenceVideo\":{\"videoFile\":\"\",\"fileName\":\"\",\"type\":\"input\",\"subfolder\":\"\"},\"_videoFrameCount\":362,\"previewFps\":24},{\"id\":\"mtn0teuxqcbzn\",\"start\":916,\"length\":362,\"frameCount\":362,\"durationSec\":15,\"prompt\":\"<Subject1> Principal 是 <Picture 1> 中的中年男性校长，保留黑灰短发、矩形眼镜、深炭灰西装、浅蓝衬衫与深蓝领带。Principal 是 S1，声音中低、略干涩，紧张时语速稍快，禁止失控喊叫。\\n<Subject2> ND Duty Officer 是电话另一端的成年男性，只以声音存在，永不入画、没有口型、没有视频通话头像。<Subject2>，S2 永远是说话人。S2始终使用成年男性低音、平直冷静、吐字清晰的声线；语速平稳偏慢、音量适中、句尾无情绪起伏。禁止播音腔、威吓咆哮、气泡音和机械合成音。\\n<Subject 3> 是 <Picture 2> 中的雨天校长办公室场景，保留深木办公桌、固定电话、档案柜、雨窗和冷蓝灰光线；无可读文字。\\n\\n人物站位：承接P03末帧。Principal 坐在桌后，身体微前倾，右手持听筒贴右耳，左手压在桌沿；电话线自然垂落，雨窗位于画面右后方。ND Duty Officer 始终不可见。\\n\\n[Shot 1]\\nPrincipal正面中近景。他吞咽一次，眉头不松，口型同步：\\n<Subject 1> (S1) says:\\n<d>[Chinese]可几十个学生都看见了，还有人拍了视频。</d>\\n\\n[Shot 2]\\nPrincipal手部近景。左手压住桌沿，右手持听筒不动，指节发白。\\n画外音\\n<Subject 2> (S2) says:\\n<d>[Chinese]封锁事故教室，保留现场</d>\\n\\n[Shot 3]\\nPrincipal侧面中近景。他闭口，肩膀下沉半寸后稳定。末帧保持听筒贴耳、左手压桌、身体仍朝桌面、视线前下方的姿态。\\n\\n【禁止项】\\n\\n文字/UI/水印/Logo/角标/可读文字/真实UI\\n\\n【强制声明】\\n\\n无背景音乐,仅保留环境音与人声和音效;画面禁字幕/文字/水印/Logo;禁止可读文字(指画面字幕文字,不含人声台词)\",\"negativePrompt\":\"\",\"taskType\":\"\",\"refs\":[],\"refAudios\":[],\"refVideos\":[],\"genImage\":{\"imageFile\":\"\",\"fileName\":\"\"},\"continuityFromPrev\":true,\"refImageSize\":\"match\",\"referenceVideo\":{\"videoFile\":\"\",\"fileName\":\"\",\"type\":\"input\",\"subfolder\":\"\"},\"_videoFrameCount\":362,\"previewFps\":24}],\"globalCommon\":{\"commonEnabled\":false,\"commonCollapsed\":true,\"prompt\":\"subject_definitions:\\n\\n\\n【参考图固定定义】本段只使用4张参考图：<Picture 1>  为陆沉的人设，锁定他高挑偏瘦的男高中生身份、黑色短碎发、白色校服衬衫与深色长裤；<Picture 2>  为林晓的人设，锁定她的五官、高马尾、白蓝校服与右手腕红色细绳；<Picture 3> 为王老师的人设，锁定她30岁漂亮女性班主任兼语文教师的眼镜、及肩深棕发、米色职业套装与端庄教师气质；\\n\\n<Picture 4> 为安娜，冷静，冰山美人角色，\\n\\n<Picture 5> 苏婉，17–18岁，栗棕齐肩短发，温暖外向，白蓝校服\\n<Picture 6> 怪兽袭击后的教室场景\\n\\n锁定雨天教室、讲台、黑板、靠窗侧、约24–30名同学的群像密度，以及陆沉站在讲台左侧、王老师站在讲台右侧介绍转校生的初始构图。后续镜头只继承以上身份与空间状态，不再重复引用任何图片编号或文件路径。\\n\\n\\n\\n参考音色：\\n声音1为陆沉\\n声音2为林晓\\n声音3为 王老师\\n\\n\\n\",\"refs\":[{\"index\":2,\"imageFile\":\"4b705b575e242ad758ae6a741574b7a3d1b42b573873d44f29f78a4fcecca3d6.png\",\"fileName\":\"\",\"type\":\"input\",\"subfolder\":\"\"},{\"index\":3,\"imageFile\":\"acfe578afcffe0cd3a381a6a2d6cf07a9dfa32b8e4ccc0474e780da9f62dbf30.png\",\"fileName\":\"\",\"type\":\"input\",\"subfolder\":\"\"},{\"index\":0,\"imageFile\":\"bd14969a06fe4427e8d1364b651fce511296a23290ebaa88944bac8256290407.png\",\"fileName\":\"\",\"type\":\"input\",\"subfolder\":\"\"},{\"index\":1,\"imageFile\":\"11d6c04ae39d3a9cd39ac9745d3e542ba9d4c86726177a0772d743bc9064cbf4.png\",\"fileName\":\"\",\"type\":\"input\",\"subfolder\":\"\"},{\"index\":5,\"imageFile\":\"2695aa48b8174a0e22cb774359cde388557750fc6e7b0e73d5dddd2bc28ce593.png\",\"fileName\":\"\",\"type\":\"input\",\"subfolder\":\"\"},{\"index\":4,\"imageFile\":\"34c96093f184184025239754d9018dde0ede8b5ce84b62eb2d0c6d71c26eb9f7.png\",\"fileName\":\"\",\"type\":\"input\",\"subfolder\":\"\"}],\"refAudios\":[{\"index\":0,\"audioFile\":\"50021f8e3d6432e746916f522e674802fe23a9ed92890b165a047256d9c9909d.wav\",\"fileName\":\"50021f8e3d6432e746916f522e674802fe23a9ed92890b165a047256d9c9909d.wav\",\"type\":\"input\",\"subfolder\":\"\",\"durationSec\":3.680917},{\"index\":1,\"audioFile\":\"4abfbc9aff2fdbb62a23e01ff19348361b413105bc8e8aff00d8bbd0f8cc055d.wav\",\"fileName\":\"4abfbc9aff2fdbb62a23e01ff19348361b413105bc8e8aff00d8bbd0f8cc055d.wav\",\"type\":\"input\",\"subfolder\":\"\",\"durationSec\":4.014792}],\"refVideos\":[]}}},\"videoWorkspaces\":{\"rv2v\":{\"selectedIndex\":0,\"currentFrame\":0,\"editMode\":\"global\",\"runSelectEnabled\":false,\"runSelection\":[],\"totalFrames\":1086,\"frameRate\":24,\"storageWidth\":1056,\"storageHeight\":32,\"segments\":[{\"id\":\"mtd7gbuo8177h\",\"start\":0,\"length\":372,\"prompt\":\"\",\"taskType\":\"\",\"refs\":[],\"referenceVideo\":{\"videoFile\":\"\",\"fileName\":\"\",\"type\":\"input\",\"subfolder\":\"\"},\"refImageSize\":\"match\",\"refAudios\":[],\"refVideos\":[]}],\"video\":{\"fileName\":\"\",\"videoFile\":\"\",\"subfolder\":\"\",\"type\":\"input\",\"frames\":[],\"frameMap\":[],\"deletedSourceRanges\":[],\"sourceFrameCount\":0,\"width\":0,\"height\":0,\"storageWidth\":1056,\"storageHeight\":32},\"videoClips\":[],\"globalCommon\":{\"commonEnabled\":false,\"commonCollapsed\":false,\"prompt\":\"\",\"refs\":[],\"refAudios\":[],\"refVideos\":[]}}}}",
+      "bd_grp_advanced": "高级采样",
+      "steps": 8,
+      "sampler": "euler",
+      "scheduler": "simple",
+      "shift_video": 6.000000000000001,
+      "shift_audio": 3,
+      "export_source_images": false,
+      "bd_grp_perf": false,
+      "clear_vram_between_segments": "",
+      "minimax_director_ui": "",
+      "model": [
+        "16",
+        0
+      ],
+      "video_vae": [
+        "3",
+        0
+      ],
+      "audio_vae": [
+        "4",
+        0
+      ],
+      "clip": [
+        "2",
+        0
+      ]
+    },
+    "class_type": "MiniMaxH3Director",
+    "_meta": {
+      "title": "MiniMaxH3Director"
+    }
+  },
+  "16": {
+    "inputs": {
+      "model": [
+        "17",
+        0
+      ]
+    },
+    "class_type": "MiniMaxH3MemoryEfficientSageAttentionPatch",
+    "_meta": {
+      "title": "MiniMax H3 Memory Efficient Sage Attention Patch"
+    }
+  },
+  "17": {
+    "inputs": {
+      "sage_attention": "auto",
+      "allow_compile": false,
+      "model": [
+        "26",
+        0
+      ]
+    },
+    "class_type": "PathchSageAttentionKJ",
+    "_meta": {
+      "title": "Patch Sage Attention KJ"
+    }
+  },
+  "18": {
+    "inputs": {
+      "mode": "upscale",
+      "upscale_method": "lanczos",
+      "latent_upscale_model": 0.25,
+      "sampler": "euler",
+      "passes": 2,
+      "seed_mode": "inherit",
+      "aspect_ratio": "16:9 (宽屏)",
+      "megapixels": 1,
+      "width": 1376,
+      "height": 768,
+      "skip_fl2v": true,
+      "confirm_first_pass": true,
+      "refine_model": [
+        "23",
+        0
+      ],
+      "sigmas": [
+        "20",
+        0
+      ],
+      "upscale_model": [
+        "19",
+        0
+      ]
+    },
+    "class_type": "MiniMaxH3DirectorRefine",
+    "_meta": {
+      "title": "MiniMax H3 Director Refine"
+    }
+  },
+  "19": {
+    "inputs": {
+      "model_name": "4x-UltraSharp.pth"
+    },
+    "class_type": "UpscaleModelLoader",
+    "_meta": {
+      "title": "Load Upscale Model"
+    }
+  },
+  "20": {
+    "inputs": {
+      "scheduler": "beta",
+      "steps": 3,
+      "denoise": 0.25000000000000006,
+      "model": [
+        "23",
+        0
+      ]
+    },
+    "class_type": "BasicScheduler",
+    "_meta": {
+      "title": "BasicScheduler"
+    }
+  },
+  "21": {
+    "inputs": {
+      "unet_name": "minimax_h3_fl2va_pruned_int8_convrot.safetensors",
+      "weight_dtype": "default"
+    },
+    "class_type": "UNETLoader",
+    "_meta": {
+      "title": "MiniMax H3 UNET"
+    }
+  },
+  "22": {
+    "inputs": {
+      "sage_attention": "disabled",
+      "allow_compile": false,
+      "model": [
+        "24",
+        0
+      ]
+    },
+    "class_type": "PathchSageAttentionKJ",
+    "_meta": {
+      "title": "Patch Sage Attention KJ"
+    }
+  },
+  "23": {
+    "inputs": {
+      "model": [
+        "22",
+        0
+      ]
+    },
+    "class_type": "MiniMaxH3MemoryEfficientSageAttentionPatch",
+    "_meta": {
+      "title": "MiniMax H3 Memory Efficient Sage Attention Patch"
+    }
+  },
+  "24": {
+    "inputs": {
+      "lora_name": "minimax_h3_fl2v_turbo_4step_v1.1_768p_comfyui_bf16.safetensors",
+      "strength_model": 1,
+      "model": [
+        "21",
+        0
+      ]
+    },
+    "class_type": "LoraLoaderModelOnly",
+    "_meta": {
+      "title": "Load LoRA"
+    }
+  },
+  "26": {
+    "inputs": {
+      "lora_name": "minimax_h3_fl2v_turbo_8step_v1.0_768p_comfyui_bf16.safetensors",
+      "strength_model": 0.7000000000000002,
+      "model": [
+        "1",
+        0
+      ]
+    },
+    "class_type": "LoraLoaderModelOnly",
+    "_meta": {
+      "title": "Load LoRA"
+    }
+  }
+}

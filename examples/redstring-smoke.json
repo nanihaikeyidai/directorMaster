@@ -1,0 +1,21 @@
+{
+  "workflow": "F:\\Work-Fisher纯净包2026.8.7\\ComfyUI\\user\\default\\workflows\\minimax_h3_director_二采_加速_红绳.json",
+  "negativePrompt": "bad video, photorealistic, identity drift, costume change, extra character, malformed hands, duplicated limbs, readable text, subtitles, watermark, logo, UI, background music",
+  "settings": { "fps": 24, "width": 1056, "height": 608, "megapixels": 0.6, "steps": 4, "seed": 666, "cfg": 1 },
+  "segments": [
+    {
+      "id": "redstring-smoke-01",
+      "title": "安娜凝刃",
+      "durationSec": 10,
+      "continuityFromPrev": false,
+      "shotPrompt": "Anna stands alone in the rear aisle of a rain-soaked classroom. She raises her right hand and exactly three black-silver blades condense above her palm. The camera moves from a medium shot to a restrained close-up; rain, cloth and a short metallic resonance remain audible. No dialogue.",
+      "assets": [
+        {
+          "path": "D:\\HermesWorkspace\\ai小说\\红绳\\05-workflow\\ep02\\归档素材\\人物\\安娜_人设.png",
+          "mediaType": "image",
+          "description": "Anna, a vigilant female student with very long deep-blue hair, grey-blue eyes and a white-and-navy school uniform; preserve her exact anime identity and proportions."
+        }
+      ]
+    }
+  ]
+}

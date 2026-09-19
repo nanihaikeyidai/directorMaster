@@ -1,0 +1,372 @@
+{
+  "114": {
+    "inputs": {
+      "image": "e18292a88f353575f6da38d689c9e0c4c80c2c176a15d157c2ee415090625b77.png"
+    },
+    "class_type": "LoadImage",
+    "_meta": {
+      "title": "Load Image"
+    }
+  },
+  "115": {
+    "inputs": {
+      "aspect_ratio": "16:9 (Widescreen)",
+      "megapixels": 0.9,
+      "multiple": 32
+    },
+    "class_type": "ResolutionSelector",
+    "_meta": {
+      "title": "Resolution Selector"
+    }
+  },
+  "124": {
+    "inputs": {
+      "samples": [
+        "127",
+        0
+      ],
+      "vae": [
+        "179",
+        0
+      ]
+    },
+    "class_type": "VAEDecode",
+    "_meta": {
+      "title": "VAE Decode"
+    }
+  },
+  "125": {
+    "inputs": {
+      "sampler_name": "euler"
+    },
+    "class_type": "KSamplerSelect",
+    "_meta": {
+      "title": "KSamplerSelect"
+    }
+  },
+  "126": {
+    "inputs": {
+      "scheduler": "beta",
+      "steps": 10,
+      "denoise": 1,
+      "model": [
+        "163",
+        0
+      ]
+    },
+    "class_type": "BasicScheduler",
+    "_meta": {
+      "title": "BasicScheduler"
+    }
+  },
+  "127": {
+    "inputs": {
+      "noise": [
+        "131",
+        0
+      ],
+      "guider": [
+        "128",
+        0
+      ],
+      "sampler": [
+        "125",
+        0
+      ],
+      "sigmas": [
+        "126",
+        0
+      ],
+      "latent_image": [
+        "143",
+        1
+      ]
+    },
+    "class_type": "SamplerCustomAdvanced",
+    "_meta": {
+      "title": "SamplerCustomAdvanced"
+    }
+  },
+  "128": {
+    "inputs": {
+      "model": [
+        "163",
+        0
+      ],
+      "conditioning": [
+        "143",
+        0
+      ]
+    },
+    "class_type": "BasicGuider",
+    "_meta": {
+      "title": "Basic Guider"
+    }
+  },
+  "131": {
+    "inputs": {
+      "noise_seed": 963325712955003
+    },
+    "class_type": "RandomNoise",
+    "_meta": {
+      "title": "RandomNoise"
+    }
+  },
+  "134": {
+    "inputs": {
+      "expression": "max(5, round(a * b)) + (5 - (max(5, round(a * b)) % 17)) % 17",
+      "values.a": [
+        "175",
+        0
+      ],
+      "values.b": [
+        "186",
+        0
+      ]
+    },
+    "class_type": "ComfyMathExpression",
+    "_meta": {
+      "title": "Math Expression"
+    }
+  },
+  "142": {
+    "inputs": {
+      "frame_rate": [
+        "186",
+        0
+      ],
+      "loop_count": 0,
+      "filename_prefix": "video/MiniMax_H3",
+      "format": "video/h264-mp4",
+      "pix_fmt": "yuv420p",
+      "crf": 19,
+      "save_metadata": false,
+      "trim_to_audio": false,
+      "pingpong": false,
+      "save_output": true,
+      "no_preview": false,
+      "images": [
+        "124",
+        0
+      ],
+      "audio": [
+        "170",
+        0
+      ]
+    },
+    "class_type": "VHS_VideoCombine",
+    "_meta": {
+      "title": "Video Combine 🎥🅥🅗🅢"
+    }
+  },
+  "143": {
+    "inputs": {
+      "prompt": "subject_definitions:\n<Subject 1> is the exact four-member adult girl group from <Picture 1>. Preserve all four original faces, adult age, body proportions, skin tones, hair, makeup, wardrobe, footwear, and empty hands. Stable identity order is M1 high ponytail and silver jacket, M2 blue-black bob and ice-blue top, M3 center-part shoulder hair and gunmetal jacket, M4 low side ponytail and sleeveless gunmetal top.\n<Subject 2> is the empty cold-silver vector stage from <Picture 2>: flat dry-looking dark graphite floor, deep rear wall, overhead trusses, cold-white spots, ice-blue linear lights, and open ZF front, ZL left, ZC center, ZR right, and ZB rear zones.\n<Subject 3> is an independent AE-style world-space title effect spelling exactly WHIPLASH in uppercase geometric sans-serif letters, built from ice-blue vector lines and existing separately from the rear wall.\n<Picture 1> is the uploaded group identity and wardrobe reference.\n<Picture 2> is the uploaded stage architecture, material, palette, and lighting reference.\n<Audio 1> is the uploaded S01.wav, actual duration 8.750 seconds.\n\nsummary:\n[reference generation + audio reference] Create a realistic three-shot opening with an AE title reveal, a full-group performance cut, and a readable M3 lip-sync portrait, while <Audio 1> drives all visual timing.\n\nretention_analysis:\n<Subject 1> and <Picture 1>: fully_preserved for four identities, adult appearance, left-to-right order, hair, wardrobe, footwear, body proportions, and empty hands.\n<Subject 2> and <Picture 2>: partially_preserved for stage architecture, flat floor, trusses, palette, and spatial zones; practical light intensity changes with the performance.\n<Subject 3>: attribute_transfer for exact uppercase spelling, ice-blue vector construction, foreground-to-midground depth, completed assembly, pulse, and full exit.\n<Audio 1>: reference for timing, energy, structure, cuts, and visible soundtrack-performance mouth phrasing; the final master audio will be restored in post.\n\ndetailed_description:\nUse realistic multi-camera 16:9 concert photography with readable anatomy and stable identities. The off-camera audience direction is in front of the stage; the frame contains only the four performers, the empty stage, and the approved title effect. Every readable face receives soft neutral frontal light, ice-blue light remains a spatial accent, and hands stay empty. The only readable text is <Subject 3>. After the quiet title opening, visible performers articulate a clear soundtrack-performance lip-sync that follows <Audio 1>'s audible syllable rhythm and phrase openings without claiming frame-exact lyric sync.\n[Shot 1] A brief front stage-scale wide establishing take. M1, M2, M3, and M4 stand in stable left-to-right order as a balanced ZB line, full bodies separated, lips naturally closed, and arms resting low. The camera remains fixed. During the opening 00:00.720 of near silence the stage is mostly dark. At 00:00.750 the rear vertical lights switch on and separate ice-blue vector strokes enter from all four frame edges in foreground and midground. The strokes assemble into exactly WHIPLASH at center by 00:01.600, remain readable without covering the four silhouettes, then separate into diagonal light bars from 00:02.500 to 00:02.800 and fill the frame to complete the transition.\n[Shot 2] At 00:02.800, the title bars complete a typography wipe into a discontinuous eye-level mid-thigh group take. All four step from ZB to ZC along separate short paths, open their shoulders, and complete one synchronized outward arm slice before returning their empty hands low. The camera trucks slightly left instead of pushing forward. M3 finishes half a step ahead of M1, M2, and M4 in a shallow triangle. All four faces are separated and front-lit; all visible members clearly articulate the same broad singing phrase shape from <Audio 1>, with natural jaw motion and no frozen supporting face.\n[Shot 3] At 00:05.250, hard cut to a discontinuous front-right medium-close portrait of M3 at ZF-center, with M1, M2, and M4 softly readable in three separate background layers. M3 becomes the explicit visual lip-sync lead, maintaining direct eye contact while her lips and jaw clearly follow the audible syllable attacks and phrase release in <Audio 1>. The three supporting members continue smaller synchronized soundtrack-performance mouth motion rather than freezing. M3 raises one empty hand from sternum height, completes a short horizontal slice beside her chin without covering her mouth, and lowers it. The camera makes a restrained five-percent portrait push. At 00:07.702, a thin outline echo of WHIPLASH pulses once in the upper midground behind the faces, stretches sideways into a light streak, and exits completely by 00:08.300. The segment ends with M3's lips completing the audible phrase and settling naturally while the shallow triangle remains stable and no text remains.\n\noverall_soundscape:\n<Audio 1> dominates. Soft synchronized footfalls, light wardrobe motion, and two clean spatial typography swishes remain restrained; no separate spoken dialogue is added.\n\nnon_diegetic_music:\nUse <Audio 1> as the beat, phrase, mouth-timing, cut, camera, and lighting reference. It conditions visible soundtrack-performance lip-sync but is not claimed as frame-exact copied singing; replace generated music with the original master track in final post-production.\n```",
+      "width": [
+        "115",
+        0
+      ],
+      "height": [
+        "115",
+        1
+      ],
+      "length": [
+        "134",
+        1
+      ],
+      "ref_image_size": "match",
+      "clip": [
+        "181",
+        0
+      ],
+      "vae": [
+        "179",
+        0
+      ],
+      "audio_vae": [
+        "180",
+        0
+      ],
+      "ref_images.ref_image_0": [
+        "114",
+        0
+      ],
+      "ref_images.ref_image_1": [
+        "148",
+        0
+      ],
+      "ref_audios.ref_audio_0": [
+        "170",
+        0
+      ]
+    },
+    "class_type": "MiniMaxH3ReferenceToVideo",
+    "_meta": {
+      "title": "MiniMax H3 Reference to Video"
+    }
+  },
+  "148": {
+    "inputs": {
+      "image": "4ae1f0aaa990542f6ee2bdccc10d30c786e4074dc5787cb3fd95815b9bee360b.png"
+    },
+    "class_type": "LoadImage",
+    "_meta": {
+      "title": "Load Image"
+    }
+  },
+  "163": {
+    "inputs": {
+      "model": [
+        "183",
+        0
+      ]
+    },
+    "class_type": "MiniMaxH3MemoryEfficientSageAttentionPatch",
+    "_meta": {
+      "title": "MiniMax H3 Memory Efficient Sage Attention Patch"
+    }
+  },
+  "167": {
+    "inputs": {
+      "frame_rate": [
+        "186",
+        0
+      ],
+      "loop_count": 0,
+      "filename_prefix": "video/MiniMax_H3",
+      "format": "video/h264-mp4",
+      "pix_fmt": "yuv420p",
+      "crf": 19,
+      "save_metadata": false,
+      "trim_to_audio": false,
+      "pingpong": false,
+      "save_output": true,
+      "no_preview": false,
+      "images": [
+        "124",
+        0
+      ],
+      "audio": [
+        "168",
+        0
+      ]
+    },
+    "class_type": "VHS_VideoCombine",
+    "_meta": {
+      "title": "Video Combine 🎥🅥🅗🅢"
+    }
+  },
+  "168": {
+    "inputs": {
+      "samples": [
+        "127",
+        0
+      ],
+      "vae": [
+        "180",
+        0
+      ]
+    },
+    "class_type": "VAEDecodeAudio",
+    "_meta": {
+      "title": "VAE Decode Audio"
+    }
+  },
+  "170": {
+    "inputs": {
+      "audio": "d0184f037318762a7915ae227f8c9f5ad27d0a029b67b2faa1863a27690770b1.wav",
+      "audioUI": ""
+    },
+    "class_type": "LoadAudio",
+    "_meta": {
+      "title": "Load Audio"
+    }
+  },
+  "175": {
+    "inputs": {
+      "expression": "a/1000",
+      "values.a": [
+        "190",
+        0
+      ]
+    },
+    "class_type": "ComfyMathExpression",
+    "_meta": {
+      "title": "Math Expression"
+    }
+  },
+  "179": {
+    "inputs": {
+      "vae_name": "minimax_h3_video_vae_int8_convrot.safetensors"
+    },
+    "class_type": "VAELoader",
+    "_meta": {
+      "title": "Load VAE"
+    }
+  },
+  "180": {
+    "inputs": {
+      "vae_name": "minimax_h3_audio_vae_fp32.safetensors"
+    },
+    "class_type": "VAELoader",
+    "_meta": {
+      "title": "Load VAE"
+    }
+  },
+  "181": {
+    "inputs": {
+      "clip_name": "qwen3vl_32b_minimax_h3_int8_convrot.safetensors",
+      "type": "minimax",
+      "device": "default"
+    },
+    "class_type": "CLIPLoader",
+    "_meta": {
+      "title": "Load CLIP"
+    }
+  },
+  "182": {
+    "inputs": {
+      "unet_name": "minimax_h3_hybrid_fl2va_ref2va_b25-49-int8.safetensors",
+      "weight_dtype": "default"
+    },
+    "class_type": "UNETLoader",
+    "_meta": {
+      "title": "Load Diffusion Model"
+    }
+  },
+  "183": {
+    "inputs": {
+      "lora_name": "minimax_h3_ref2v_turbo_8step_v1.0_768p_comfyui_bf16.safetensors",
+      "strength_model": 0.7000000000000002,
+      "model": [
+        "182",
+        0
+      ]
+    },
+    "class_type": "LoraLoaderModelOnly",
+    "_meta": {
+      "title": "Load LoRA"
+    }
+  },
+  "186": {
+    "inputs": {
+      "value": 24
+    },
+    "class_type": "PrimitiveFloat",
+    "_meta": {
+      "title": "帧率"
+    }
+  },
+  "190": {
+    "inputs": {
+      "audio": [
+        "170",
+        0
+      ]
+    },
+    "class_type": "Audio Duration (mtb)",
+    "_meta": {
+      "title": "Audio Duration (mtb)"
+    }
+  }
+}

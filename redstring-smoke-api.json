@@ -1,0 +1,231 @@
+{
+  "1": {
+    "inputs": {
+      "unet_name": "minimax_h3_fl2va_pruned_int8_convrot.safetensors",
+      "weight_dtype": "default"
+    },
+    "class_type": "UNETLoader",
+    "_meta": {
+      "title": "MiniMax H3 UNET"
+    }
+  },
+  "2": {
+    "inputs": {
+      "clip_name": "qwen3vl_32b_minimax_h3_nvfp4_awq.safetensors",
+      "type": "minimax",
+      "device": "default"
+    },
+    "class_type": "CLIPLoader",
+    "_meta": {
+      "title": "CLIP (minimax / Qwen3-VL)"
+    }
+  },
+  "3": {
+    "inputs": {
+      "vae_name": "minimax_h3_video_vae_fp16.safetensors"
+    },
+    "class_type": "VAELoader",
+    "_meta": {
+      "title": "Video VAE"
+    }
+  },
+  "4": {
+    "inputs": {
+      "vae_name": "minimax_h3_audio_vae_fp32.safetensors"
+    },
+    "class_type": "VAELoader",
+    "_meta": {
+      "title": "Audio VAE"
+    }
+  },
+  "6": {
+    "inputs": {
+      "images": [
+        "12",
+        0
+      ],
+      "audio": [
+        "12",
+        1
+      ],
+      "fps": [
+        "12",
+        2
+      ],
+      "bit_depth": 8,
+      "color_space": "sRGB"
+    },
+    "class_type": "CreateVideo",
+    "_meta": {
+      "title": "CreateVideo"
+    }
+  },
+  "7": {
+    "inputs": {
+      "video": [
+        "6",
+        0
+      ],
+      "filename_prefix": "video/MiniMaxH3_Director",
+      "format": "auto",
+      "format.codec": "auto",
+      "codec": "auto"
+    },
+    "class_type": "SaveVideo",
+    "_meta": {
+      "title": "SaveVideo"
+    }
+  },
+  "8": {
+    "inputs": {
+      "source": [
+        "12",
+        5
+      ]
+    },
+    "class_type": "PreviewAny",
+    "_meta": {
+      "title": "Director 运行报告"
+    }
+  },
+  "12": {
+    "inputs": {
+      "model": [
+        "15",
+        0
+      ],
+      "video_vae": [
+        "3",
+        0
+      ],
+      "audio_vae": [
+        "4",
+        0
+      ],
+      "clip": [
+        "2",
+        0
+      ],
+      "task_type": "r2v — 参考主体生视频(Reference to Video)",
+      "global_prompt": "",
+      "bd_grp_sample": "采样设置",
+      "cfg": 1,
+      "seed": 666,
+      "frame_rate": 24,
+      "width": 1056,
+      "height": 608,
+      "ref_max_size": 1056,
+      "total_frames": 243,
+      "timeline_data": "{\"version\":5,\"editMode\":\"segment\",\"totalFrames\":243,\"frameRate\":24,\"video\":{\"fileName\":\"\",\"videoFile\":\"\",\"subfolder\":\"\",\"type\":\"input\",\"frames\":[],\"frameMap\":[],\"sourceFrameCount\":734,\"deletedSourceRanges\":[]},\"videoClips\":[],\"global\":{\"taskType\":\"r2v — 参考主体生视频(Reference to Video)\",\"prompt\":\"\",\"refs\":[],\"referenceVideo\":{\"videoFile\":\"\",\"fileName\":\"\",\"type\":\"input\",\"subfolder\":\"\"},\"continuousReference\":false,\"genImage\":{\"imageFile\":\"\"},\"sourceWidth\":768,\"sourceHeight\":1024,\"refAudios\":[],\"commonEnabled\":true,\"commonCollapsed\":false,\"refVideos\":[]},\"output\":{\"mode\":\"fixed\",\"aspectRatio\":\"16:9 (宽屏)\",\"megapixels\":0.6,\"multiple\":32,\"longEdge\":1056,\"width\":1056,\"height\":608,\"maxExportFrames\":0,\"exportMode\":\"all\",\"audioMode\":\"source\",\"refImageSize\":\"match\",\"continuityEnabled\":true,\"continuityOverlapFrames\":22},\"runSelectEnabled\":false,\"runSelection\":[],\"segments\":[{\"id\":\"redstring-smoke-01\",\"start\":0,\"length\":243,\"frameCount\":243,\"durationSec\":10,\"prompt\":\"subject_definitions:\\n<Picture 1> is Anna, a vigilant female student with very long deep-blue hair, grey-blue eyes and a white-and-navy school uniform; preserve her exact anime identity and proportions.\\n\\nsummary:\\n[reference generation] Create a 10-second 16:9 cinematic sequence using only selected references.\\n\\nretention_analysis:\\n<Picture 1>: fully_preserved - preserve identity and described attributes.\\n\\ndetailed_description:\\nAnna stands alone in the rear aisle of a rain-soaked classroom. She raises her right hand and exactly three black-silver blades condense above her palm. The camera moves from a medium shot to a restrained close-up; rain, cloth and a short metallic resonance remain audible. No dialogue.\\n\\noverall_soundscape:\\nContinuous diegetic ambience and synchronized action sound only.\\n\\nnon_diegetic_music:\\nN/A\",\"negativePrompt\":\"bad video, photorealistic, identity drift, costume change, extra character, malformed hands, duplicated limbs, readable text, subtitles, watermark, logo, UI, background music\",\"taskType\":\"\",\"refs\":[{\"index\":0,\"imageFile\":\"安娜_人设.png\",\"fileName\":\"安娜_人设.png\",\"type\":\"input\",\"subfolder\":\"\"}],\"refAudios\":[],\"refVideos\":[],\"genImage\":{\"imageFile\":\"\",\"fileName\":\"\"},\"continuityFromPrev\":false,\"selected\":true}],\"timelineMode\":\"prompt_batch\",\"width\":1056,\"height\":608,\"refMaxSize\":1056,\"gen\":{\"defaultFrameCount\":124},\"keyframes\":[{\"id\":\"msdtx3zi62ktv_s\",\"imageFile\":\"0059.png\",\"width\":768,\"height\":1024,\"start\":0,\"length\":62,\"frameCount\":62,\"durationSec\":5,\"prompt\":\"一个猴子在极速奔跑，跑的过程中裤子掉在地上，但他仍然继续奔跑。过程中伴随自然的跑步声\",\"negativePrompt\":\"bad video\",\"isStartFrame\":true,\"isEndFrame\":false},{\"id\":\"msdtx3zi62ktv_e\",\"imageFile\":\"0060.png\",\"width\":512,\"height\":682,\"start\":62,\"length\":62,\"frameCount\":62,\"durationSec\":5,\"prompt\":\"\",\"negativePrompt\":\"bad video\",\"isStartFrame\":false,\"isEndFrame\":true},{\"id\":\"msdtx87njf33g_s\",\"imageFile\":\"0060.png\",\"width\":512,\"height\":682,\"start\":124,\"length\":62,\"frameCount\":62,\"durationSec\":5,\"prompt\":\"猴子在快速奔跑，双臂自然摆动，跑到一个岩石旁，慢慢的坐下，随着时间的流逝，沙尘慢慢消失，漏出蓝天背景。过程中伴随自然的跑步、坐下时候产生的声音\",\"negativePrompt\":\"bad video\",\"isStartFrame\":true,\"isEndFrame\":false},{\"id\":\"msdtx87njf33g_e\",\"imageFile\":\"0062.png\",\"width\":768,\"height\":1024,\"start\":186,\"length\":62,\"frameCount\":62,\"durationSec\":5,\"prompt\":\"\",\"negativePrompt\":\"bad video\",\"isStartFrame\":false,\"isEndFrame\":true},{\"id\":\"msdtwxyuscavj_s\",\"imageFile\":\"0062.png\",\"width\":768,\"height\":1024,\"start\":248,\"length\":62,\"frameCount\":62,\"durationSec\":5,\"prompt\":\"猴子从岩石上起身，起身后穿上衣服，背上书包，去教室上课，慢慢走到教室里，过程中伴随穿衣、背书包、走路的背景音\",\"negativePrompt\":\"bad video\",\"isStartFrame\":true,\"isEndFrame\":false},{\"id\":\"msdtwxyuscavj_e\",\"imageFile\":\"0086.png\",\"width\":768,\"height\":1024,\"start\":310,\"length\":62,\"frameCount\":62,\"durationSec\":5,\"prompt\":\"\",\"negativePrompt\":\"bad video\",\"isStartFrame\":false,\"isEndFrame\":true},{\"id\":\"msdx1e2eigp2x\",\"imageFile\":\"\",\"width\":0,\"height\":0,\"start\":372,\"length\":124,\"frameCount\":124,\"durationSec\":5,\"prompt\":\"\",\"negativePrompt\":\"bad video\",\"isStartFrame\":true,\"isEndFrame\":false}],\"durationSec\":20,\"shots\":[{\"id\":\"msdtx3zi62ktv\",\"durationSec\":5,\"prompt\":\"一个猴子在极速奔跑，跑的过程中裤子掉在地上，但他仍然继续奔跑。过程中伴随自然的跑步声\",\"negativePrompt\":\"bad video\",\"startImage\":{\"imageFile\":\"0059.png\",\"width\":768,\"height\":1024},\"endImage\":{\"imageFile\":\"0060.png\",\"width\":512,\"height\":682}},{\"id\":\"msdtx87njf33g\",\"durationSec\":5,\"prompt\":\"猴子在快速奔跑，双臂自然摆动，跑到一个岩石旁，慢慢的坐下，随着时间的流逝，沙尘慢慢消失，漏出蓝天背景。过程中伴随自然的跑步、坐下时候产生的声音\",\"negativePrompt\":\"bad video\",\"startImage\":{\"imageFile\":\"0060.png\",\"width\":512,\"height\":682},\"endImage\":{\"imageFile\":\"0062.png\",\"width\":768,\"height\":1024}},{\"id\":\"msdtwxyuscavj\",\"durationSec\":5,\"prompt\":\"猴子从岩石上起身，起身后穿上衣服，背上书包，去教室上课，慢慢走到教室里，过程中伴随穿衣、背书包、走路的背景音\",\"negativePrompt\":\"bad video\",\"startImage\":{\"imageFile\":\"0062.png\",\"width\":768,\"height\":1024},\"endImage\":{\"imageFile\":\"0086.png\",\"width\":768,\"height\":1024}},{\"id\":\"msdx1e2eigp2x\",\"durationSec\":5,\"prompt\":\"\",\"negativePrompt\":\"bad video\",\"startImage\":null,\"endImage\":null}],\"liveTaePreview\":true,\"batchDetailMode\":\"solo\",\"batchWorkspaces\":{\"r2v\":{\"selectedIndex\":0,\"editMode\":\"segment\",\"runSelectEnabled\":false,\"runSelection\":[],\"segments\":[{\"id\":\"redstring-smoke-01\",\"start\":0,\"length\":243,\"frameCount\":243,\"durationSec\":10,\"prompt\":\"subject_definitions:\\n<Picture 1> is Anna, a vigilant female student with very long deep-blue hair, grey-blue eyes and a white-and-navy school uniform; preserve her exact anime identity and proportions.\\n\\nsummary:\\n[reference generation] Create a 10-second 16:9 cinematic sequence using only selected references.\\n\\nretention_analysis:\\n<Picture 1>: fully_preserved - preserve identity and described attributes.\\n\\ndetailed_description:\\nAnna stands alone in the rear aisle of a rain-soaked classroom. She raises her right hand and exactly three black-silver blades condense above her palm. The camera moves from a medium shot to a restrained close-up; rain, cloth and a short metallic resonance remain audible. No dialogue.\\n\\noverall_soundscape:\\nContinuous diegetic ambience and synchronized action sound only.\\n\\nnon_diegetic_music:\\nN/A\",\"negativePrompt\":\"bad video, photorealistic, identity drift, costume change, extra character, malformed hands, duplicated limbs, readable text, subtitles, watermark, logo, UI, background music\",\"taskType\":\"\",\"refs\":[{\"index\":0,\"imageFile\":\"安娜_人设.png\",\"fileName\":\"安娜_人设.png\",\"type\":\"input\",\"subfolder\":\"\"}],\"refAudios\":[],\"refVideos\":[],\"genImage\":{\"imageFile\":\"\",\"fileName\":\"\"},\"continuityFromPrev\":false,\"selected\":true}],\"globalCommon\":{\"commonEnabled\":false,\"commonCollapsed\":false,\"prompt\":\"\",\"refs\":[],\"refAudios\":[],\"refVideos\":[]}}}}",
+      "bd_grp_advanced": "高级采样",
+      "steps": 4,
+      "sampler": "euler",
+      "scheduler": "simple",
+      "shift_video": 6,
+      "shift_audio": 3,
+      "bd_grp_perf": "性能",
+      "clear_vram_between_segments": true,
+      "export_source_images": true
+    },
+    "class_type": "MiniMaxH3Director",
+    "_meta": {
+      "title": "MiniMaxH3Director"
+    }
+  },
+  "14": {
+    "inputs": {
+      "model": [
+        "41",
+        0
+      ],
+      "sage_attention": "auto",
+      "allow_compile": false
+    },
+    "class_type": "PathchSageAttentionKJ",
+    "_meta": {
+      "title": "PathchSageAttentionKJ"
+    }
+  },
+  "15": {
+    "inputs": {
+      "model": [
+        "14",
+        0
+      ]
+    },
+    "class_type": "MiniMaxH3MemoryEfficientSageAttentionPatch",
+    "_meta": {
+      "title": "MiniMaxH3MemoryEfficientSageAttentionPatch"
+    }
+  },
+  "16": {
+    "inputs": {
+      "model": [
+        "1",
+        0
+      ],
+      "lora_name": "h3\\minimax_h3_fl2v_turbo_4step_v1.1_768p_comfyui_bf16.safetensors",
+      "strength_model": 1
+    },
+    "class_type": "LoraLoaderModelOnly",
+    "_meta": {
+      "title": "LoraLoaderModelOnly"
+    }
+  },
+  "19": {
+    "inputs": {
+      "images": [
+        "12",
+        6
+      ],
+      "audio": [
+        "12",
+        1
+      ],
+      "fps": [
+        "12",
+        2
+      ],
+      "bit_depth": 10,
+      "color_space": "sRGB"
+    },
+    "class_type": "CreateVideo",
+    "_meta": {
+      "title": "CreateVideo"
+    }
+  },
+  "20": {
+    "inputs": {
+      "video": [
+        "19",
+        0
+      ],
+      "filename_prefix": "video/MiniMaxH3_Director",
+      "format": "auto",
+      "format.codec": "auto",
+      "codec": "auto"
+    },
+    "class_type": "SaveVideo",
+    "_meta": {
+      "title": "SaveVideo"
+    }
+  },
+  "41": {
+    "inputs": {
+      "model": [
+        "16",
+        0
+      ],
+      "processing_control_value": 0.08,
+      "processing_percent_1": 0.1,
+      "processing_percent_2": 0.9,
+      "mcs": 2,
+      "device": "auto",
+      "mode": "4-step LoRA"
+    },
+    "class_type": "TESpeedMiniMaxH3",
+    "_meta": {
+      "title": "TESpeedMiniMaxH3"
+    }
+  }
+}

@@ -1,0 +1,231 @@
+{
+  "1": {
+    "inputs": {
+      "unet_name": "minimax_h3_fl2va_pruned_int8_convrot.safetensors",
+      "weight_dtype": "default"
+    },
+    "class_type": "UNETLoader",
+    "_meta": {
+      "title": "MiniMax H3 UNET"
+    }
+  },
+  "2": {
+    "inputs": {
+      "clip_name": "qwen3vl_32b_minimax_h3_int8_convrot.safetensors",
+      "type": "minimax",
+      "device": "default"
+    },
+    "class_type": "CLIPLoader",
+    "_meta": {
+      "title": "CLIP (minimax / Qwen3-VL)"
+    }
+  },
+  "3": {
+    "inputs": {
+      "vae_name": "minimax_h3_video_vae_fp16.safetensors"
+    },
+    "class_type": "VAELoader",
+    "_meta": {
+      "title": "Video VAE"
+    }
+  },
+  "4": {
+    "inputs": {
+      "vae_name": "minimax_h3_audio_vae_fp32.safetensors"
+    },
+    "class_type": "VAELoader",
+    "_meta": {
+      "title": "Audio VAE"
+    }
+  },
+  "6": {
+    "inputs": {
+      "images": [
+        "12",
+        0
+      ],
+      "audio": [
+        "12",
+        1
+      ],
+      "fps": [
+        "12",
+        2
+      ],
+      "bit_depth": 8,
+      "color_space": "sRGB"
+    },
+    "class_type": "CreateVideo",
+    "_meta": {
+      "title": "CreateVideo"
+    }
+  },
+  "7": {
+    "inputs": {
+      "video": [
+        "6",
+        0
+      ],
+      "filename_prefix": "video/MiniMaxH3_Director",
+      "format": "auto",
+      "format.codec": "auto",
+      "codec": "auto"
+    },
+    "class_type": "SaveVideo",
+    "_meta": {
+      "title": "SaveVideo"
+    }
+  },
+  "8": {
+    "inputs": {
+      "source": [
+        "12",
+        5
+      ]
+    },
+    "class_type": "PreviewAny",
+    "_meta": {
+      "title": "Director 运行报告"
+    }
+  },
+  "12": {
+    "inputs": {
+      "model": [
+        "15",
+        0
+      ],
+      "video_vae": [
+        "3",
+        0
+      ],
+      "audio_vae": [
+        "4",
+        0
+      ],
+      "clip": [
+        "2",
+        0
+      ],
+      "task_type": "r2v — 参考主体生视频(Reference to Video)",
+      "global_prompt": "",
+      "bd_grp_sample": "采样设置",
+      "cfg": 1,
+      "seed": 666,
+      "frame_rate": 24,
+      "width": 1056,
+      "height": 608,
+      "ref_max_size": 1056,
+      "total_frames": 362,
+      "timeline_data": "{\"version\":5,\"editMode\":\"segment\",\"totalFrames\":362,\"frameRate\":24,\"video\":{\"fileName\":\"\",\"videoFile\":\"\",\"subfolder\":\"\",\"type\":\"input\",\"frames\":[],\"frameMap\":[],\"sourceFrameCount\":734,\"deletedSourceRanges\":[]},\"videoClips\":[],\"global\":{\"taskType\":\"r2v — 参考主体生视频(Reference to Video)\",\"prompt\":\"\",\"refs\":[],\"referenceVideo\":{\"videoFile\":\"\",\"fileName\":\"\",\"type\":\"input\",\"subfolder\":\"\"},\"continuousReference\":false,\"genImage\":{\"imageFile\":\"\"},\"sourceWidth\":768,\"sourceHeight\":1024,\"refAudios\":[],\"commonEnabled\":true,\"commonCollapsed\":false,\"refVideos\":[]},\"output\":{\"mode\":\"fixed\",\"aspectRatio\":\"16:9 (宽屏)\",\"megapixels\":0.6,\"multiple\":32,\"longEdge\":1056,\"width\":1056,\"height\":608,\"maxExportFrames\":0,\"exportMode\":\"all\",\"audioMode\":\"generate\",\"exportSourceImages\":false,\"refImageSize\":\"match\",\"continuityEnabled\":true,\"continuityOverlapFrames\":22},\"runSelectEnabled\":false,\"runSelection\":[],\"segments\":[{\"id\":\"ep02_segment10_who_are_you_looking_for_v2\",\"start\":0,\"length\":362,\"frameCount\":362,\"durationSec\":15,\"prompt\":\"subject_definitions:\\n<Picture 1> is the single principal identity: an approximately 52-year-old adult male school principal with short black-grey hair, rectangular glasses, a dark charcoal-grey suit, light shirt and tie. Inherit only identity, face, age, proportions and clothing; do not inherit the reference background or its pose. He is the only visible person in the office, sweating heavily with a damp collar, seated at the monitor desk holding the landline receiver to his right ear. He is the first speaker (S1).\\n<Picture 2> is the giant bat-like distorted creature, with a grey-black body, broad black wings, pointed ears and red eyes. It appears only as a frozen surveillance-recording image on the office monitor; it never becomes physically present in the office and never shares the office space with the principal.\\n<Picture 3> is the rainy principal's office. Inherit the monitor desk, landline telephone, filing cabinets, rain-streaked window, desk layout and cold blue-grey rainy light; do not inherit photographic rendering style, readable marks or any temporary people.\\n<Audio 1> is the voice-timbre reference for the principal (S1). Reference only pitch, timbre, adult male texture, speech rhythm and tense emotional quality; never copy the reference audio's original lines.\\n\\nsummary:\\n[reference generation] Generate one continuous 15-second 16:9 horizontal video at 2K-class clarity for EP02 segment 10, using only the supplied reference images and one voice reference, with no first-frame image, no storyboard image and no reference video. Apply a high-detail Japanese anime youth cinematic look with delicate cel-shaded characters, hand-drawn animation backgrounds, clean stable linework, cold blue-grey rainy light, rain-streaked glass and restrained wet reflections. The principal, still on the phone, studies the frozen monitor image in which a blurred male student silhouette shields another student in front of the black-winged creature's break-in point. He first asks the off-screen ND caller, in a fast, agitated voice, whether they are really investigating the creature or the students. The caller, remaining strictly an off-screen male voice, coldly states that ND takes over tonight, seals the accident area and that other classes resume tomorrow as usual. Instead of obeying, the principal raises his voice and urgently presses to know what the creature actually is, but the caller hangs up mid-question with a short dial tone; the principal is left shocked and tense, receiver still at his ear. The bat-like creature stays only inside the frozen monitor image; no second visible person appears, no computer operation or screen content is shown, and no readable text or UI is generated.\\n\\nretention_analysis:\\n<Picture 1>: fully_preserved - keep the principal's identity, rectangular glasses, short black-grey hair, charcoal suit, sweaty state, seated position at the monitor desk and receiver at his right ear; allow only the scripted fast head movements, agitated facial expressions, brief open-close of the mouth and tense gripping of the receiver.\\n<Picture 2>: fully_preserved - keep the black-winged bat-like creature only as the frozen surveillance image inside the monitor; do not instantiate it in the office.\\n<Picture 3>: fully_preserved - keep the office desk, monitor, landline telephone, cabinets, rainy window, spatial layout and cold blue-grey rainy atmosphere; the monitor screen shows only the unreadable frozen image and never a desktop, UI or file window; do not add readable wall marks or temporary people.\\n<Audio 1>: reference - the principal's on-screen lines use the timbre, adult male texture and tense rhythm of the reference, delivered fast and agitated; never copy the original words.\\n\\ndetailed_description:\\nThe video is 16:9 horizontal, 2K-class, high-detail Japanese anime youth cinematic style, with delicate cel-shaded characters, hand-drawn background art and clean stable linework. Establish a coherent fixed 180-degree office axis: the principal sits behind the monitor desk, the monitor is directly in front of him, the landline is within reach on the desk, filing cabinets stay behind him and the rain-streaked window stays in the background. Exactly one visible person exists: the principal. The ND caller is never visible and never receives a face, avatar or lip movement; off-screen lines require no visible mouth and no lip sync. Inside the monitor's frozen classroom image, in front of the black-winged creature's break-in point near the windows, one blurred unidentifiable male student silhouette shields another student; both stay indistinct, never clearly face-on, never in the office itself. Throughout the segment the principal never touches the keyboard or mouse; no computer desktop, UI, folder or dialog is ever shown. All speech is delivered at a noticeably fast, urgent pace.\\n\\n[Shot 1] From 00:00 to 00:05, begin with a stable close shot of the principal seated alone at the monitor desk, receiver pressed to his right ear, eyes fixed on the frozen monitor image where the blurred shielding silhouette stands in front of the black-winged creature's break-in point. He speaks on-screen (S1) rapidly and agitatedly, with fast precise lip sync, and asks once: <d>[Chinese] 你们要查的，究竟是那只东西，还是这些学生？！</d> He finishes, breathing hard, jaw tense, still staring at the monitor; the other end of the line stays silent except for a faint current hum.\\n\\n[Shot 2] From 00:05 to 00:10, cut to a side medium close shot with a slow push-in. After the brief silence the low, calm, forceful adult male caller remains an off-screen telephone voice (S2) and says once, cold and unhurried, with no visible caller and no mouth animation: <d>[Chinese] 今晚我们接管。事故区封闭，其他班明天照常上课。</d> The principal's expression hardens; instead of yielding, he opens his mouth to interrupt, brows tight, hand clenching the receiver.\\n\\n[Shot 3] From 00:10 to 00:15, cut to a frontal medium close shot. The principal (S1) raises his voice, excited and urgent, and presses forward in a fast, almost breathless delivery with precise lip sync, starting his question: <d>[Chinese] 那只东西到底是什么？！你们既然要接管，总该告诉我——</d> He is cut off mid-sentence at about 13 seconds by a clear short hang-up dial tone from the caller's side. The principal freezes, shocked and tense, pupils shrinking, receiver still pressed to his ear, mouth still slightly open; he holds this stunned pose. Stop all major movement by 14.50 seconds, then hold the final pose for at least 0.50 seconds: receiver against his right ear, body rigid with tension, shocked expression, rainy office unchanged.\\n\\nNo subtitles, captions, Chinese characters, title cards, speech bubbles, UI, watermark or logo appear in the image. The monitor shows only the unreadable frozen surveillance image with blurred student silhouettes and no readable timestamps, text, desktop or real interface; the principal never operates the computer and no screen content is displayed. No background music; retain only rain, monitor hum, telephone-line hiss, fast tense breathing, the short hang-up tone and the receiver grip sounds. Only one voice speaks at a time, and speech is fast and urgent throughout.\\n\\noverall_soundscape:\\nContinuous rain against the office window, quiet monitor hum, telephone-line hiss, the principal's fast agitated breathing and slight fabric rustle, one clear short hang-up dial tone around 13 seconds; two rapid on-screen principal lines plus one cold off-screen adult male caller line, with only one voice speaking at a time, fast and urgent delivery, and the caller never entering the frame.\\n\\nnon_diegetic_music:\\nN/A\",\"negativePrompt\":\"bad video, photorealistic, identity drift, costume change, extra character, malformed hands, duplicated limbs, readable text, subtitles, watermark, logo, UI, background music, second visible person in the office, caller on screen, caller mouth, creature physically inside the office, creature leaving the monitor, clear student faces, students physically inside the office, computer screen, monitor UI, desktop interface, file explorer, dialog box, keyboard typing, mouse operation, readable folder names, file dialog text, storyboard grid, panel borders, arrows, production annotations, portrait orientation, slow speech, sluggish movement\",\"taskType\":\"\",\"refs\":[{\"index\":0,\"imageFile\":\"校长_SEG10.png\",\"fileName\":\"校长_SEG10.png\",\"type\":\"input\",\"subfolder\":\"\"},{\"index\":1,\"imageFile\":\"黑翼飞行怪兽.png\",\"fileName\":\"黑翼飞行怪兽.png\",\"type\":\"input\",\"subfolder\":\"\"},{\"index\":2,\"imageFile\":\"场景_雨天校长办公室_SEG10.png\",\"fileName\":\"场景_雨天校长办公室_SEG10.png\",\"type\":\"input\",\"subfolder\":\"\"}],\"refAudios\":[{\"index\":0,\"audioFile\":\"校长_SEG10.wav\",\"fileName\":\"校长_SEG10.wav\",\"type\":\"input\",\"subfolder\":\"\"}],\"refVideos\":[],\"genImage\":{\"imageFile\":\"\",\"fileName\":\"\"},\"continuityFromPrev\":false,\"selected\":true}],\"timelineMode\":\"prompt_batch\",\"width\":1056,\"height\":608,\"refMaxSize\":1056,\"gen\":{\"defaultFrameCount\":124},\"keyframes\":[{\"id\":\"msdtx3zi62ktv_s\",\"imageFile\":\"0059.png\",\"width\":768,\"height\":1024,\"start\":0,\"length\":62,\"frameCount\":62,\"durationSec\":5,\"prompt\":\"一个猴子在极速奔跑，跑的过程中裤子掉在地上，但他仍然继续奔跑。过程中伴随自然的跑步声\",\"negativePrompt\":\"bad video\",\"isStartFrame\":true,\"isEndFrame\":false},{\"id\":\"msdtx3zi62ktv_e\",\"imageFile\":\"0060.png\",\"width\":512,\"height\":682,\"start\":62,\"length\":62,\"frameCount\":62,\"durationSec\":5,\"prompt\":\"\",\"negativePrompt\":\"bad video\",\"isStartFrame\":false,\"isEndFrame\":true},{\"id\":\"msdtx87njf33g_s\",\"imageFile\":\"0060.png\",\"width\":512,\"height\":682,\"start\":124,\"length\":62,\"frameCount\":62,\"durationSec\":5,\"prompt\":\"猴子在快速奔跑，双臂自然摆动，跑到一个岩石旁，慢慢的坐下，随着时间的流逝，沙尘慢慢消失，漏出蓝天背景。过程中伴随自然的跑步、坐下时候产生的声音\",\"negativePrompt\":\"bad video\",\"isStartFrame\":true,\"isEndFrame\":false},{\"id\":\"msdtx87njf33g_e\",\"imageFile\":\"0062.png\",\"width\":768,\"height\":1024,\"start\":186,\"length\":62,\"frameCount\":62,\"durationSec\":5,\"prompt\":\"\",\"negativePrompt\":\"bad video\",\"isStartFrame\":false,\"isEndFrame\":true},{\"id\":\"msdtwxyuscavj_s\",\"imageFile\":\"0062.png\",\"width\":768,\"height\":1024,\"start\":248,\"length\":62,\"frameCount\":62,\"durationSec\":5,\"prompt\":\"猴子从岩石上起身，起身后穿上衣服，背上书包，去教室上课，慢慢走到教室里，过程中伴随穿衣、背书包、走路的背景音\",\"negativePrompt\":\"bad video\",\"isStartFrame\":true,\"isEndFrame\":false},{\"id\":\"msdtwxyuscavj_e\",\"imageFile\":\"0086.png\",\"width\":768,\"height\":1024,\"start\":310,\"length\":62,\"frameCount\":62,\"durationSec\":5,\"prompt\":\"\",\"negativePrompt\":\"bad video\",\"isStartFrame\":false,\"isEndFrame\":true},{\"id\":\"msdx1e2eigp2x\",\"imageFile\":\"\",\"width\":0,\"height\":0,\"start\":372,\"length\":124,\"frameCount\":124,\"durationSec\":5,\"prompt\":\"\",\"negativePrompt\":\"bad video\",\"isStartFrame\":true,\"isEndFrame\":false}],\"durationSec\":20,\"shots\":[{\"id\":\"msdtx3zi62ktv\",\"durationSec\":5,\"prompt\":\"一个猴子在极速奔跑，跑的过程中裤子掉在地上，但他仍然继续奔跑。过程中伴随自然的跑步声\",\"negativePrompt\":\"bad video\",\"startImage\":{\"imageFile\":\"0059.png\",\"width\":768,\"height\":1024},\"endImage\":{\"imageFile\":\"0060.png\",\"width\":512,\"height\":682}},{\"id\":\"msdtx87njf33g\",\"durationSec\":5,\"prompt\":\"猴子在快速奔跑，双臂自然摆动，跑到一个岩石旁，慢慢的坐下，随着时间的流逝，沙尘慢慢消失，漏出蓝天背景。过程中伴随自然的跑步、坐下时候产生的声音\",\"negativePrompt\":\"bad video\",\"startImage\":{\"imageFile\":\"0060.png\",\"width\":512,\"height\":682},\"endImage\":{\"imageFile\":\"0062.png\",\"width\":768,\"height\":1024}},{\"id\":\"msdtwxyuscavj\",\"durationSec\":5,\"prompt\":\"猴子从岩石上起身，起身后穿上衣服，背上书包，去教室上课，慢慢走到教室里，过程中伴随穿衣、背书包、走路的背景音\",\"negativePrompt\":\"bad video\",\"startImage\":{\"imageFile\":\"0062.png\",\"width\":768,\"height\":1024},\"endImage\":{\"imageFile\":\"0086.png\",\"width\":768,\"height\":1024}},{\"id\":\"msdx1e2eigp2x\",\"durationSec\":5,\"prompt\":\"\",\"negativePrompt\":\"bad video\",\"startImage\":null,\"endImage\":null}],\"liveTaePreview\":true,\"batchDetailMode\":\"solo\",\"batchWorkspaces\":{\"r2v\":{\"selectedIndex\":0,\"editMode\":\"segment\",\"runSelectEnabled\":false,\"runSelection\":[],\"segments\":[{\"id\":\"ep02_segment10_who_are_you_looking_for_v2\",\"start\":0,\"length\":362,\"frameCount\":362,\"durationSec\":15,\"prompt\":\"subject_definitions:\\n<Picture 1> is the single principal identity: an approximately 52-year-old adult male school principal with short black-grey hair, rectangular glasses, a dark charcoal-grey suit, light shirt and tie. Inherit only identity, face, age, proportions and clothing; do not inherit the reference background or its pose. He is the only visible person in the office, sweating heavily with a damp collar, seated at the monitor desk holding the landline receiver to his right ear. He is the first speaker (S1).\\n<Picture 2> is the giant bat-like distorted creature, with a grey-black body, broad black wings, pointed ears and red eyes. It appears only as a frozen surveillance-recording image on the office monitor; it never becomes physically present in the office and never shares the office space with the principal.\\n<Picture 3> is the rainy principal's office. Inherit the monitor desk, landline telephone, filing cabinets, rain-streaked window, desk layout and cold blue-grey rainy light; do not inherit photographic rendering style, readable marks or any temporary people.\\n<Audio 1> is the voice-timbre reference for the principal (S1). Reference only pitch, timbre, adult male texture, speech rhythm and tense emotional quality; never copy the reference audio's original lines.\\n\\nsummary:\\n[reference generation] Generate one continuous 15-second 16:9 horizontal video at 2K-class clarity for EP02 segment 10, using only the supplied reference images and one voice reference, with no first-frame image, no storyboard image and no reference video. Apply a high-detail Japanese anime youth cinematic look with delicate cel-shaded characters, hand-drawn animation backgrounds, clean stable linework, cold blue-grey rainy light, rain-streaked glass and restrained wet reflections. The principal, still on the phone, studies the frozen monitor image in which a blurred male student silhouette shields another student in front of the black-winged creature's break-in point. He first asks the off-screen ND caller, in a fast, agitated voice, whether they are really investigating the creature or the students. The caller, remaining strictly an off-screen male voice, coldly states that ND takes over tonight, seals the accident area and that other classes resume tomorrow as usual. Instead of obeying, the principal raises his voice and urgently presses to know what the creature actually is, but the caller hangs up mid-question with a short dial tone; the principal is left shocked and tense, receiver still at his ear. The bat-like creature stays only inside the frozen monitor image; no second visible person appears, no computer operation or screen content is shown, and no readable text or UI is generated.\\n\\nretention_analysis:\\n<Picture 1>: fully_preserved - keep the principal's identity, rectangular glasses, short black-grey hair, charcoal suit, sweaty state, seated position at the monitor desk and receiver at his right ear; allow only the scripted fast head movements, agitated facial expressions, brief open-close of the mouth and tense gripping of the receiver.\\n<Picture 2>: fully_preserved - keep the black-winged bat-like creature only as the frozen surveillance image inside the monitor; do not instantiate it in the office.\\n<Picture 3>: fully_preserved - keep the office desk, monitor, landline telephone, cabinets, rainy window, spatial layout and cold blue-grey rainy atmosphere; the monitor screen shows only the unreadable frozen image and never a desktop, UI or file window; do not add readable wall marks or temporary people.\\n<Audio 1>: reference - the principal's on-screen lines use the timbre, adult male texture and tense rhythm of the reference, delivered fast and agitated; never copy the original words.\\n\\ndetailed_description:\\nThe video is 16:9 horizontal, 2K-class, high-detail Japanese anime youth cinematic style, with delicate cel-shaded characters, hand-drawn background art and clean stable linework. Establish a coherent fixed 180-degree office axis: the principal sits behind the monitor desk, the monitor is directly in front of him, the landline is within reach on the desk, filing cabinets stay behind him and the rain-streaked window stays in the background. Exactly one visible person exists: the principal. The ND caller is never visible and never receives a face, avatar or lip movement; off-screen lines require no visible mouth and no lip sync. Inside the monitor's frozen classroom image, in front of the black-winged creature's break-in point near the windows, one blurred unidentifiable male student silhouette shields another student; both stay indistinct, never clearly face-on, never in the office itself. Throughout the segment the principal never touches the keyboard or mouse; no computer desktop, UI, folder or dialog is ever shown. All speech is delivered at a noticeably fast, urgent pace.\\n\\n[Shot 1] From 00:00 to 00:05, begin with a stable close shot of the principal seated alone at the monitor desk, receiver pressed to his right ear, eyes fixed on the frozen monitor image where the blurred shielding silhouette stands in front of the black-winged creature's break-in point. He speaks on-screen (S1) rapidly and agitatedly, with fast precise lip sync, and asks once: <d>[Chinese] 你们要查的，究竟是那只东西，还是这些学生？！</d> He finishes, breathing hard, jaw tense, still staring at the monitor; the other end of the line stays silent except for a faint current hum.\\n\\n[Shot 2] From 00:05 to 00:10, cut to a side medium close shot with a slow push-in. After the brief silence the low, calm, forceful adult male caller remains an off-screen telephone voice (S2) and says once, cold and unhurried, with no visible caller and no mouth animation: <d>[Chinese] 今晚我们接管。事故区封闭，其他班明天照常上课。</d> The principal's expression hardens; instead of yielding, he opens his mouth to interrupt, brows tight, hand clenching the receiver.\\n\\n[Shot 3] From 00:10 to 00:15, cut to a frontal medium close shot. The principal (S1) raises his voice, excited and urgent, and presses forward in a fast, almost breathless delivery with precise lip sync, starting his question: <d>[Chinese] 那只东西到底是什么？！你们既然要接管，总该告诉我——</d> He is cut off mid-sentence at about 13 seconds by a clear short hang-up dial tone from the caller's side. The principal freezes, shocked and tense, pupils shrinking, receiver still pressed to his ear, mouth still slightly open; he holds this stunned pose. Stop all major movement by 14.50 seconds, then hold the final pose for at least 0.50 seconds: receiver against his right ear, body rigid with tension, shocked expression, rainy office unchanged.\\n\\nNo subtitles, captions, Chinese characters, title cards, speech bubbles, UI, watermark or logo appear in the image. The monitor shows only the unreadable frozen surveillance image with blurred student silhouettes and no readable timestamps, text, desktop or real interface; the principal never operates the computer and no screen content is displayed. No background music; retain only rain, monitor hum, telephone-line hiss, fast tense breathing, the short hang-up tone and the receiver grip sounds. Only one voice speaks at a time, and speech is fast and urgent throughout.\\n\\noverall_soundscape:\\nContinuous rain against the office window, quiet monitor hum, telephone-line hiss, the principal's fast agitated breathing and slight fabric rustle, one clear short hang-up dial tone around 13 seconds; two rapid on-screen principal lines plus one cold off-screen adult male caller line, with only one voice speaking at a time, fast and urgent delivery, and the caller never entering the frame.\\n\\nnon_diegetic_music:\\nN/A\",\"negativePrompt\":\"bad video, photorealistic, identity drift, costume change, extra character, malformed hands, duplicated limbs, readable text, subtitles, watermark, logo, UI, background music, second visible person in the office, caller on screen, caller mouth, creature physically inside the office, creature leaving the monitor, clear student faces, students physically inside the office, computer screen, monitor UI, desktop interface, file explorer, dialog box, keyboard typing, mouse operation, readable folder names, file dialog text, storyboard grid, panel borders, arrows, production annotations, portrait orientation, slow speech, sluggish movement\",\"taskType\":\"\",\"refs\":[{\"index\":0,\"imageFile\":\"校长_SEG10.png\",\"fileName\":\"校长_SEG10.png\",\"type\":\"input\",\"subfolder\":\"\"},{\"index\":1,\"imageFile\":\"黑翼飞行怪兽.png\",\"fileName\":\"黑翼飞行怪兽.png\",\"type\":\"input\",\"subfolder\":\"\"},{\"index\":2,\"imageFile\":\"场景_雨天校长办公室_SEG10.png\",\"fileName\":\"场景_雨天校长办公室_SEG10.png\",\"type\":\"input\",\"subfolder\":\"\"}],\"refAudios\":[{\"index\":0,\"audioFile\":\"校长_SEG10.wav\",\"fileName\":\"校长_SEG10.wav\",\"type\":\"input\",\"subfolder\":\"\"}],\"refVideos\":[],\"genImage\":{\"imageFile\":\"\",\"fileName\":\"\"},\"continuityFromPrev\":false,\"selected\":true}],\"globalCommon\":{\"commonEnabled\":false,\"commonCollapsed\":false,\"prompt\":\"\",\"refs\":[],\"refAudios\":[],\"refVideos\":[]}}}}",
+      "bd_grp_advanced": "高级采样",
+      "steps": 8,
+      "sampler": "euler",
+      "scheduler": "simple",
+      "shift_video": 6,
+      "shift_audio": 3,
+      "bd_grp_perf": false,
+      "clear_vram_between_segments": "性能",
+      "export_source_images": true
+    },
+    "class_type": "MiniMaxH3Director",
+    "_meta": {
+      "title": "MiniMaxH3Director"
+    }
+  },
+  "14": {
+    "inputs": {
+      "model": [
+        "41",
+        0
+      ],
+      "sage_attention": "auto",
+      "allow_compile": false
+    },
+    "class_type": "PathchSageAttentionKJ",
+    "_meta": {
+      "title": "PathchSageAttentionKJ"
+    }
+  },
+  "15": {
+    "inputs": {
+      "model": [
+        "14",
+        0
+      ]
+    },
+    "class_type": "MiniMaxH3MemoryEfficientSageAttentionPatch",
+    "_meta": {
+      "title": "MiniMaxH3MemoryEfficientSageAttentionPatch"
+    }
+  },
+  "16": {
+    "inputs": {
+      "model": [
+        "1",
+        0
+      ],
+      "lora_name": "h3\\minimax_h3_fl2v_turbo_8step_v1.0_comfyui_bf16.safetensors",
+      "strength_model": 1
+    },
+    "class_type": "LoraLoaderModelOnly",
+    "_meta": {
+      "title": "LoraLoaderModelOnly"
+    }
+  },
+  "19": {
+    "inputs": {
+      "images": [
+        "12",
+        6
+      ],
+      "audio": [
+        "12",
+        1
+      ],
+      "fps": [
+        "12",
+        2
+      ],
+      "bit_depth": 10,
+      "color_space": "sRGB"
+    },
+    "class_type": "CreateVideo",
+    "_meta": {
+      "title": "CreateVideo"
+    }
+  },
+  "20": {
+    "inputs": {
+      "video": [
+        "19",
+        0
+      ],
+      "filename_prefix": "video/MiniMaxH3_Director",
+      "format": "auto",
+      "format.codec": "auto",
+      "codec": "auto"
+    },
+    "class_type": "SaveVideo",
+    "_meta": {
+      "title": "SaveVideo"
+    }
+  },
+  "41": {
+    "inputs": {
+      "model": [
+        "16",
+        0
+      ],
+      "processing_control_value": 0.08,
+      "processing_percent_1": 0.1,
+      "processing_percent_2": 0.9,
+      "mcs": 2,
+      "device": "auto",
+      "mode": "8-step LoRA"
+    },
+    "class_type": "TESpeedMiniMaxH3",
+    "_meta": {
+      "title": "TESpeedMiniMaxH3"
+    }
+  }
+}

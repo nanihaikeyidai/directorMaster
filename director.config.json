@@ -1,0 +1,25 @@
+{
+  "version": 1,
+  "workspaceRoot": "D:\\HermesWorkspace\\directorMaster",
+  "screenplayRoot": "workspace/screenplays",
+  "screenplay": {
+    "authoritative": "workspace/screenplays/EP02_雨幕余温.md",
+    "draft": "workspace/screenplays/drafts/EP02_雨幕余温_screenwriter_draft.md",
+    "approval": "workspace/screenplays/.approved.json",
+    "history": "workspace/screenplays/history"
+  },
+  "assetRoot": "workspace/assets",
+  "workflowRoot": "workspace/workflows",
+  "skillJobRoot": "workspace/skill-jobs",
+  "productionRoot": "workspace/production",
+  "outputRoots": {
+    "screenwriter": "workspace/outputs/screenwriter",
+    "shotlist-builder": "workspace/outputs/shotlist-builder"
+  },
+  "skillRouting": {
+    "screenplay": "$screenwriter",
+    "shotlist": "$shotlist-builder"
+  },
+  "promptPlatform": "MiniMax H3",
+  "promptPlatformConfirmed": true
+}

@@ -1,0 +1,763 @@
+{
+  "246": {
+    "inputs": {
+      "sampler_name": "res_multistep"
+    },
+    "class_type": "KSamplerSelect",
+    "_meta": {
+      "title": "KSamplerSelect"
+    }
+  },
+  "251": {
+    "inputs": {
+      "scheduler": "simple",
+      "steps": 8,
+      "denoise": 1,
+      "model": [
+        "327",
+        0
+      ]
+    },
+    "class_type": "BasicScheduler",
+    "_meta": {
+      "title": "BasicScheduler"
+    }
+  },
+  "269": {
+    "inputs": {
+      "model": [
+        "327",
+        0
+      ],
+      "conditioning": [
+        "287",
+        0
+      ]
+    },
+    "class_type": "BasicGuider",
+    "_meta": {
+      "title": "Basic Guider"
+    }
+  },
+  "276": {
+    "inputs": {
+      "seed": -1
+    },
+    "class_type": "RandomSeedNoise",
+    "_meta": {
+      "title": "随机种子噪波"
+    }
+  },
+  "280": {
+    "inputs": {
+      "noise": [
+        "276",
+        0
+      ],
+      "guider": [
+        "269",
+        0
+      ],
+      "sampler": [
+        "246",
+        0
+      ],
+      "sigmas": [
+        "251",
+        0
+      ],
+      "latent_image": [
+        "287",
+        1
+      ]
+    },
+    "class_type": "SamplerCustomAdvanced",
+    "_meta": {
+      "title": "SamplerCustomAdvanced"
+    }
+  },
+  "281": {
+    "inputs": {
+      "text": [
+        "287",
+        5
+      ]
+    },
+    "class_type": "FeiHouEasyH3RHPromptPreview",
+    "_meta": {
+      "title": "FeiHou Easy H3 Prompt Preview · RH"
+    }
+  },
+  "282": {
+    "inputs": {
+      "samples": [
+        "280",
+        0
+      ],
+      "vae": [
+        "287",
+        2
+      ]
+    },
+    "class_type": "VAEDecode",
+    "_meta": {
+      "title": "VAE Decode"
+    }
+  },
+  "283": {
+    "inputs": {
+      "samples": [
+        "280",
+        1
+      ],
+      "vae": [
+        "287",
+        3
+      ]
+    },
+    "class_type": "VAEDecodeAudio",
+    "_meta": {
+      "title": "VAE Decode Audio"
+    }
+  },
+  "284": {
+    "inputs": {
+      "lora_1": {
+        "on": true,
+        "lora": "minimax_h3_ref2v_turbo_4step_v0.1_comfyui_bf16.safetensors",
+        "strength": 1,
+        "bypass": true
+      },
+      "lora_2": {
+        "on": false,
+        "lora": "minimax_h3_ref2v_turbo_8step_v1.0_768p_lightx2v_bf16.safetensors",
+        "strength": 1,
+        "bypass": true
+      },
+      "+ Add LoRA": ""
+    },
+    "class_type": "FeiHouEasyH3RHLoraStack",
+    "_meta": {
+      "title": "Load LoRA (Model Only)"
+    }
+  },
+  "287": {
+    "inputs": {
+      "h3_context": [
+        "295",
+        2
+      ]
+    },
+    "class_type": "FeiHouEasyH3RHOutput",
+    "_meta": {
+      "title": "FeiHou Easy H3 Output"
+    }
+  },
+  "295": {
+    "inputs": {
+      "mode": "reference",
+      "prompt": "subject_definitions:\n<Subject 1> __MINIMAX_H3_REF_1__is the adult woman in the reference image, with long pastel-pink hair, white rabbit ears, a white-and-pink futuristic outfit with black harness straps, black thigh-high stockings, and pink ankle boots, standing in an industrial interior.\n\nsummary:\n[reference generation] The target video shows <Subject 1> smiling and walking forward through the industrial interior while the camera maintains a distant full-body composition.\n\nretention_analysis:\n<Subject 1> (appears in [Shot 1]): fully_preserved - her pastel-pink hair, rabbit ears, white-and-pink futuristic outfit, black harness details, thigh-high stockings, pink boots, and industrial setting are retained as she walks forward.\n\ndetailed_description:\nThe target video has a polished realistic cosplay-fashion style, with cool industrial lighting, muted gray concrete surfaces, and soft highlights on the pink-and-white costume.\n[Shot 1] A distant full-body shot establishes <Subject 1> centered in a spacious industrial interior with a concrete floor, overhead beams, hanging cables, metal structures, and scattered utility lights in the background. She faces the camera with a gentle, confident smile. Her long pastel-pink hair falls over her shoulders and sways naturally beneath tall white rabbit ears. Wearing the fitted white-and-pink futuristic outfit with black harness straps, black thigh-high stockings, and pink ankle boots, she begins walking forward at an unhurried pace. The camera smoothly tracks backward at the same speed, preserving her complete body from rabbit ears to boots in frame throughout. Her arms swing lightly at her sides, her hair and pink jacket panels move subtly with each step, and the glossy concrete floor catches faint reflections of her boots. She continues looking toward the camera with the same warm smile as the distant full-body framing remains stable until the final frame.\n\noverall_soundscape:\nQuiet industrial room tone with a low mechanical hum, faint ventilation noise, and soft rhythmic footsteps on the concrete floor.\n\nnon_diegetic_music:\nN/A",
+      "resolution": "540P",
+      "aspect_ratio": "9:16",
+      "width": 1344,
+      "height": 768,
+      "audio_duration_auto": "off",
+      "seconds": 5,
+      "advanced": true,
+      "fps": 24,
+      "keyframe_role": "first",
+      "ref_image_size": "640",
+      "reference_mention_mode": "index",
+      "prompt_optimizer_enabled": false,
+      "prompt_optimizer_api_format": "auto",
+      "prompt_optimizer_api_url": "",
+      "prompt_optimizer_api_key": "",
+      "prompt_optimizer_model": "openai/gpt-5.6-terra",
+      "prompt_optimizer_scene_guide": "none",
+      "force_offload": true,
+      "reference_text_only": false,
+      "low_vram_streamed_attention": false,
+      "embedded_media_json": "[{\"media_type\":\"image\",\"ordinal\":1,\"filename\":\"fc9d9e62bf66d9bb41ad08da478f7d7695f71c09e6a8a9a41b50612dce149a02.png\",\"subfolder\":\"\",\"storage\":\"input\",\"audio_trim\":\"\"}]",
+      "h3_bundle": [
+        "341",
+        0
+      ],
+      "media_1": "fc9d9e62bf66d9bb41ad08da478f7d7695f71c09e6a8a9a41b50612dce149a02.png",
+      "media_type_1": "image",
+      "media_trim_1": "",
+      "prompt_optimizer_applied": false,
+      "second_sampling_output_connected": true
+    },
+    "class_type": "FeiHouEasyH3RH",
+    "_meta": {
+      "title": "ComfyUI-FeiHou-Easy-H3-RH"
+    }
+  },
+  "297": {
+    "inputs": {
+      "switch": false,
+      "on_false": [
+        "283",
+        0
+      ],
+      "on_true": [
+        "287",
+        7
+      ]
+    },
+    "class_type": "ComfySwitchNodeV2",
+    "_meta": {
+      "title": "true=原声音频 | false=生成音频"
+    }
+  },
+  "298": {
+    "inputs": {
+      "fps": [
+        "287",
+        4
+      ],
+      "images": [
+        "282",
+        0
+      ],
+      "duration_control": [
+        "287",
+        8
+      ],
+      "audio": [
+        "297",
+        0
+      ]
+    },
+    "class_type": "FeiHouEasyH3RHDurationCrop",
+    "_meta": {
+      "title": "FeiHou Easy H3 Digital human/MV Duration Crop"
+    }
+  },
+  "301": {
+    "inputs": {
+      "max_resolution": 4096,
+      "jpeg_quality": 100,
+      "suppress_default_preview": true,
+      "preview_frames": 1024,
+      "preview_fps": 12,
+      "tiny_vae": "taeh3.safetensors",
+      "model": [
+        "295",
+        0
+      ]
+    },
+    "class_type": "ModelPreviewOverrideKJ",
+    "_meta": {
+      "title": "Model Preview Override KJ"
+    }
+  },
+  "305": {
+    "inputs": {
+      "attention": "comfy kitchen attention",
+      "model": [
+        "318",
+        0
+      ]
+    },
+    "class_type": "ModelAttentionBackend",
+    "_meta": {
+      "title": "ModelAttentionBackend"
+    }
+  },
+  "306": {
+    "inputs": {
+      "width": [
+        "321",
+        0
+      ],
+      "height": [
+        "321",
+        1
+      ],
+      "upscale_method": "bicubic",
+      "keep_proportion": "crop",
+      "pad_color": "0, 0, 0",
+      "crop_position": "center",
+      "divisible_by": 32,
+      "device": "cpu",
+      "image": [
+        "298",
+        0
+      ]
+    },
+    "class_type": "ImageResizeKJv2",
+    "_meta": {
+      "title": "Resize Image v2"
+    }
+  },
+  "307": {
+    "inputs": {
+      "cfg": 1,
+      "model": [
+        "305",
+        0
+      ],
+      "positive": [
+        "308",
+        0
+      ],
+      "negative": [
+        "308",
+        0
+      ]
+    },
+    "class_type": "CFGGuider",
+    "_meta": {
+      "title": "CFG Guider"
+    }
+  },
+  "308": {
+    "inputs": {
+      "frame_idx": 0,
+      "positive": [
+        "312",
+        0
+      ],
+      "latent": [
+        "319",
+        0
+      ],
+      "vae": [
+        "322",
+        2
+      ],
+      "image": [
+        "306",
+        0
+      ]
+    },
+    "class_type": "MiniMaxH3AddGuide",
+    "_meta": {
+      "title": "Add Guide for MiniMax H3"
+    }
+  },
+  "309": {
+    "inputs": {
+      "value": [
+        "306",
+        0
+      ]
+    },
+    "class_type": "ImpactImageInfo",
+    "_meta": {
+      "title": "ImpactImageInfo"
+    }
+  },
+  "310": {
+    "inputs": {
+      "noise": [
+        "317",
+        0
+      ],
+      "guider": [
+        "307",
+        0
+      ],
+      "sampler": [
+        "316",
+        0
+      ],
+      "sigmas": [
+        "320",
+        0
+      ],
+      "latent_image": [
+        "319",
+        0
+      ]
+    },
+    "class_type": "SamplerCustomAdvanced",
+    "_meta": {
+      "title": "SamplerCustomAdvanced"
+    }
+  },
+  "312": {
+    "inputs": {
+      "text": "Enhance this video with sharp, crisp details while preserving a natural photorealistic appearance.",
+      "clip": [
+        "322",
+        6
+      ]
+    },
+    "class_type": "CLIPTextEncode",
+    "_meta": {
+      "title": "CLIP Text Encode (Prompt)"
+    }
+  },
+  "316": {
+    "inputs": {
+      "sampler_name": "res_multistep"
+    },
+    "class_type": "KSamplerSelect",
+    "_meta": {
+      "title": "KSamplerSelect"
+    }
+  },
+  "317": {
+    "inputs": {
+      "seed": -1
+    },
+    "class_type": "RandomSeedNoise",
+    "_meta": {
+      "title": "随机种子噪波"
+    }
+  },
+  "318": {
+    "inputs": {
+      "shift_video": 12,
+      "shift_audio": 3,
+      "model": [
+        "345",
+        0
+      ]
+    },
+    "class_type": "MiniMaxH3SigmaShift",
+    "_meta": {
+      "title": "ModelSamplingMiniMaxH3"
+    }
+  },
+  "319": {
+    "inputs": {
+      "width": [
+        "309",
+        2
+      ],
+      "height": [
+        "309",
+        1
+      ],
+      "length": [
+        "309",
+        0
+      ]
+    },
+    "class_type": "EmptyMiniMaxH3LatentAV",
+    "_meta": {
+      "title": "Empty MiniMax H3 AV Latent"
+    }
+  },
+  "320": {
+    "inputs": {
+      "scheduler": "simple",
+      "steps": 4,
+      "denoise": 1,
+      "model": [
+        "305",
+        0
+      ]
+    },
+    "class_type": "BasicScheduler",
+    "_meta": {
+      "title": "BasicScheduler"
+    }
+  },
+  "321": {
+    "inputs": {
+      "resolution": "720P",
+      "aspect_ratio": "9:16",
+      "width": 1344,
+      "height": 768
+    },
+    "class_type": "FeiHouEasyH3RHResolution",
+    "_meta": {
+      "title": "FeiHou Easy H3 Resolution · RH"
+    }
+  },
+  "322": {
+    "inputs": {
+      "h3_context": [
+        "295",
+        2
+      ]
+    },
+    "class_type": "FeiHouEasyH3RHOutput",
+    "_meta": {
+      "title": "FeiHou Easy H3 Output"
+    }
+  },
+  "323": {
+    "inputs": {
+      "fps": [
+        "322",
+        4
+      ],
+      "images": [
+        "324",
+        0
+      ],
+      "duration_control": [
+        "322",
+        8
+      ],
+      "audio": [
+        "297",
+        0
+      ]
+    },
+    "class_type": "FeiHouEasyH3RHDurationCrop",
+    "_meta": {
+      "title": "FeiHou Easy H3 Digital human/MV Duration Crop"
+    }
+  },
+  "324": {
+    "inputs": {
+      "samples": [
+        "310",
+        0
+      ],
+      "vae": [
+        "322",
+        2
+      ]
+    },
+    "class_type": "VAEDecode",
+    "_meta": {
+      "title": "VAE Decode"
+    }
+  },
+  "325": {
+    "inputs": {
+      "attention": "comfy kitchen attention",
+      "model": [
+        "326",
+        0
+      ]
+    },
+    "class_type": "ModelAttentionBackend",
+    "_meta": {
+      "title": "ModelAttentionBackend"
+    }
+  },
+  "326": {
+    "inputs": {
+      "shift_video": 12,
+      "shift_audio": 3,
+      "model": [
+        "301",
+        0
+      ]
+    },
+    "class_type": "MiniMaxH3SigmaShift",
+    "_meta": {
+      "title": "ModelSamplingMiniMaxH3"
+    }
+  },
+  "327": {
+    "inputs": {
+      "selection": "sol-attn",
+      "selection.tau": 1.3,
+      "start_percent": 0.2,
+      "end_percent": 1,
+      "dense_blocks": "",
+      "min_tokens": 12288,
+      "extra_tokens": 256,
+      "sink_conditioning": "exact_kv_and_rows",
+      "verbose": true,
+      "model": [
+        "325",
+        0
+      ]
+    },
+    "class_type": "BlockSparseAttention",
+    "_meta": {
+      "title": "Model Sparse Attention"
+    }
+  },
+  "340": {
+    "inputs": {
+      "enabled": true,
+      "detector": "face_yolov8m.pt",
+      "target": "largest_face",
+      "denoise": 0.25,
+      "steps": 8,
+      "seed": 636094094319744,
+      "advanced": false,
+      "canvas_size": "768",
+      "confidence": 0.35,
+      "crop_factor": 2.5,
+      "chunk_frames": "不分段",
+      "sampler_name": "euler",
+      "scheduler": "simple",
+      "prompt": "Refine the face in this video crop. Preserve identity, expression, gaze, mouth movement, lighting and motion. Natural facial detail; no new motion or camera changes.",
+      "audio_lock": false,
+      "clean_second_model": true,
+      "force_offload": true,
+      "images": [
+        "323",
+        0
+      ],
+      "model": [
+        "295",
+        1
+      ],
+      "h3_context": [
+        "295",
+        2
+      ],
+      "audio": [
+        "297",
+        0
+      ]
+    },
+    "class_type": "FeiHouEasyH3RHFaceRefine",
+    "_meta": {
+      "title": "FeiHou Easy H3 Face Refine (Experimental) · RH"
+    }
+  },
+  "341": {
+    "inputs": {
+      "remix_model": "FeiHou_MiniMax-H3_Remix_HSA_v0.7.safetensors",
+      "text_encoder": "qwen3vl_32b_minimax_h3_int8_convrot.safetensors",
+      "video_vae": "minimax_h3_video_vae_int8_convrot.safetensors",
+      "audio_vae": "minimax_h3_audio_vae_fp32.safetensors",
+      "second_sampling_model": "minimax_h3_ref2va_pruned_int8_convrot.safetensors",
+      "first_pass_lora_stack": [
+        "284",
+        0
+      ],
+      "second_pass_lora_stack": [
+        "342",
+        0
+      ]
+    },
+    "class_type": "FeiHouEasyH3RHRemixLoader",
+    "_meta": {
+      "title": "FeiHou Easy H3 Remix加载器 · RH"
+    }
+  },
+  "342": {
+    "inputs": {
+      "lora_1": {
+        "on": true,
+        "lora": "minimax_h3_lms_v1.0_r64.safetensors",
+        "strength": 0.75,
+        "bypass": true
+      },
+      "lora_2": {
+        "on": true,
+        "lora": "minimax_h3_ref2v_turbo_4step_v0.1_comfyui_bf16.safetensors",
+        "strength": 0.75,
+        "bypass": true
+      },
+      "+ Add LoRA": ""
+    },
+    "class_type": "FeiHouEasyH3RHLoraStack",
+    "_meta": {
+      "title": "Load LoRA (Model Only)"
+    }
+  },
+  "345": {
+    "inputs": {
+      "max_resolution": 4096,
+      "jpeg_quality": 100,
+      "suppress_default_preview": true,
+      "preview_frames": 1024,
+      "preview_fps": 12,
+      "tiny_vae": "taeh3.safetensors",
+      "model": [
+        "295",
+        1
+      ]
+    },
+    "class_type": "ModelPreviewOverrideKJ",
+    "_meta": {
+      "title": "Model Preview Override KJ"
+    }
+  },
+  "349": {
+    "inputs": {
+      "frame_rate": [
+        "298",
+        1
+      ],
+      "loop_count": 0,
+      "filename_prefix": "Minimax_H3",
+      "format": "video/h264-mp4",
+      "pix_fmt": "yuv420p",
+      "crf": 19,
+      "save_metadata": true,
+      "trim_to_audio": false,
+      "pingpong": false,
+      "save_output": true,
+      "no_preview": false,
+      "images": [
+        "298",
+        0
+      ],
+      "audio": [
+        "298",
+        2
+      ]
+    },
+    "class_type": "VHS_VideoCombine",
+    "_meta": {
+      "title": "Video Combine 🎥🅥🅗🅢"
+    }
+  },
+  "350": {
+    "inputs": {
+      "frame_rate": [
+        "340",
+        2
+      ],
+      "loop_count": 0,
+      "filename_prefix": "Minimax_H3_FaceRefine",
+      "format": "video/h264-mp4",
+      "pix_fmt": "yuv420p",
+      "crf": 19,
+      "save_metadata": true,
+      "trim_to_audio": false,
+      "pingpong": false,
+      "save_output": true,
+      "no_preview": false,
+      "images": [
+        "340",
+        0
+      ],
+      "audio": [
+        "340",
+        1
+      ]
+    },
+    "class_type": "VHS_VideoCombine",
+    "_meta": {
+      "title": "Video Combine 🎥🅥🅗🅢"
+    }
+  },
+  "351": {
+    "inputs": {
+      "frame_rate": [
+        "323",
+        1
+      ],
+      "loop_count": 0,
+      "filename_prefix": "Minimax_H3_Upscale",
+      "format": "video/h264-mp4",
+      "pix_fmt": "yuv420p",
+      "crf": 19,
+      "save_metadata": true,
+      "trim_to_audio": false,
+      "pingpong": false,
+      "save_output": true,
+      "no_preview": false,
+      "images": [
+        "323",
+        0
+      ],
+      "audio": [
+        "323",
+        2
+      ]
+    },
+    "class_type": "VHS_VideoCombine",
+    "_meta": {
+      "title": "Video Combine 🎥🅥🅗🅢"
+    }
+  }
+}
