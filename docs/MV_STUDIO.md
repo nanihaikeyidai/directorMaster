@@ -18,6 +18,8 @@ workspace/workflows/mv/
 
 页面右上角“工作流配置”提供本地/云端两个页签。文件选择会把 JSON 副本导入对应目录，目录中的文件会自动列出，可直接切换。云端页签同时保存 RunningHub 工作流 ID；API JSON 本身通常不携带这个 ID，需从 RunningHub API 页面复制填写。当前默认云端模板是 `minimax_h3_remix_ref2va_dual_sampling_api.json`。
 
+已纳入 RH 云端导演台模板 `minimax_h3_director_api_920.json`。该模板的主节点为 `MiniMaxH3Director`，保留时间线、分段提示词、图片引用、参考音频和连续片段结构，基线为 24 FPS、16:9、864×480、8 步。它与肥猴 Remix 模板共用 `segments / pictures / audios / settings` 输入协议，由同一适配层自动写入 `timeline_data`；在工作流配置页选择该文件即可切换。
+
 页面、CLI 和项目文件继续使用统一的 `segments / pictures / audios / settings` 输入协议。`vite-plugins/runninghub-workflow-adapters.ts` 在提交前识别工作流类型并完成转换：肥猴 Remix 写入 12 个媒体槽、提示词、时长、分辨率、FPS、8/4 步双采样和原音频开关；旧 ReferenceToVideo 和 Director 工作流继续走各自适配器。Remix API（`FeiHouEasyH3RH`）支持 9 张图片与 3 条音频参考。肥猴工作流返回多个视频时，优先级为人脸精修成片、第二采样成片、第一采样成片。
 
 ## 推荐流程
