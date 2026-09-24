@@ -17,7 +17,7 @@ export type BandMvNote = {
   direction?: string;
 };
 
-export type BandMvSettings = Partial<Record<"members" | "style" | "stage" | "wardrobe" | "performance" | "continuity" | "vocalStartSec", string>>;
+export type BandMvSettings = Partial<Record<"members" | "style" | "stage" | "wardrobe" | "performance" | "continuity" | "cameraStability" | "vocalStartSec", string>>;
 
 export type BandMvVocalTiming = {
   mode: "instrumental" | "pre_vocal" | "vocal_enters" | "vocal_active";
@@ -41,4 +41,4 @@ export function buildStandardBandMvPrompt(input: {
   leadSilenceSec?: number;
 }): string;
 
-export const BAND_MV_PROMPT_TEMPLATE_VERSION: "band-live-ref2va-v4-duration-shot-grammar";
+export const BAND_MV_PROMPT_TEMPLATE_VERSION: "band-live-ref2va-v5-stable-camera";

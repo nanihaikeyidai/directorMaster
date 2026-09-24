@@ -43,6 +43,10 @@ assert.match(prompt, /\[Shot 2\] At 00:03\.096/);
 assert.match(prompt, /\[Shot 3\] At 00:06\.450/);
 assert.match(prompt, /\[Shot 4\] At 00:09\.804/);
 assert.match(prompt, /<d>\[Chinese\] 跟着灯光向前走<\/d>/);
+assert.match(prompt, /Camera stability rule:/);
+assert.match(prompt, /mostly locked-off tripod or stabilized compositions/);
+assert.match(prompt, /Do not use continuous tracking, orbiting, crane movement/);
+assert.match(prompt, /locked-off/);
 for (const asset of assets) assert.ok(prompt.includes(asset.description));
 
 const introPrompt = buildStandardBandMvPrompt({
