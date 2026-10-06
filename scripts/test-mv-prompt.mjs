@@ -47,6 +47,10 @@ assert.match(prompt, /Camera stability rule:/);
 assert.match(prompt, /mostly locked-off tripod or stabilized compositions/);
 assert.match(prompt, /Do not use continuous tracking, orbiting, crane movement/);
 assert.match(prompt, /locked-off/);
+assert.match(prompt, /featured instrumentalist/);
+assert.match(prompt, /at least three visual dimensions/);
+assert.match(prompt, /Never place the same subject at the same scale/);
+assert.doesNotMatch(prompt, /MUSICIAN_CLOSE/);
 for (const asset of assets) assert.ok(prompt.includes(asset.description));
 
 const introPrompt = buildStandardBandMvPrompt({

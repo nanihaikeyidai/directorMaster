@@ -41,4 +41,4 @@ export function buildStandardBandMvPrompt(input: {
   leadSilenceSec?: number;
 }): string;
 
-export const BAND_MV_PROMPT_TEMPLATE_VERSION: "band-live-ref2va-v5-stable-camera";
+export const BAND_MV_PROMPT_TEMPLATE_VERSION: "band-live-ref2va-v6-duration-shot-coverage";
