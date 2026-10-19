@@ -1,13 +1,23 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import type { IncomingMessage, ServerResponse } from "node:http";
 import { execFile } from "node:child_process";
-import { createHash } from "node:crypto";
+import { createHash, randomUUID } from "node:crypto";
 import { promises as fs, createReadStream } from "node:fs";
 import path from "node:path";
 import { promisify } from "node:util";
 import type { Plugin } from "vite";
 import { cloudConfig, submitCloud, cloudStatus, listCloudJobs } from './runninghub';
 import { getVoiceJob, listVoiceAssets, listVoiceJobs, saveVoiceAsset, submitVoiceJob } from './voice-runtime';
+import {
+  mixAndExport,
+  probeMedia,
+  synthesizeLines,
+} from "../lib/redub-pipeline.mjs";
+import {
+  migrateScriptToTimeline,
+  normalizeTimeline,
+  validateTimeline,
+} from "../lib/redub-timeline.mjs";
 
 const execFileAsync = promisify(execFile);
 
@@ -22,6 +32,7 @@ const MV_ROOT = path.join(DIRECTOR_WORKSPACE, "workspace", "mv");
 const MV_WORKFLOW_ROOT = path.join(DIRECTOR_WORKSPACE, "workspace", "workflows", "mv");
 const MV_LOCAL_WORKFLOW_ROOT = path.join(MV_WORKFLOW_ROOT, "local");
 const MV_CLOUD_WORKFLOW_ROOT = path.join(MV_WORKFLOW_ROOT, "cloud");
+const REDUB_ROOT = path.join(DIRECTOR_WORKSPACE, "workspace", "dialogue-redub");
 const SCREENPLAY_ROOT = path.join(
   DIRECTOR_WORKSPACE,
   "workspace",
@@ -580,6 +591,678 @@ function directorPath(value: string) {
   return resolved;
 }
 
+type RedubManifestItem = {
+  id: string;
+  speaker?: string;
+  start?: number;
+  end?: number;
+  text?: string;
+  path?: string;
+  ttsDuration?: number;
+  [key: string]: unknown;
+};
+
+type RedubTimelineClip = {
+  id: string;
+  source: string;
+  trackId: string;
+  start: number;
+  duration: number;
+  offset: number;
+  gain: number;
+  fadeIn: number;
+  fadeOut: number;
+  mute: boolean;
+  audioPath: string;
+  sourceDuration?: number;
+  text?: string;
+  metadata?: Record<string, unknown>;
+};
+
+type RedubTimelineTrack = {
+  id: string;
+  name: string;
+  kind: "dialogue" | "vocal" | "bed" | "sfx";
+  volume: number;
+  muted: boolean;
+  solo: boolean;
+  pan: number;
+  clips: RedubTimelineClip[];
+};
+
+type RedubTimeline = {
+  version: number;
+  name: string;
+  duration: number;
+  tracks: RedubTimelineTrack[];
+};
+
+type RedubTimelineValidationError = {
+  code: string;
+  message: string;
+  location: string;
+  trackId?: string;
+  clipId?: string;
+  previousClipId?: string;
+};
+
+type RedubJobDocument = {
+  id: string;
+  status?: string;
+  stage?: string;
+  duration?: number;
+  sourceVideo?: string;
+  scriptPath?: string;
+  ttsManifest?: string;
+  refs?: Record<string, unknown>;
+  speakerRefs?: Record<string, string>;
+  ttsCount?: number;
+  createdAt?: string;
+  updatedAt?: string;
+  [key: string]: unknown;
+};
+
+const redubLocks = new Map<string, Promise<void>>();
+const REDUB_JOB_ID_PATTERN = /^(?!\.)(?!.*\.\.)[A-Za-z0-9._\u4e00-\u9fff-]{1,180}$/u;
+const REDUB_CLIP_ID_PATTERN = /^[A-Za-z0-9_\u4e00-\u9fff-]{1,96}$/u;
+
+const normalizeRedubTimeline = normalizeTimeline as unknown as (
+  value: unknown,
+) => RedubTimeline;
+const validateRedubTimeline = validateTimeline as unknown as (
+  value: unknown,
+  options?: { requireAudioPath?: boolean },
+) => RedubTimelineValidationError[];
+const migrateRedubTimeline = migrateScriptToTimeline as unknown as (
+  script: unknown,
+  manifest: unknown,
+  options?: Record<string, unknown>,
+) => RedubTimeline;
+const synthesizeRedubLines = synthesizeLines as unknown as (
+  job: RedubJobDocument,
+  options?: { onlySpeakers?: string[] | null; force?: boolean },
+) => Promise<unknown>;
+const mixRedubTimeline = mixAndExport as unknown as (
+  job: RedubJobDocument,
+  options?: { burnSubs?: boolean },
+) => Promise<RedubJobDocument>;
+const probeRedubMedia = probeMedia as unknown as (
+  file: string,
+) => Promise<{ format?: { duration?: number } }>;
+
+function isUnknownRecord(value: unknown): value is Record<string, unknown> {
+  return value !== null && typeof value === "object" && !Array.isArray(value);
+}
+
+function safeRedubJobId(value: unknown) {
+  const id = String(value || "").trim();
+  if (!REDUB_JOB_ID_PATTERN.test(id)) throw new Error("重配音任务 ID 格式无效");
+  return id;
+}
+
+function safeRedubClipId(value: unknown) {
+  const id = String(value || "").trim();
+  if (!REDUB_CLIP_ID_PATTERN.test(id)) throw new Error("台词片段 ID 格式无效");
+  return id;
+}
+
+function redubPath(value: string, label = "重配音文件") {
+  const resolved = directorPath(path.resolve(value));
+  if (resolved !== REDUB_ROOT && !resolved.startsWith(REDUB_ROOT + path.sep)) {
+    throw new Error(`${label}必须位于 workspace/dialogue-redub 内`);
+  }
+  return resolved;
+}
+
+function redubJobPath(jobRoot: string, value: string, label: string) {
+  const resolved = redubPath(path.resolve(jobRoot, value), label);
+  if (resolved !== jobRoot && !resolved.startsWith(jobRoot + path.sep)) {
+    throw new Error(`${label}必须位于当前重配音任务目录内`);
+  }
+  return resolved;
+}
+
+async function redubJobRoot(jobIdValue: unknown) {
+  const jobId = safeRedubJobId(jobIdValue);
+  const lexicalRoot = redubPath(path.join(REDUB_ROOT, jobId), "重配音任务目录");
+  const [redubReal, jobReal, stat] = await Promise.all([
+    fs.realpath(REDUB_ROOT).catch(() => REDUB_ROOT),
+    fs.realpath(lexicalRoot),
+    fs.stat(lexicalRoot),
+  ]);
+  if (!stat.isDirectory()) throw new Error("重配音任务路径不是目录");
+  if (!jobReal.startsWith(redubReal + path.sep)) {
+    throw new Error("重配音任务目录解析到了工作区根目录之外");
+  }
+  return { jobId, root: lexicalRoot };
+}
+
+async function readRedubJson(file: string, label: string): Promise<unknown> {
+  try {
+    return JSON.parse(await fs.readFile(file, "utf8"));
+  } catch (error) {
+    const detail = error instanceof Error ? error.message : String(error);
+    const wrapped = new Error(`${label}读取或解析失败：${detail}`) as NodeJS.ErrnoException;
+    if (
+      error instanceof Error &&
+      "code" in error &&
+      typeof (error as NodeJS.ErrnoException).code === "string"
+    ) {
+      wrapped.code = (error as NodeJS.ErrnoException).code;
+    }
+    throw wrapped;
+  }
+}
+
+async function readRedubJob(jobIdValue: unknown) {
+  const { jobId, root } = await redubJobRoot(jobIdValue);
+  const file = redubJobPath(root, "job.json", "job.json");
+  const parsed = await readRedubJson(file, "job.json");
+  if (!isUnknownRecord(parsed) || parsed.id !== jobId) {
+    throw new Error("job.json 格式无效或任务 ID 不一致");
+  }
+  const job = { ...parsed, id: jobId, root } as RedubJobDocument;
+  const pathFields = [
+    "sourceVideo",
+    "originalAudio",
+    "vocalsAudio",
+    "instrumentalAudio",
+    "scriptPath",
+    "ttsManifest",
+    "mixedAudio",
+    "srtPath",
+    "exportPath",
+  ] as const;
+  for (const field of pathFields) {
+    const value = job[field];
+    if (typeof value === "string" && value) {
+      job[field] = redubJobPath(root, value, `job.${field}`);
+    }
+  }
+  if (isUnknownRecord(job.refs)) {
+    const refs: Record<string, unknown> = {};
+    for (const [speaker, refValue] of Object.entries(job.refs)) {
+      if (!isUnknownRecord(refValue) || typeof refValue.path !== "string") {
+        refs[speaker] = refValue;
+        continue;
+      }
+      refs[speaker] = {
+        ...refValue,
+        path: redubJobPath(root, refValue.path, `声源 ${speaker} 的参考音频`),
+      };
+    }
+    job.refs = refs;
+  }
+  return { jobId, root, file, job };
+}
+
+async function readRedubManifest(root: string): Promise<RedubManifestItem[]> {
+  const file = redubJobPath(root, path.join("tts", "manifest.json"), "TTS manifest");
+  try {
+    const parsed = await readRedubJson(file, "TTS manifest");
+    if (!Array.isArray(parsed)) throw new Error("TTS manifest 必须是数组");
+    return parsed.map((item) => {
+      if (!isUnknownRecord(item)) throw new Error("TTS manifest 存在无效条目");
+      const id = safeRedubClipId(item.id);
+      return { ...item, id } as RedubManifestItem;
+    });
+  } catch (error) {
+    if (
+      error instanceof Error &&
+      "code" in error &&
+      (error as NodeJS.ErrnoException).code === "ENOENT"
+    ) {
+      return [];
+    }
+    throw error;
+  }
+}
+
+async function readRedubScript(root: string): Promise<Record<string, unknown> | null> {
+  const file = redubJobPath(root, path.join("transcript", "script.json"), "script.json");
+  try {
+    const parsed = await readRedubJson(file, "script.json");
+    if (!isUnknownRecord(parsed)) throw new Error("script.json 必须是对象");
+    return parsed;
+  } catch (error) {
+    if (
+      error instanceof Error &&
+      "code" in error &&
+      (error as NodeJS.ErrnoException).code === "ENOENT"
+    ) {
+      return null;
+    }
+    throw error;
+  }
+}
+
+function manifestPaths(root: string, manifest: RedubManifestItem[]) {
+  const byId = new Map<string, string>();
+  for (const item of manifest) {
+    if (!item.path) continue;
+    const resolved = redubJobPath(root, String(item.path), `片段 ${item.id} 的 manifest 音频`);
+    byId.set(item.id, resolved);
+  }
+  return byId;
+}
+
+function trustRedubAudioPaths(
+  root: string,
+  timeline: RedubTimeline,
+  manifest: RedubManifestItem[],
+) {
+  const trustedManifestPaths = manifestPaths(root, manifest);
+  for (const track of timeline.tracks) {
+    for (const clip of track.clips) {
+      const manifestPath = trustedManifestPaths.get(clip.id);
+      if (manifestPath) {
+        clip.audioPath = manifestPath;
+      } else if (clip.audioPath) {
+        clip.audioPath = redubJobPath(root, clip.audioPath, `片段 ${clip.id} 的音频`);
+      }
+    }
+  }
+  return timeline;
+}
+
+async function loadRedubTimeline(
+  root: string,
+  job: RedubJobDocument,
+  manifest: RedubManifestItem[],
+) {
+  const timelineFile = redubJobPath(root, "timeline.json", "timeline.json");
+  try {
+    const timeline = normalizeRedubTimeline(
+      await readRedubJson(timelineFile, "timeline.json"),
+    );
+    return trustRedubAudioPaths(root, timeline, manifest);
+  } catch (error) {
+    if (
+      !(
+        error instanceof Error &&
+        "code" in error &&
+        (error as NodeJS.ErrnoException).code === "ENOENT"
+      )
+    ) {
+      throw error;
+    }
+  }
+
+  const script = await readRedubScript(root);
+  if (!script) throw new Error("timeline.json 不存在，且无法读取旧 script.json");
+  const migrated = normalizeRedubTimeline(
+    migrateRedubTimeline(script, manifest, {
+      duration: Number(job.duration || 0),
+      name: `${job.id} · 台词重配时间轴`,
+      instrumentalPath: typeof job.instrumentalAudio === "string" ? job.instrumentalAudio : "",
+      separation: typeof job.separation === "string" ? job.separation : undefined,
+    }),
+  );
+  return trustRedubAudioPaths(root, migrated, manifest);
+}
+
+async function withRedubJobLock<T>(jobId: string, run: () => Promise<T>): Promise<T> {
+  const previous = redubLocks.get(jobId) || Promise.resolve();
+  let release: () => void = () => undefined;
+  const current = new Promise<void>((resolve) => {
+    release = resolve;
+  });
+  const queued = previous.then(() => current);
+  redubLocks.set(jobId, queued);
+  await previous;
+  try {
+    return await run();
+  } finally {
+    release();
+    if (redubLocks.get(jobId) === queued) redubLocks.delete(jobId);
+  }
+}
+
+async function writeRedubJson(file: string, value: unknown) {
+  await fs.mkdir(path.dirname(file), { recursive: true });
+  await fs.writeFile(file, JSON.stringify(value, null, 2), "utf8");
+}
+
+async function listRedubJobs() {
+  let entries;
+  try {
+    entries = await fs.readdir(REDUB_ROOT, { withFileTypes: true });
+  } catch (error) {
+    if (
+      error instanceof Error &&
+      "code" in error &&
+      (error as NodeJS.ErrnoException).code === "ENOENT"
+    ) {
+      return [];
+    }
+    throw error;
+  }
+
+  const jobs = [];
+  for (const entry of entries) {
+    if (!entry.isDirectory() || !REDUB_JOB_ID_PATTERN.test(entry.name)) continue;
+    try {
+      const { job, root } = await readRedubJob(entry.name);
+      const sourceName =
+        typeof job.sourceVideo === "string" ? path.basename(job.sourceVideo) : "";
+      jobs.push({
+        id: entry.name,
+        status: String(job.status || "unknown"),
+        stage: String(job.stage || "状态未知"),
+        duration: Number(job.duration || 0),
+        sourceName,
+        ttsCount: Number(job.ttsCount || 0),
+        createdAt: String(job.createdAt || ""),
+        updatedAt:
+          String(job.updatedAt || job.createdAt || "") ||
+          (await fs.stat(path.join(root, "job.json"))).mtime.toISOString(),
+        exportPath: typeof job.exportPath === "string" ? job.exportPath : "",
+      });
+    } catch {
+      // 忽略中断或手工残留的不完整任务，避免一个坏目录阻断整个任务列表。
+    }
+  }
+  return jobs.sort((left, right) =>
+    String(right.updatedAt).localeCompare(String(left.updatedAt)),
+  );
+}
+
+async function getRedubJobDetail(jobIdValue: unknown) {
+  const { jobId, root, job } = await readRedubJob(jobIdValue);
+  const manifest = await readRedubManifest(root);
+  const timeline = await loadRedubTimeline(root, job, manifest);
+  return {
+    id: jobId,
+    job,
+    timeline,
+    ttsManifest: manifest,
+  };
+}
+
+function redubTimelineErrorResponse(
+  res: ServerResponse,
+  errors: RedubTimelineValidationError[],
+) {
+  return send(res, 422, {
+    error: "时间轴校验失败",
+    errors,
+  });
+}
+
+async function saveRedubTimeline(requestValue: unknown) {
+  if (!isUnknownRecord(requestValue)) throw new Error("时间轴请求必须是对象");
+  const { jobId, root, job, file: jobFile } = await readRedubJob(requestValue.jobId);
+  const manifest = await readRedubManifest(root);
+  const manifestById = manifestPaths(root, manifest);
+  const current = await loadRedubTimeline(root, job, manifest);
+  const currentClipById = new Map(
+    current.tracks.flatMap((track) =>
+      track.clips.map((clip) => [clip.id, clip] as const),
+    ),
+  );
+  const rawTimeline = requestValue.timeline;
+  const errors = validateRedubTimeline(rawTimeline);
+  if (errors.length) return { errors };
+
+  const timeline = normalizeRedubTimeline(rawTimeline);
+  for (const track of timeline.tracks) {
+    for (const clip of track.clips) {
+      const manifestAudio = manifestById.get(clip.id);
+      const existingAudio = currentClipById.get(clip.id)?.audioPath;
+      if (manifestAudio) {
+        clip.audioPath = manifestAudio;
+      } else if (existingAudio) {
+        // 客户端提交的 audioPath 一律忽略；旧时间轴中的带音轨只沿用服务端已知路径。
+        clip.audioPath = redubJobPath(root, existingAudio, `片段 ${clip.id} 的音频`);
+      } else {
+        throw new Error(`片段 ${clip.id} 的 audioPath 无法从 TTS manifest 确认`);
+      }
+      if (!clip.audioPath) throw new Error(`片段 ${clip.id} 缺少受信音频路径`);
+    }
+  }
+
+  await writeRedubJson(
+    redubJobPath(root, "timeline.json", "timeline.json"),
+    timeline,
+  );
+  const updatedJob: RedubJobDocument = {
+    ...job,
+    id: jobId,
+    status: job.status === "done" ? "editing" : job.status || "editing",
+    stage: "多轨时间轴已保存",
+    updatedAt: new Date().toISOString(),
+  };
+  await writeRedubJson(jobFile, updatedJob);
+  return { timeline, job: updatedJob, ttsManifest: manifest };
+}
+
+async function regenerateRedubClip(
+  requestValue: unknown,
+): Promise<
+  | { errors: RedubTimelineValidationError[] }
+  | {
+      timeline: RedubTimeline;
+      ttsManifest: RedubManifestItem[];
+      clipId: string;
+      path: string;
+      url: string;
+      job: RedubJobDocument;
+    }
+> {
+  if (!isUnknownRecord(requestValue)) throw new Error("TTS 请求必须是对象");
+  const { jobId, root, job, file: jobFile } = await readRedubJob(requestValue.jobId);
+  const clipId = safeRedubClipId(requestValue.clipId);
+  const force = requestValue.force !== false;
+  const timeline = await loadRedubTimeline(root, job, await readRedubManifest(root));
+  const clip = timeline.tracks
+    .flatMap((track) => track.clips)
+    .find((candidate) => candidate.id === clipId);
+  if (!clip) throw new Error(`未找到片段 ${clipId}`);
+  const manifest = await readRedubManifest(root);
+  const item = manifest.find((candidate) => candidate.id === clipId);
+  if (!item) throw new Error(`片段 ${clipId} 不在 TTS manifest 中，不能重新合成`);
+  const text =
+    requestValue.text === undefined ? String(clip.text || "") : String(requestValue.text).trim();
+  if (!text) throw new Error("台词文本不能为空");
+  if (text.length > 2000) throw new Error("单句台词不能超过 2000 字");
+
+  const existingPath = manifestPaths(root, manifest).get(clipId);
+  if (!force && existingPath) {
+    await fs.access(existingPath);
+    return {
+      timeline,
+      ttsManifest: manifest,
+      clipId,
+      path: existingPath,
+      url: `/api/local/file?path=${encodeURIComponent(existingPath)}`,
+      job,
+    };
+  }
+
+  const script = await readRedubScript(root);
+  if (!script || !Array.isArray(script.segments)) {
+    throw new Error("script.json 缺少 segments，无法建立单句 TTS 请求");
+  }
+  const sourceSegments = script.segments.filter(isUnknownRecord);
+  const sourceSegment = sourceSegments.find((segment) => segment.id === clipId);
+  if (!sourceSegment) throw new Error(`script.json 中未找到片段 ${clipId}`);
+
+  const tempRoot = redubPath(
+    path.join(REDUB_ROOT, `.tts-${jobId}-${randomUUID()}`),
+    "TTS 临时目录",
+  );
+  const tempScriptFile = redubJobPath(
+    tempRoot,
+    path.join("transcript", "script.json"),
+    "单句 TTS 台词本",
+  );
+  const tempManifest = redubJobPath(
+    tempRoot,
+    path.join("tts", "manifest.json"),
+    "单句 TTS manifest",
+  );
+  try {
+    await fs.mkdir(path.join(tempRoot, "tts"), { recursive: true });
+    await writeRedubJson(tempScriptFile, {
+      ...script,
+      segments: [
+        {
+          ...sourceSegment,
+          id: clipId,
+          newText: text,
+          start: clip.start,
+          end: clip.start + clip.duration,
+        },
+      ],
+    });
+    const speaker = String(sourceSegment.speaker || item.speaker || clip.source || "");
+    if (!speaker) throw new Error(`片段 ${clipId} 缺少 speaker`);
+    const tempJob = {
+      ...job,
+      id: jobId,
+      root: tempRoot,
+      scriptPath: tempScriptFile,
+      ttsManifest: tempManifest,
+      refs: job.refs,
+      speakerRefs: job.speakerRefs,
+    };
+    await synthesizeRedubLines(tempJob, { onlySpeakers: [speaker], force: true });
+
+    const generatedManifestRaw = await readRedubJson(tempManifest, "单句 TTS manifest");
+    if (!Array.isArray(generatedManifestRaw)) throw new Error("单句 TTS manifest 格式无效");
+    const generated = generatedManifestRaw
+      .filter(isUnknownRecord)
+      .find((candidate) => candidate.id === clipId);
+    if (!generated || typeof generated.path !== "string") {
+      throw new Error(`片段 ${clipId} 未生成可用的 TTS 音频`);
+    }
+    const generatedPath = redubJobPath(
+      tempRoot,
+      generated.path,
+      `片段 ${clipId} 的临时 TTS 音频`,
+    );
+    await fs.access(generatedPath);
+    const destination = redubJobPath(
+      root,
+      path.join("tts", `${clipId}.wav`),
+      `片段 ${clipId} 的 TTS 音频`,
+    );
+    await fs.copyFile(generatedPath, destination);
+
+    let ttsDuration = Number(generated.ttsDuration || 0);
+    if (!(ttsDuration > 0)) {
+      const probe = await probeRedubMedia(destination);
+      ttsDuration = Number(probe.format?.duration || 0);
+    }
+    const updatedItem: RedubManifestItem = {
+      ...item,
+      ...generated,
+      id: clipId,
+      speaker,
+      start: clip.start,
+      end: clip.start + clip.duration,
+      text,
+      path: destination,
+      ...(ttsDuration > 0 ? { ttsDuration } : {}),
+    };
+    const nextManifest = manifest.map((candidate) =>
+      candidate.id === clipId ? updatedItem : candidate,
+    );
+    if (!nextManifest.some((candidate) => candidate.id === clipId)) {
+      nextManifest.push(updatedItem);
+    }
+    await writeRedubJson(
+      redubJobPath(root, path.join("tts", "manifest.json"), "TTS manifest"),
+      nextManifest,
+    );
+
+    clip.text = text;
+    clip.audioPath = destination;
+    if (ttsDuration > 0) clip.sourceDuration = ttsDuration;
+    const nextScript = {
+      ...script,
+      segments: script.segments.map((segment) => {
+        if (!isUnknownRecord(segment) || segment.id !== clipId) return segment;
+        return {
+          ...segment,
+          newText: text,
+          start: clip.start,
+          end: clip.start + clip.duration,
+        };
+      }),
+    };
+    await writeRedubJson(
+      redubJobPath(root, path.join("transcript", "script.json"), "script.json"),
+      nextScript,
+    );
+    await writeRedubJson(
+      redubJobPath(root, "timeline.json", "timeline.json"),
+      timeline,
+    );
+    const updatedJob: RedubJobDocument = {
+      ...job,
+      id: jobId,
+      status: "tts_done",
+      stage: `片段 ${clipId} 已重新合成`,
+      ttsCount: nextManifest.filter((candidate) => candidate.path).length,
+      updatedAt: new Date().toISOString(),
+    };
+    await writeRedubJson(jobFile, updatedJob);
+    return {
+      timeline,
+      ttsManifest: nextManifest,
+      clipId,
+      path: destination,
+      url: `/api/local/file?path=${encodeURIComponent(destination)}&v=${Date.now()}`,
+      job: updatedJob,
+    };
+  } finally {
+    await fs.rm(tempRoot, { recursive: true, force: true }).catch(() => undefined);
+  }
+}
+
+async function previewRedubClip(requestValue: unknown) {
+  if (!isUnknownRecord(requestValue)) throw new Error("试听请求必须是对象");
+  const jobId = safeRedubJobId(requestValue.jobId);
+  const clipId = safeRedubClipId(requestValue.clipId);
+  const { root, job } = await readRedubJob(jobId);
+  const timeline = await loadRedubTimeline(root, job, await readRedubManifest(root));
+  const clip = timeline.tracks.flatMap((track) => track.clips)
+    .find((candidate) => candidate.id === clipId);
+  if (!clip) throw new Error(`未找到片段 ${clipId}`);
+  const manifest = await readRedubManifest(root);
+  const item = manifest.find((candidate) => candidate.id === clipId);
+  if (!item?.path) throw new Error(`片段 ${clipId} 没有可试听的 manifest 音频`);
+  const file = redubJobPath(root, String(item.path), `片段 ${clipId} 的试听音频`);
+  const stat = await fs.stat(file);
+  if (!stat.isFile()) throw new Error("试听路径不是文件");
+  return {
+    jobId,
+    clipId,
+    path: file,
+    url: `/api/local/file?path=${encodeURIComponent(file)}&v=${Math.round(stat.mtimeMs)}`,
+  };
+}
+
+async function mixRedubJob(requestValue: unknown) {
+  if (!isUnknownRecord(requestValue)) throw new Error("混音请求必须是对象");
+  const { root, job } = await readRedubJob(requestValue.jobId);
+  const timeline = await loadRedubTimeline(root, job, await readRedubManifest(root));
+  const errors = validateRedubTimeline(timeline);
+  if (errors.length) return { errors };
+  const updatedJob = await mixRedubTimeline(job, {
+    burnSubs: requestValue.burnSubs !== false,
+  });
+  return {
+    job: updatedJob,
+    exportPath:
+      typeof updatedJob.exportPath === "string" ? updatedJob.exportPath : "",
+    mixedAudio:
+      typeof updatedJob.mixedAudio === "string" ? updatedJob.mixedAudio : "",
+    srtPath: typeof updatedJob.srtPath === "string" ? updatedJob.srtPath : "",
+  };
+}
+
 async function discoverComfy() {
   const script = [
     '$candidates = Get-CimInstance Win32_Process | Where-Object { $_.Name -match "^python(w)?\\.exe$" -and $_.CommandLine -match "main\\.py" }',
@@ -1022,6 +1705,70 @@ export function localRuntime(): Plugin {
           const episode=url.searchParams.get('episode')||'ep02';
           if(!/^ep\d{2}$/.test(episode)) throw new Error('集数格式无效');
           const DIRECTOR_GRAPH=path.join(DIRECTOR_WORKSPACE,'workspace','production',episode,'director-project.json');
+          if (url.pathname.startsWith("/api/local/redub/")) {
+            const origin = req.headers.origin;
+            let sameOrigin = true;
+            if (origin) {
+              try {
+                sameOrigin = new URL(origin).host === req.headers.host;
+              } catch {
+                sameOrigin = false;
+              }
+            }
+            if (!sameOrigin) {
+              return send(res, 403, { error: "不允许跨站访问重配音工作区" });
+            }
+            if (url.pathname === "/api/local/redub/jobs" && req.method === "GET") {
+              return send(res, 200, { jobs: await listRedubJobs() });
+            }
+            if (url.pathname === "/api/local/redub/job" && req.method === "GET") {
+              return send(res, 200, await getRedubJobDetail(url.searchParams.get("id")));
+            }
+            if (url.pathname === "/api/local/redub/timeline" && req.method === "PUT") {
+              const request = JSON.parse((await readBody(req)).toString("utf8"));
+              const jobId = safeRedubJobId(
+                isUnknownRecord(request) ? request.jobId : undefined,
+              );
+              const result = await withRedubJobLock(jobId, () =>
+                saveRedubTimeline(request),
+              );
+              if (Array.isArray(result.errors) && result.errors.length) {
+                return redubTimelineErrorResponse(res, result.errors);
+              }
+              return send(res, 200, result);
+            }
+            if (url.pathname === "/api/local/redub/tts" && req.method === "POST") {
+              const request = JSON.parse((await readBody(req)).toString("utf8"));
+              const jobId = safeRedubJobId(
+                isUnknownRecord(request) ? request.jobId : undefined,
+              );
+              const result = await withRedubJobLock(jobId, () =>
+                regenerateRedubClip(request),
+              );
+              if ("errors" in result && Array.isArray(result.errors) && result.errors.length) {
+                return redubTimelineErrorResponse(res, result.errors);
+              }
+              return send(res, 200, result);
+            }
+            if (url.pathname === "/api/local/redub/preview" && req.method === "POST") {
+              const request = JSON.parse((await readBody(req)).toString("utf8"));
+              return send(res, 200, await previewRedubClip(request));
+            }
+            if (url.pathname === "/api/local/redub/mix" && req.method === "POST") {
+              const request = JSON.parse((await readBody(req)).toString("utf8"));
+              const jobId = safeRedubJobId(
+                isUnknownRecord(request) ? request.jobId : undefined,
+              );
+              const result = await withRedubJobLock(jobId, () =>
+                mixRedubJob(request),
+              );
+              if ("errors" in result && Array.isArray(result.errors) && result.errors.length) {
+                return redubTimelineErrorResponse(res, result.errors);
+              }
+              return send(res, 200, result);
+            }
+            return send(res, 404, { error: "未知重配音接口" });
+          }
           if (url.pathname.startsWith('/api/local/runninghub/')) {
             const origin = req.headers.origin;
             if (origin && new URL(origin).host !== req.headers.host) return send(res,403,{error:'不允许跨站云端调用'});
