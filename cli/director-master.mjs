@@ -4,6 +4,7 @@ import { createHash } from 'node:crypto';
 import { readFileSync, writeFileSync, readdirSync, statSync, existsSync, mkdirSync, copyFileSync } from 'node:fs';
 import path from 'node:path';
 import { buildStandardBandMvPrompt } from '../lib/mv-prompt.mjs';
+import { normalizeCues, writeBilingualSubtitles } from '../lib/subtitle-cues.mjs';
 
 const argv = process.argv.slice(2);
 const command = argv.shift() || 'help';
@@ -521,6 +522,50 @@ async function redubCommand() {
   return { status: job.status, id: job.id, root: job.root, exportPath: job.exportPath, stage: job.stage, scriptPath: job.scriptPath, redubRoot: REDUB_ROOT };
 }
 
+
+function hasRunningHubApiKey() {
+  return Boolean(String(process.env.RUNNINGHUB_API_KEY || '').trim());
+}
+
+function subtitleCommand() {
+  const cuesPath = option('cues');
+  const outDir = option('out');
+  const videoPath = option('video');
+  const langs = (option('langs', 'zh,en') || 'zh,en').split(/[,，]/).map((s) => s.trim()).filter(Boolean);
+  const sourceLang = langs[0] || 'zh';
+  const targetLang = langs[1] || (sourceLang === 'zh' ? 'en' : 'zh');
+  const basename = option('basename', 'subtitles') || 'subtitles';
+
+  if (!cuesPath) {
+    if (videoPath) {
+      if (!hasRunningHubApiKey()) {
+        throw new Error('字幕云端 ASR 需要 RUNNINGHUB_API_KEY；当前未配置。可改用离线：--cues <json> --out <dir>（本命令不会调用 RunningHub）。');
+      }
+      throw new Error('Subtitle V0 仅支持离线 --cues；云端 ASR（--video + RunningHub）尚未接入，请先提供 cues JSON。');
+    }
+    throw new Error('subtitle 需要 --cues <json> --out <dir>（离线导出），或配置密钥后使用未来的 --video 云端路径');
+  }
+  if (!outDir) throw new Error('subtitle 需要 --out <dir>');
+
+  const resolvedCues = path.resolve(cuesPath);
+  const resolvedOut = path.resolve(outDir);
+  if (!existsSync(resolvedCues)) throw new Error('cues 文件不存在：' + resolvedCues);
+  const payload = JSON.parse(readFileSync(resolvedCues, 'utf8'));
+  const cues = normalizeCues(payload);
+  const written = writeBilingualSubtitles(resolvedOut, cues, {
+    sourceLang: payload.sourceLang || sourceLang,
+    targetLang: payload.targetLang || targetLang,
+    basename,
+  });
+  return {
+    status: 'written',
+    cueCount: cues.length,
+    sourceLang: payload.sourceLang || sourceLang,
+    targetLang: payload.targetLang || targetLang,
+    ...written,
+  };
+}
+
 try {
   if (command === 'discover') console.log(JSON.stringify(discover(), null, 2));
   else if (command === 'index') { const root = option('root', process.cwd()); console.log(JSON.stringify({ root, assets: walk(root) }, null, 2)); }
@@ -538,7 +583,8 @@ try {
   else if (command === 'voice-generate') console.log(JSON.stringify(await voiceGenerate(),null,2));
   else if (command === 'voice-status') console.log(JSON.stringify(await voiceStatus(),null,2));
   else if (command === 'redub') console.log(JSON.stringify(await redubCommand(), null, 2));
-  else console.log('Director Master CLI\n  discover\n  index --root <dir>\n  skill-task --kind screenplay --script <file> [--brief <text>]\n  skill-task --kind shotlist --script <file> --platform "MiniMax H3" --confirmed true [--assets <dir>]\n  prepare --spec <project.json> --out <workflow.json>\n  run --spec <project.json> [--watch]\n  status --id <prompt-id>\n  mv-cut --audio <music.wav> --project <name> --cuts 8.4,21.7 --notes <segments.json> --people <dir> --scenes <dir> [--asset-meta <descriptions.json>]\n  voice-generate --ref <voice.wav> --text <台词> --character <角色> --emotion <情绪描述> --consent true [--watch]\n  voice-generate --ref <voice.wav> --batch <dialogue.json> --consent true [--watch]\n  voice-status --id <job-id>\n  redub --video <file> --consent true [--name <id>] [--script <script.json>] [--skip-separate] [--stop-after extract|separate|transcribe|refs|tts]\n  redub --stage init|extract|separate|transcribe|script|refs|tts|mix --job <id> [--script <file>] [--consent true]');
+  else if (command === 'subtitle') console.log(JSON.stringify(subtitleCommand(), null, 2));
+  else console.log('Director Master CLI\n  discover\n  index --root <dir>\n  skill-task --kind screenplay --script <file> [--brief <text>]\n  skill-task --kind shotlist --script <file> --platform "MiniMax H3" --confirmed true [--assets <dir>]\n  prepare --spec <project.json> --out <workflow.json>\n  run --spec <project.json> [--watch]\n  status --id <prompt-id>\n  mv-cut --audio <music.wav> --project <name> --cuts 8.4,21.7 --notes <segments.json> --people <dir> --scenes <dir> [--asset-meta <descriptions.json>]\n  voice-generate --ref <voice.wav> --text <台词> --character <角色> --emotion <情绪描述> --consent true [--watch]\n  voice-generate --ref <voice.wav> --batch <dialogue.json> --consent true [--watch]\n  voice-status --id <job-id>\n  redub --video <file> --consent true [--name <id>] [--script <script.json>] [--skip-separate] [--stop-after extract|separate|transcribe|refs|tts]\n  redub --stage init|extract|separate|transcribe|script|refs|tts|mix --job <id> [--script <file>] [--consent true]\n  subtitle --cues <cues.json> --out <dir> [--langs zh,en] [--basename subtitles]\n  subtitle --video <file>   # V0: 无 cues 且无 RUNNINGHUB_API_KEY 时明确报错，不调用云端');
 } catch (error) {
   console.error('[director-master] ' + (error instanceof Error ? error.message : String(error)));
   process.exitCode = 1;
