@@ -16,11 +16,13 @@ workspace/workflows/mv/
 └─ cloud/   # RunningHub API JSON
 ```
 
-页面右上角“工作流配置”提供本地/云端两个页签。文件选择会把 JSON 副本导入对应目录，目录中的文件会自动列出，可直接切换。云端页签同时保存 RunningHub 工作流 ID；API JSON 本身通常不携带这个 ID，需从 RunningHub API 页面复制填写。当前默认云端模板是 `minimax_h3_remix_ref2va_dual_sampling_api.json`。
+页面右上角“工作流配置”提供本地/云端两个页签。文件选择会把 JSON 副本导入对应目录，目录中的文件会自动列出，可直接切换。云端页签同时保存 RunningHub 工作流 ID；API JSON 本身通常不携带这个 ID，需从 RunningHub API 页面复制填写。当前默认云端模板是 `minimax_h3_multiref_pixel_fantasy_api.json`，RunningHub MV API ID 为 `2087128116820013058`。
+
+短剧导演台与 MV 的 RunningHub 云端配置互相独立。短剧配置保存在 `workspace/workflows/short-drama/cloud/`，默认 `minimax_h3_director_api_920.json`，RunningHub ID `2090979599860719618`；在短剧“项目与生成设置”中单独选择/导入短剧 API JSON 和填写短剧 API ID。MV 页面只读取 `workspace/workflows/mv/cloud/` 下的工作流，默认仍为像素幻想 API。提交请求会携带 `productType`，服务端按产品类型限制工作流目录并应用各自默认值，避免一个页面的选择覆盖另一个页面。
 
 已纳入 RH 云端导演台模板 `minimax_h3_director_api_920.json`。该模板的主节点为 `MiniMaxH3Director`，保留时间线、分段提示词、图片引用、参考音频和连续片段结构，基线为 24 FPS、16:9、864×480、8 步。它与肥猴 Remix 模板共用 `segments / pictures / audios / settings` 输入协议，由同一适配层自动写入 `timeline_data`；在工作流配置页选择该文件即可切换。
 
-页面、CLI 和项目文件继续使用统一的 `segments / pictures / audios / settings` 输入协议。`vite-plugins/runninghub-workflow-adapters.ts` 在提交前识别工作流类型并完成转换：肥猴 Remix 写入 12 个媒体槽、提示词、时长、分辨率、FPS、8/4 步双采样和原音频开关；旧 ReferenceToVideo 和 Director 工作流继续走各自适配器。Remix API（`FeiHouEasyH3RH`）支持 9 张图片与 3 条音频参考。肥猴工作流返回多个视频时，优先级为人脸精修成片、第二采样成片、第一采样成片。
+页面、CLI 和项目文件继续使用统一的 `segments / pictures / audios / settings` 输入协议。`vite-plugins/runninghub-workflow-adapters.ts` 在提交前识别工作流类型并完成转换：像素幻想 `MiniMaxH3ReferenceToVideo` 工作流会自动写入图片/音频引用、提示词、8 步采样和分辨率；肥猴 Remix 写入 12 个媒体槽、提示词、时长、分辨率、FPS、8/4 步双采样和原音频开关；Director 工作流继续使用时间线适配器。像素幻想与 Remix API 均支持最多 9 张图片与 3 条音频参考。肥猴工作流返回多个视频时，优先级为人脸精修成片、第二采样成片、第一采样成片。
 
 ## 推荐流程
 
@@ -104,6 +106,11 @@ CLI 与页面执行相同的 15 秒硬校验，并生成相同目录结构。页
 - 云端批量使用指定的 RunningHub 导演台工作流，严格串行执行：当前片段完成或失败后，才处理下一片段。
 - 每个片段显示准备、排队、生成、成功或失败状态；成功后可直接播放或打开成片。
 - 云端片段全部完成后，服务端使用 FFmpeg 按片段顺序拼接视频，并从项目源音频重新封装音轨，避免使用模型生成的替代音乐。
+- 云端任务会记录所属 MV 项目和 SEG 序号；重新打开项目时，如果成片已下载但页面自动保存被中断，会从成功任务记录恢复视频路径并绑定回对应分段。
+- 分段视频路径、时间范围和生成历史一起自动保存。若生成完成与旧自动保存并发，只会追加一次后续保存，防止已完成产物被旧状态覆盖。
+- 音频时间轴下方提供完整视频预览，可切换“视频原声”（按 SEG 拼接并保留每段生成视频自带音频）与“音乐原声”（使用 SOURCE TRACK 覆盖参考音轨）进行口型/同步对比。每当当前 SEG 成片集合变化时，后台一次性生成并缓存两种音轨版本及其浏览器兼容预览；切换只更换播放器源，不重复拼接或转码。每段优先使用最新成片；没有新片时回退到生成历史或 `segments/videos` 中同序号的旧片，并在卡片/总览标注回退段数。所有分段都有可用视频后，新片到达会自动更新两种版本。项目视频列表每 5 秒同步一次，自动保存也会保留回退路径。拼接任务按项目串行执行，避免并发写同一预览文件。
+- 完整视频预览旁的“导出”复用当前签名下已缓存的对应音轨版本；如果缓存不存在才合成。优先弹出 MP4“另存为”对话框（选择具体目录和文件名），兼容回退到目录选择器；数据以流式写入并在关闭后核对文件大小，成功提示显示保存文件名/目录。无文件系统访问 API 时回退为浏览器下载。
+- 片段与完整视频预览统一走 `/api/local/video-preview`：按原片版本在系统临时目录生成可浏览器解码的 H.264 Baseline/yuv420p + faststart 缓存，保留可选音轨，原始生成文件不改写；单段播放器使用 `preload=none`，只在用户播放时转码，避免打开项目就批量占用 CPU。媒体响应支持标准 Range 与后缀 Range，避免个别浏览器出现有声无画面。
 
 ## H3 提示词约束
 

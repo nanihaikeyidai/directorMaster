@@ -6,7 +6,14 @@ import { promises as fs, createReadStream } from "node:fs";
 import path from "node:path";
 import { promisify } from "node:util";
 import type { Plugin } from "vite";
-import { cloudConfig, submitCloud, cloudStatus, listCloudJobs } from './runninghub';
+import {
+  cancelCloud,
+  cloudConfig,
+  cloudStatus,
+  listCloudJobs,
+  runningHubAccountStatus,
+  submitCloud,
+} from './runninghub';
 import { getVoiceJob, listVoiceAssets, listVoiceJobs, saveVoiceAsset, submitVoiceJob } from './voice-runtime';
 import {
   mixAndExport,
@@ -1773,8 +1780,10 @@ export function localRuntime(): Plugin {
             const origin = req.headers.origin;
             if (origin && new URL(origin).host !== req.headers.host) return send(res,403,{error:'不允许跨站云端调用'});
             if(url.pathname === '/api/local/runninghub/config' && req.method === 'GET') return send(res,200,await cloudConfig());
+            if(url.pathname === '/api/local/runninghub/account' && req.method === 'GET') return send(res,200,await runningHubAccountStatus());
             if(url.pathname === '/api/local/runninghub/jobs' && req.method === 'POST') return send(res,202,await submitCloud(JSON.parse((await readBody(req)).toString('utf8'))));
             if(url.pathname === '/api/local/runninghub/jobs' && req.method === 'GET') return send(res,200,url.searchParams.has('id')?await cloudStatus(url.searchParams.get('id')||''):await listCloudJobs());
+            if(url.pathname === '/api/local/runninghub/jobs' && req.method === 'DELETE') return send(res,200,await cancelCloud(url.searchParams.get('id')||''));
           }
           if (url.pathname.startsWith("/api/local/voice/")) {
             const origin = req.headers.origin;

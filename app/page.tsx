@@ -151,10 +151,8 @@ const LEGACY_PROJECT_ROOT =
   "D:\\HermesWorkspace\\ai小说\\红绳\\05-workflow\\ep02\\归档素材";
 const TEMPLATE_PATH =
   WORKSPACE_ROOT + "\\workspace\\workflows\\minimax_h3_director_default.json";
-const SCREENPLAY_PATH =
-  WORKSPACE_ROOT + "\\ai小说\\红绳\\05-workflow\\ep02\\EP02_雨幕余温.md";
-const PRODUCTION_ROOT = WORKSPACE_ROOT + "\\workspace\\production\\ep02";
-const SCREENPLAY_STORAGE_KEY = "director-master-workspace-ep02-screenplay";
+const SHORT_DRAMA_CLOUD_WORKFLOW_PATH =
+  WORKSPACE_ROOT + "\\workspace\\workflows\\short-drama\\cloud\\minimax_h3_director_api_920.json";
 const SCRIPT_NODE_ID = "__episode-script";
 const CANVAS_MIN_SCALE = 0.35;
 const CANVAS_MAX_SCALE = 1.8;
@@ -431,16 +429,51 @@ function EpisodeCanvas({episode}:{episode:string}) {
   const [provider, setProvider] = useState('local');
   const [cloudSteps, setCloudSteps] = useState(8);
   const [cloudMP, setCloudMP] = useState(0.6);
+  const [shortDramaCloudWorkflowPath, setShortDramaCloudWorkflowPath] = useState(SHORT_DRAMA_CLOUD_WORKFLOW_PATH);
+  const [shortDramaCloudWorkflowId, setShortDramaCloudWorkflowId] = useState('2090979599860719618');
+  const [shortDramaCloudWorkflows, setShortDramaCloudWorkflows] = useState<{path:string;fileName:string;nodeCount:number;invalid?:boolean}[]>([]);
+  const [shortDramaWorkflowMessage, setShortDramaWorkflowMessage] = useState('');
+  const shortDramaWorkflowInputRef = useRef<HTMLInputElement>(null);
   useEffect(() => {
     const saved = localStorage.getItem('director-cloud-settings');
-    if(saved) { try { const value=JSON.parse(saved);setProvider(value.provider||'local');setCloudSteps(value.steps||8);setCloudMP(value.megapixels||0.6); } catch {} }
+    if(saved) { try { const value=JSON.parse(saved);setProvider(value.provider||'local');setCloudSteps(value.steps||8);setCloudMP(value.megapixels||0.6);setShortDramaCloudWorkflowPath(value.workflowPath||SHORT_DRAMA_CLOUD_WORKFLOW_PATH);setShortDramaCloudWorkflowId(value.workflowId||'2090979599860719618'); } catch {} }
+    void fetch('/api/local/runninghub/config').then(async response => { const config:any=await response.json(); if(!response.ok) throw new Error(config.error||'云端工作流配置读取失败'); setShortDramaCloudWorkflows(Array.isArray(config.shortDramaWorkflows)?config.shortDramaWorkflows:[]); if(!localStorage.getItem('director-cloud-settings')) { if(config.shortDramaTemplatePath) setShortDramaCloudWorkflowPath(config.shortDramaTemplatePath); if(config.workflowId) setShortDramaCloudWorkflowId(String(config.workflowId)); } }).catch(error=>setShortDramaWorkflowMessage(String(error)));
     const id=localStorage.getItem('director-cloud-job-'+episode);
     if(id) void monitorCloud(id);
     else void fetch('/api/local/runninghub/jobs').then(r=>r.json()).then((jobs:any)=>{const match=Array.isArray(jobs)&&jobs.find((j:any)=>(j.episode||'ep02')===episode);if(match)void monitorCloud(match.id);}).catch(()=>{});
   }, []);
   function saveCloud(provider: string, steps: number, megapixels: number) {
     setProvider(provider);setCloudSteps(steps);setCloudMP(megapixels);
-    localStorage.setItem('director-cloud-settings',JSON.stringify({provider,steps,megapixels}));
+    const current:any=(()=>{try{return JSON.parse(localStorage.getItem('director-cloud-settings')||'{}')}catch{return {}}})();
+    localStorage.setItem('director-cloud-settings',JSON.stringify({...current,provider,steps,megapixels}));
+  }
+  function saveShortDramaCloudWorkflow(workflowPath: string, workflowId: string) {
+    setShortDramaCloudWorkflowPath(workflowPath);setShortDramaCloudWorkflowId(workflowId);
+    const current:any=(()=>{try{return JSON.parse(localStorage.getItem('director-cloud-settings')||'{}')}catch{return {}}})();
+    localStorage.setItem('director-cloud-settings',JSON.stringify({...current,workflowPath,workflowId}));
+  }
+  async function importShortDramaCloudWorkflow(file: File) {
+    setShortDramaWorkflowMessage(`正在导入 ${file.name}…`);
+    try {
+      const bytes=new Uint8Array(await file.arrayBuffer());let binary='';for(let offset=0;offset<bytes.length;offset+=0x8000)binary+=String.fromCharCode(...bytes.subarray(offset,offset+0x8000));
+      const response=await fetch('/api/local/workflow/import',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({fileName:file.name,dataBase64:btoa(binary),kind:'short-drama-cloud'})});
+      const result:any=await response.json();if(!response.ok)throw new Error(result.error||'导入短剧云端工作流失败');
+      const configResponse=await fetch('/api/local/runninghub/config');const config:any=await configResponse.json();
+      setShortDramaCloudWorkflows(Array.isArray(config.shortDramaWorkflows)?config.shortDramaWorkflows:[]);
+      saveShortDramaCloudWorkflow(String(result.path),shortDramaCloudWorkflowId);
+      setShortDramaWorkflowMessage(`已导入并设为短剧云端工作流：${result.fileName}`);
+    } catch(error) { setShortDramaWorkflowMessage(error instanceof Error?error.message:String(error)); }
+    finally { if(shortDramaWorkflowInputRef.current)shortDramaWorkflowInputRef.current.value=''; }
+  }
+  async function checkShortDramaCloudWorkflow() {
+    setShortDramaWorkflowMessage('正在检查短剧云端工作流…');
+    try {
+      const response=await fetch('/api/local/workflow?path='+encodeURIComponent(shortDramaCloudWorkflowPath));
+      const workflow:any=await response.json();if(!response.ok)throw new Error(workflow.error||'读取工作流失败');
+      if(!workflow||typeof workflow!=='object'||!Object.keys(workflow).length)throw new Error('工作流 JSON 为空');
+      if(!/^\d{10,30}$/.test(shortDramaCloudWorkflowId.trim()))throw new Error('RunningHub 工作流 ID 应为 10–30 位数字');
+      setShortDramaWorkflowMessage(`检查通过：${shortDramaCloudWorkflows.find(item=>item.path===shortDramaCloudWorkflowPath)?.fileName||shortDramaCloudWorkflowPath} · ID ${shortDramaCloudWorkflowId}`);
+    } catch(error) { setShortDramaWorkflowMessage(error instanceof Error?error.message:String(error)); }
   }
   async function monitorCloud(id: string) {
     for(let attempt=0;attempt<1440;attempt++) {
@@ -2070,7 +2103,7 @@ function EpisodeCanvas({episode}:{episode:string}) {
           prompt:referenceNode||commonNode||promptPartOverrides[segment.id]?finalPrompt:production?.finalPrompt||segment.finalPrompt||finalPrompt,
           negativePrompt:segment.negativePrompt,definitions:referencePrompt,referencePrompt,commonPrompt,shotPrompt:segment.shotPrompt,pictures:ps,audios:as,
         }));
-        const response=await fetch('/api/local/runninghub/jobs',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({episode,segments:cloudSegments,sequenceNos:requestedSegments.map(s=>s.sequenceNo),settings:{steps:cloudSteps,megapixels:cloudMP}})});
+        const response=await fetch('/api/local/runninghub/jobs',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({productType:'short-drama',workflowPath:shortDramaCloudWorkflowPath,workflowId:shortDramaCloudWorkflowId,episode,segments:cloudSegments,sequenceNos:requestedSegments.map(s=>s.sequenceNo),settings:{steps:cloudSteps,megapixels:cloudMP}})});
         const receipt:any=await response.json();if(!response.ok) throw new Error(receipt.error||'云端提交失败');
         localStorage.setItem('director-cloud-job-'+episode,receipt.id);
         void monitorCloud(receipt.id);return;
@@ -4429,6 +4462,15 @@ function EpisodeCanvas({episode}:{episode:string}) {
                 <label>云端生成步数<input type="number" min={1} max={100} value={cloudSteps} onChange={e=>saveCloud(provider,Number(e.target.value),cloudMP)}/></label>
                 <label>云端分辨率<select value={cloudMP} onChange={e=>saveCloud(provider,cloudSteps,Number(e.target.value))}>{[0.2,0.3,0.4,0.5,0.6,0.7,0.8,0.9,1].map(mp=><option value={mp} key={mp}>{mp} MP</option>)}</select></label>
                 <p>默认 8 步 · 0.6 MP · 24 FPS。使用导入的导演台云端工作流，二采关闭。支持所选连续片段；密钥由本地服务读取。</p>
+                <h3>短剧云端工作流</h3>
+                <label>短剧 API JSON<select value={shortDramaCloudWorkflowPath} onChange={e=>saveShortDramaCloudWorkflow(e.target.value,shortDramaCloudWorkflowId)}>
+                  {!shortDramaCloudWorkflows.some(item=>item.path===shortDramaCloudWorkflowPath)&&<option value={shortDramaCloudWorkflowPath}>{shortDramaCloudWorkflowPath}</option>}
+                  {shortDramaCloudWorkflows.map(item=><option key={item.path} value={item.path}>{item.fileName}{item.invalid?' · JSON 无效':''}</option>)}
+                </select></label>
+                <label>短剧 RunningHub 工作流 ID<input value={shortDramaCloudWorkflowId} onChange={e=>saveShortDramaCloudWorkflow(shortDramaCloudWorkflowPath,e.target.value)} placeholder="短剧云端 API ID" /></label>
+                <div className="settings-actions"><button onClick={()=>shortDramaWorkflowInputRef.current?.click()}>导入短剧云端 API JSON</button><button onClick={()=>void checkShortDramaCloudWorkflow()}>检查配置</button><input ref={shortDramaWorkflowInputRef} hidden type="file" accept="application/json,.json" onChange={e=>{const file=e.target.files?.[0];if(file)void importShortDramaCloudWorkflow(file)}} /></div>
+                <p className="workspace-note">短剧默认使用 h3_director_api_920（ID 2090979599860719618）；此配置与 MV 页面中的像素幻想云端工作流独立保存。</p>
+                {shortDramaWorkflowMessage&&<p className={shortDramaWorkflowMessage.includes('失败')||shortDramaWorkflowMessage.includes('无效')?'error-box':'workspace-note'}>{shortDramaWorkflowMessage}</p>}
               </>}
             </section>
             <section>

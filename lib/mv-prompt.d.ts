@@ -15,6 +15,8 @@ export type BandMvNote = {
   kind?: "vocal" | "instrumental";
   lyrics?: string;
   direction?: string;
+  shotType?: "auto" | "lead" | "guitar" | "drums" | "bass" | "audience" | "wide";
+  shotActions?: { type: string; duration: number; memberId?: string; moveType?: string; moveDuration?: number }[];
 };
 
 export type BandMvSettings = Partial<Record<"members" | "style" | "stage" | "wardrobe" | "performance" | "continuity" | "cameraStability" | "vocalStartSec", string>>;
@@ -41,4 +43,6 @@ export function buildStandardBandMvPrompt(input: {
   leadSilenceSec?: number;
 }): string;
 
-export const BAND_MV_PROMPT_TEMPLATE_VERSION: "band-live-ref2va-v6-duration-shot-coverage";
+export function defaultBandMvActions(shotType?: string, duration?: number): { type: string; duration: number }[];
+
+export const BAND_MV_PROMPT_TEMPLATE_VERSION: "band-live-ref2va-v8-timed-multi-action-role-mapping";

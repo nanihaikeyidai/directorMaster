@@ -9,10 +9,13 @@ import { adaptRunningHubWorkflow } from './runninghub-workflow-adapters';
 const root = path.resolve('D:/HermesWorkspace/directorMaster');
 const jobs = path.join(root, 'workspace/runninghub');
 const templatePath = path.join(root, 'workspace/workflows/runninghub-director-api.json');
+const shortDramaCloudWorkflowRoot = path.join(root, 'workspace/workflows/short-drama/cloud');
+const shortDramaTemplatePath = path.join(shortDramaCloudWorkflowRoot, 'minimax_h3_director_api_920.json');
 const mvWorkflowRoot = path.join(root, 'workspace/workflows/mv');
 const mvCloudWorkflowRoot = path.join(mvWorkflowRoot, 'cloud');
-const mvTemplatePath = path.join(mvCloudWorkflowRoot, 'minimax_h3_remix_ref2va_dual_sampling_api.json');
+const mvTemplatePath = path.join(mvCloudWorkflowRoot, 'minimax_h3_multiref_pixel_fantasy_api.json');
 const apiBase = 'https://www.runninghub.cn';
+const accountStatusUrl = 'https://www.runninghub.cn/uc/openapi/accountStatus';
 const defaultWorkflowId = '2090979599860719618';
 const mvWorkflowId = '2087128116820013058';
 const allowedWorkflowIds = new Set([defaultWorkflowId, mvWorkflowId]);
@@ -30,6 +33,26 @@ async function call(endpoint: string, body: any, secret: string): Promise<any> {
   if (!response.ok) throw new Error('RunningHub HTTP '+response.status);
   return response.json();
 }
+export async function runningHubAccountStatus() {
+  const secret = await key();
+  const response = await fetch(accountStatusUrl, {
+    method: 'POST',
+    headers: { 'content-type': 'application/json', Authorization: `Bearer ${secret}` },
+    body: JSON.stringify({ apikey: secret }),
+    signal: AbortSignal.timeout(15000),
+  });
+  if (!response.ok) throw new Error(`RunningHub 账户余额查询失败（HTTP ${response.status}）`);
+  const result: any = await response.json();
+  if (result.code !== 0) throw new Error(result.msg || 'RunningHub 账户余额查询失败');
+  const data = result.data || {};
+  return {
+    coins: Number(data.remainCoins) || 0,
+    walletBalance: data.remainMoney == null ? undefined : String(data.remainMoney),
+    currency: String(data.currency || 'CNY'),
+    runningTasks: Number(data.currentTaskCounts) || 0,
+    checkedAt: new Date().toISOString(),
+  };
+}
 async function save(job: any) {
   await fs.mkdir(jobs,{recursive:true});
   const target = path.join(jobs, job.id+'.json');
@@ -38,15 +61,34 @@ async function save(job: any) {
 }
 export async function cloudConfig() {
   let configured = false, error = ''; try { configured = Boolean(await key()); } catch(e) {error=String(e);}
-  return { configured, error, templatePath, mvTemplatePath, mvWorkflowRoot, mvCloudWorkflowRoot, workflowId:defaultWorkflowId, mvWorkflowId, instanceType:'plus', steps:8, megapixels:0.6 };
+  const shortDramaWorkflows = await listWorkflowFiles(shortDramaCloudWorkflowRoot);
+  return { configured, error, templatePath, shortDramaTemplatePath, shortDramaCloudWorkflowRoot, shortDramaWorkflows, mvTemplatePath, mvWorkflowRoot, mvCloudWorkflowRoot, workflowId:defaultWorkflowId, mvWorkflowId, instanceType:'plus', steps:8, megapixels:0.6 };
 }
 
-function resolveMvWorkflowPath(value: unknown, workflowId: string) {
+async function listWorkflowFiles(directory: string) {
+  await fs.mkdir(directory, { recursive: true });
+  const names = (await fs.readdir(directory, { withFileTypes: true }))
+    .filter((entry) => entry.isFile() && path.extname(entry.name).toLowerCase() === '.json')
+    .map((entry) => entry.name)
+    .sort((a, b) => a.localeCompare(b));
+  return Promise.all(names.map(async (fileName) => {
+    const filePath = path.join(directory, fileName);
+    try {
+      const parsed = JSON.parse(await fs.readFile(filePath, 'utf8'));
+      return { path: filePath, fileName, nodeCount: Object.keys(parsed).length };
+    } catch {
+      return { path: filePath, fileName, nodeCount: 0, invalid: true };
+    }
+  }));
+}
+
+function resolveWorkflowPath(value: unknown, workflowId: string, productType: 'short-drama' | 'mv') {
   const requested = String(value || '').trim();
-  if (!requested) return workflowId === mvWorkflowId ? mvTemplatePath : templatePath;
+  if (!requested) return productType === 'mv' ? mvTemplatePath : shortDramaTemplatePath;
   const resolved = path.resolve(requested);
-  if (path.extname(resolved).toLowerCase() !== '.json' || (resolved !== mvCloudWorkflowRoot && !resolved.startsWith(mvCloudWorkflowRoot + path.sep))) {
-    throw new Error('云端工作流必须位于 workspace/workflows/mv/cloud 目录内');
+  const rootForProduct = productType === 'mv' ? mvCloudWorkflowRoot : shortDramaCloudWorkflowRoot;
+  if (path.extname(resolved).toLowerCase() !== '.json' || (resolved !== rootForProduct && !resolved.startsWith(rootForProduct + path.sep))) {
+    throw new Error(productType === 'mv' ? 'MV 云端工作流必须位于 workspace/workflows/mv/cloud 目录内' : '短剧云端工作流必须位于 workspace/workflows/short-drama/cloud 目录内');
   }
   return resolved;
 }
@@ -59,15 +101,21 @@ export async function listCloudJobs() {
 }
 export async function submitCloud(request: any) {
   const episode=request.episode||'ep02';if(!/^ep\d{2}$/.test(episode))throw new Error('集数格式无效');
+  const projectId = request.productType === 'mv' ? String(request.projectId || '') : '';
+  // MV project IDs are also used as human-readable workspace folder names,
+  // so Chinese (and other Unicode letter/number) IDs are valid. Keep path
+  // separators and punctuation excluded to prevent unsafe identifiers.
+  if (projectId && !/^[\p{L}\p{N}_-]{1,100}$/u.test(projectId)) throw new Error('MV 项目 ID 无效');
   const segments = structuredClone(request.segments);
   if (!Array.isArray(segments) || !segments.length || segments.length>32) throw new Error('请选择 1–32 个片段');
   const steps = Number(request.settings?.steps ?? 8), megapixels=Number(request.settings?.megapixels ?? 0.6);
-  const workflowId = String(request.workflowId || defaultWorkflowId);
+  const productType = request.productType === 'mv' ? 'mv' : 'short-drama';
+  const workflowId = String(request.workflowId || (productType === 'mv' ? mvWorkflowId : defaultWorkflowId));
   if (!allowedWorkflowIds.has(workflowId) && !/^\d{10,30}$/.test(workflowId)) throw new Error('RunningHub 工作流 ID 无效');
   if (!Number.isInteger(steps)||steps<1||steps>100||!sizes[String(megapixels)]) throw new Error('步数或分辨率无效');
   const [width,height]=sizes[String(megapixels)];
   const settings = { taskType:'r2v',frameRate:24,width,height,refMaxSize:width,megapixels,cfg:1,seed:666,steps,sampler:'euler',scheduler:'simple',shiftVideo:6,shiftAudio:3,audioMode:'generate',exportMode:'all',continuityEnabled:true,continuityOverlapFrames:5,runSelectEnabled:false,clearVram:true,exportSourceImages:false } as const;
-  const selectedTemplatePath = resolveMvWorkflowPath(request.workflowPath, workflowId);
+  const selectedTemplatePath = resolveWorkflowPath(request.workflowPath, workflowId, productType);
   const template = JSON.parse(await fs.readFile(selectedTemplatePath,'utf8'));
   for (const segment of segments) {
     if (!segment.id || !segment.prompt?.trim() || !Number.isFinite(segment.durationSec) || segment.durationSec<1 || segment.durationSec>15) throw new Error('片段需有提示词且时长为 1–15 秒');
@@ -80,8 +128,9 @@ export async function submitCloud(request: any) {
     }
   }
   const preview = adaptRunningHubWorkflow(template, segments, settings);
-  const job = { id:randomUUID(),provider:'runninghub',workflowId,workflowPath:selectedTemplatePath,workflowKind:preview.kind,status:'UPLOADING',stage:'上传素材',percent:5,createdAt:new Date().toISOString(),settings,sequenceNos:request.sequenceNos||[],taskId:'',outputs:[] } as any;
+  const job = { id:randomUUID(),provider:'runninghub',productType,workflowId,workflowPath:selectedTemplatePath,workflowKind:preview.kind,status:'UPLOADING',stage:'上传素材',percent:5,createdAt:new Date().toISOString(),settings,sequenceNos:request.sequenceNos||[],taskId:'',outputs:[] } as any;
   job.episode=episode;
+  if (projectId) job.projectId = projectId;
   await save(job);
   // Keep submission work alive independently of the browser connection.
   void (async()=>{
@@ -102,6 +151,8 @@ export async function submitCloud(request: any) {
       const workflow = adapted.workflow;
       await fs.writeFile(path.join(jobs,job.id+'.workflow.json'),JSON.stringify(workflow,null,2));
       job.stage='正在提交 RunningHub';job.percent=30;await save(job);
+      const latest = JSON.parse(await fs.readFile(path.join(jobs,job.id+'.json'),'utf8'));
+      if (latest.status === 'CANCELLED') return;
       // MiniMax H3 reference-video inference can exceed the smaller cloud tier's
       // VRAM even at 0.6 MP. Run MV and director jobs on RunningHub Plus (48 GB)
       // so a valid project does not fail after all assets have been uploaded.
@@ -117,7 +168,7 @@ export async function cloudStatus(id: string) {
   if(inflight.has(id)) return inflight.get(id);
   const pending=(async()=>{
     const job=JSON.parse(await fs.readFile(path.join(jobs,id+'.json'),'utf8'));
-    if(!job.taskId || ['SUCCESS','FAILED'].includes(job.status)) return job;
+    if(!job.taskId || ['SUCCESS','FAILED','CANCELLED'].includes(job.status)) return job;
     const secret=await key(), result=await call('/task/openapi/status',{taskId:job.taskId},secret);
     if(result.code!==0) throw new Error('状态查询失败：'+result.msg);
     job.status=result.data;job.stage=result.data==='QUEUED'?'云端排队':'云端生成中';
@@ -151,4 +202,16 @@ export async function cloudStatus(id: string) {
     await save(job);return job;
   })();
   inflight.set(id,pending);try{return await pending;}finally{inflight.delete(id);}
+}
+
+export async function cancelCloud(id: string) {
+  if (!/^[\da-f-]{36}$/.test(id)) throw new Error('任务 ID 无效');
+  const job = JSON.parse(await fs.readFile(path.join(jobs,id+'.json'),'utf8'));
+  if (['SUCCESS','FAILED','CANCELLED'].includes(job.status)) return job;
+  if (job.taskId) {
+    const result = await call('/task/openapi/cancel',{taskId:job.taskId},await key());
+    if (result.code !== 0) throw new Error('RunningHub 取消失败：'+result.msg);
+  }
+  job.status='CANCELLED';job.stage='已取消';job.error='用户取消任务';await save(job);
+  return job;
 }

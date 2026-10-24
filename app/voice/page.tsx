@@ -1,6 +1,6 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 
+import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 
 type VoiceAsset = {
@@ -160,8 +160,8 @@ export default function VoiceCloneStudio() {
 
   return <main className="voice-app">
     <header className="mv-topbar">
-      <a className="mv-brand" href="/"><span>DM</span><b>DIRECTOR MASTER</b></a>
-      <nav><a href="/">导演画布</a><a href="/mv">MV 制作</a><a className="active" href="/voice">声音克隆</a></nav>
+      <Link className="mv-brand" href="/"><span>DM</span><b>DIRECTOR MASTER</b></Link>
+      <nav><Link href="/">导演画布</Link><Link href="/mv">MV 制作</Link><Link className="active" href="/voice">声音克隆</Link></nav>
       <div className={`voice-runtime ${comfy.found ? "online" : "offline"}`}><i />{comfy.found ? `COMFY : ${comfy.port}` : "COMFY OFFLINE"}</div>
     </header>
 
