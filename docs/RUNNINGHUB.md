@@ -1,25 +1,48 @@
 # RunningHub 云端生成
 
-在「项目与生成设置 → 生成位置」选择 RunningHub 云端。默认 LitePlus、8 步、0.6 MP（1056×608）、24 FPS，关闭二采。云端参数独立于本地 ComfyUI；无需启动 ComfyUI。
+在「项目与生成设置 → 生成位置」选择 RunningHub 云端。云端参数独立于本地 ComfyUI；无需启动 ComfyUI。默认使用 Plus 实例、8 步、0.6 MP（1056×608）、24 FPS，关闭二采。
 
-从画布勾选 SEG 后点击生成，素材引用节点、公共提示词和分镜提示词沿用现有编译规则。服务器检查图片/音频编号，上传所选素材，按回执文件名重建每段引用，并同步 timeline 与 r2v workspace。支持连续段，首段关闭前段连续性。
+从画布勾选 SEG 后点击生成。服务端检查图片/音频编号，上传所选素材，按回执文件名重建每段引用，并同步 timeline 与工作流输入。支持连续段，首段关闭前段连续性。
 
-工作流模板：普通导演台使用 `workspace/workflows/runninghub-director-api.json`；MV 使用 `workspace/workflows/runninghub-mv-ref2v-api.json`，对应 RunningHub 工作流 `2087128116820013058`。MV 模板核心节点为 `MiniMaxH3ReferenceToVideo`，服务端会动态绑定最多 9 个图片引用槽、1 个主参考音频、提示词、分辨率和步数，并保留模板内的音频时长到帧数计算链。
+## 工作流目录
 
-MV 云端提交前会写入任务目录的 `*.workflow.json` 快照，可用于核对实际提交的节点类型、图片/音频文件名和最终提示词；任务仍按片段串行提交，避免连续片段并发造成素材或额度混淆。
+短剧与 MV 使用各自独立的工作流目录，提交请求必须带 `productType`：
 
-密钥只由本机服务读取 RUNNINGHUB_API_KEY，或当前 Windows 用户的 DPAPI 文件。浏览器与任务记录不保存密钥。任务与实际提交工作流在 `workspace/runninghub`，成片按任务 ID 分目录归档。
+| 产品 | 模板目录 | 默认模板 | 默认 RunningHub ID |
+| --- | --- | --- | --- |
+| 短剧 | `workspace/workflows/short-drama/cloud/` | `minimax_h3_director_api_920.json` | `2090979599860719618` |
+| MV | `workspace/workflows/mv/cloud/` | `minimax_h3_multiref_pixel_fantasy_api.json` | `2087128116820013058` |
 
-CLI（运行本地 directorMaster 服务后）：
+目录内可保存多个已验证模板。页面导入工作流时只允许写入当前产品目录，选择结果保存在浏览器本地设置中。
 
-```sh
+`vite-plugins/runninghub-workflow-adapters.ts` 按节点类型适配：
+
+- 导演台 `MiniMaxH3Director`：时间线、分段提示词和参考媒体。
+- 像素幻想 `MiniMaxH3ReferenceToVideo`：最多 9 张图片、3 条音频、提示词、采样与尺寸。
+- 肥猴 Remix `FeiHouEasyH3RH`：12 个媒体槽、双采样和原音频开关。
+
+云端提交前会把实际工作流写入任务目录的 `*.workflow.json`，用于核对节点、媒体文件名和最终提示词。片段按顺序串行提交，避免连续片段并发造成状态或额度混淆。
+
+## 凭据与文件
+
+密钥只由本机服务从 `RUNNINGHUB_API_KEY` 或当前 Windows 用户的 DPAPI 读取。浏览器、任务记录、日志和 Git 中不得出现明文密钥。任务与实际提交工作流位于 `workspace/runninghub`，成片按任务 ID 分目录归档；该目录默认不提交到 Git。
+
+CLI（需要先运行本地 Director Master 服务）：
+
+```powershell
 npm run director -- run --provider runninghub --spec project.json --steps 8 --megapixels 0.6 --watch
 npm run director -- status --provider runninghub --id <本地任务ID>
 ```
 
-API：GET `/api/local/runninghub/config` 查询配置；POST `/api/local/runninghub/jobs` 提交 `{segments, sequenceNos, settings:{steps,megapixels}}`；GET `/api/local/runninghub/jobs?id=<本地任务ID>` 查询并归档成片。任务状态是真实云端状态；百分比仅表示上传/提交/完成阶段，不代表采样精确进度。刷新页面可恢复最近任务。
+主要 API：
 
-后续排查：显存不足时显示 RunningHub 返回原因，不自动改参数或付费重试；查询暂时失败可重试同一任务，避免重复提交。
+- `GET /api/local/runninghub/config`：工作流目录、模板和本地配置状态。
+- `GET /api/local/runninghub/account`：查询当前账户的 RunningHub 币、钱包余额和运行中任务数。
+- `POST /api/local/runninghub/jobs`：提交 `{productType, workflowPath, workflowId, episode, segments, sequenceNos, settings}`。
+- `GET /api/local/runninghub/jobs?id=<本地任务ID>`：查询并归档成片。
+- `DELETE /api/local/runninghub/jobs?id=<本地任务ID>`：取消当前任务。
+
+任务状态来自云端；百分比只表示上传、提交和完成阶段，不代表采样精确进度。刷新页面可恢复最近任务。显存不足时显示服务端原因，不自动改参数或付费重试；临时查询失败应查询同一任务，不要重新提交。
 
 ## 2026-09-06 验证记录
 

@@ -460,6 +460,67 @@ async function voiceStatus() {
   return job;
 }
 
+async function redubCommand() {
+  const {
+    createJob, extractAudio, separateAudio, transcribe, applyScript, extractRefs,
+    synthesizeLines, mixAndExport, readJob, runPipeline, REDUB_ROOT,
+  } = await import('../lib/redub-pipeline.mjs');
+  const stage = option('stage', 'all');
+  const jobId = option('job');
+  if (stage === 'all') {
+    if (option('consent') !== 'true') throw new Error('redub 必须 --consent true');
+    const job = await runPipeline({
+      videoPath: option('video'),
+      name: option('name', 'redub'),
+      consent: true,
+      scriptPath: option('script') || undefined,
+      skipSeparate: argv.includes('--skip-separate'),
+      burnSubs: option('burn-subs', 'true') !== 'false',
+      stopAfter: option('stop-after') || undefined,
+    });
+    return { status: job.status, id: job.id, root: job.root, exportPath: job.exportPath, stage: job.stage, scriptPath: job.scriptPath };
+  }
+  if (!jobId) throw new Error('分阶段 redub 需要 --job <id|root>');
+  let job = await readJob(jobId);
+  if (stage === 'extract') job = await extractAudio(job);
+  else if (stage === 'separate') job = await separateAudio(job, { skip: argv.includes('--skip-separate') });
+  else if (stage === 'transcribe') job = await transcribe(job);
+  else if (stage === 'script') job = await applyScript(job, option('script'));
+  else if (stage === 'refs') {
+    const speakerRefs = {};
+    const refHua = option('ref-华强') || option('ref-huaqiang');
+    const refBoss = option('ref-老板') || option('ref-boss');
+    if (refHua) speakerRefs['华强'] = path.resolve(refHua);
+    if (refBoss) speakerRefs['老板'] = path.resolve(refBoss);
+    // also accept --ref speaker=path pairs via --speaker-refs json
+    const refsJson = option('speaker-refs');
+    if (refsJson) Object.assign(speakerRefs, JSON.parse(existsSync(path.resolve(refsJson)) ? readFileSync(path.resolve(refsJson), 'utf8') : refsJson));
+    job = await extractRefs(job, { speakerRefs });
+  }
+  else if (stage === 'tts') {
+    const only = option('only-speakers') || option('only-speaker');
+    const onlySpeakers = only ? only.split(/[,，]/).map((s) => s.trim()).filter(Boolean) : null;
+    const force = option('force', 'false') === 'true' || Boolean(onlySpeakers);
+    // reload refs from disk if present
+    if (!job.refs || !Object.keys(job.refs).length) {
+      const refsDir = path.join(job.root, 'refs');
+      const speakerRefs = {};
+      try {
+        const j = JSON.parse(readFileSync(path.join(refsDir, 'speaker-refs.json'), 'utf8'));
+        Object.assign(speakerRefs, j);
+      } catch { /* optional */ }
+      job = await extractRefs(job, { speakerRefs });
+    }
+    job = await synthesizeLines(job, { onlySpeakers, force });
+  }
+  else if (stage === 'mix') job = await mixAndExport(job, { burnSubs: option('burn-subs', 'true') !== 'false' });
+  else if (stage === 'init') {
+    if (option('consent') !== 'true') throw new Error('redub 必须 --consent true');
+    job = await createJob({ videoPath: option('video'), name: option('name', 'redub'), consent: true });
+  } else throw new Error('未知 --stage：' + stage);
+  return { status: job.status, id: job.id, root: job.root, exportPath: job.exportPath, stage: job.stage, scriptPath: job.scriptPath, redubRoot: REDUB_ROOT };
+}
+
 try {
   if (command === 'discover') console.log(JSON.stringify(discover(), null, 2));
   else if (command === 'index') { const root = option('root', process.cwd()); console.log(JSON.stringify({ root, assets: walk(root) }, null, 2)); }
@@ -476,7 +537,8 @@ try {
   else if (command === 'mv-cut') console.log(JSON.stringify(mvCut(), null, 2));
   else if (command === 'voice-generate') console.log(JSON.stringify(await voiceGenerate(),null,2));
   else if (command === 'voice-status') console.log(JSON.stringify(await voiceStatus(),null,2));
-  else console.log('Director Master CLI\n  discover\n  index --root <dir>\n  skill-task --kind screenplay --script <file> [--brief <text>]\n  skill-task --kind shotlist --script <file> --platform "MiniMax H3" --confirmed true [--assets <dir>]\n  prepare --spec <project.json> --out <workflow.json>\n  run --spec <project.json> [--watch]\n  status --id <prompt-id>\n  mv-cut --audio <music.wav> --project <name> --cuts 8.4,21.7 --notes <segments.json> --people <dir> --scenes <dir> [--asset-meta <descriptions.json>]\n  voice-generate --ref <voice.wav> --text <台词> --character <角色> --emotion <情绪描述> --consent true [--watch]\n  voice-generate --ref <voice.wav> --batch <dialogue.json> --consent true [--watch]\n  voice-status --id <job-id>');
+  else if (command === 'redub') console.log(JSON.stringify(await redubCommand(), null, 2));
+  else console.log('Director Master CLI\n  discover\n  index --root <dir>\n  skill-task --kind screenplay --script <file> [--brief <text>]\n  skill-task --kind shotlist --script <file> --platform "MiniMax H3" --confirmed true [--assets <dir>]\n  prepare --spec <project.json> --out <workflow.json>\n  run --spec <project.json> [--watch]\n  status --id <prompt-id>\n  mv-cut --audio <music.wav> --project <name> --cuts 8.4,21.7 --notes <segments.json> --people <dir> --scenes <dir> [--asset-meta <descriptions.json>]\n  voice-generate --ref <voice.wav> --text <台词> --character <角色> --emotion <情绪描述> --consent true [--watch]\n  voice-generate --ref <voice.wav> --batch <dialogue.json> --consent true [--watch]\n  voice-status --id <job-id>\n  redub --video <file> --consent true [--name <id>] [--script <script.json>] [--skip-separate] [--stop-after extract|separate|transcribe|refs|tts]\n  redub --stage init|extract|separate|transcribe|script|refs|tts|mix --job <id> [--script <file>] [--consent true]');
 } catch (error) {
   console.error('[director-master] ' + (error instanceof Error ? error.message : String(error)));
   process.exitCode = 1;
