@@ -24,3 +24,7 @@
 - [x] lint/build/核心逻辑测试
 - [ ] EP02 首采真实生成（旧二采测试已按用户要求中断）
 - [ ] 使用文档和问题排查文档
+
+## 管理方式
+
+- Superpowers 驱动迭代；见 docs/PROJECT_MANAGEMENT.md
