@@ -24,3 +24,10 @@
 - [x] lint/build/核心逻辑测试
 - [ ] EP02 首采真实生成（旧二采测试已按用户要求中断）
 - [ ] 使用文档和问题排查文档
+
+## V0.5 双语字幕（规划）
+
+- [ ] 接入 RunningHub Confucius4-R2T2 语音转录（参考帖 https://www.runninghub.cn/post/2104649076645130241）
+- [ ] 成片 → ASR cues → 双语 SRT/ASS → 可选烧录
+- [ ] 详见 docs/SUBTITLE_BILINGUAL_PLAN.md
+
