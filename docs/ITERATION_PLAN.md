@@ -25,9 +25,14 @@
 - [ ] EP02 首采真实生成（旧二采测试已按用户要求中断）
 - [ ] 使用文档和问题排查文档
 
-## V0.5 双语字幕（规划）
+## V0.5 双语字幕
 
+- [x] V0：cue 归一化 + 双语 SRT/ASS 导出 + 离线 CLI（无 RH 调用）
+- [x] V0：`detectSubtitleWorkflowKind` adapter 骨架（启发式，不提交云端）
 - [ ] 接入 RunningHub Confucius4-R2T2 语音转录（参考帖 https://www.runninghub.cn/post/2104649076645130241）
 - [ ] 成片 → ASR cues → 双语 SRT/ASS → 可选烧录
 - [ ] 详见 docs/SUBTITLE_BILINGUAL_PLAN.md
 
+## 管理方式
+
+- Superpowers 驱动迭代；见 docs/PROJECT_MANAGEMENT.md
