@@ -194,6 +194,13 @@
 .mv-prompt-refbar { display: flex; align-items: center; gap: 7px; padding: 8px 13px; }
 .mv-prompt-refbar span { padding: 4px 6px; background: #121f2c; color: #86cfe4; font: 9px var(--font-geist-mono); }
 .mv-prompt-refbar strong { margin-left: auto; color: #7d8b9f; font-size: 9px; font-weight: 500; }
+.mv-review-status.pending { color: #d6b35c; }
+.mv-review-status.approved { color: #52dca5; }
+.mv-review-status.submitted { color: #61dcff; }
+.mv-review-status.failed { color: #ff7d89; }
+.mv-batch-list label.disabled { opacity: .45; cursor: not-allowed; }
+.mv-batch-list label.disabled input { cursor: not-allowed; }
+
 .mv-shot-type { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin: 0 13px 10px; padding: 9px 10px; border: 1px solid #263b4f; background: linear-gradient(100deg,rgba(19,42,57,.8),rgba(14,22,34,.8)); }
 .mv-shot-type > span { display: grid; gap: 3px; min-width: 0; }
 .mv-shot-type b { color: #b9eafa; font-size: 10px; }

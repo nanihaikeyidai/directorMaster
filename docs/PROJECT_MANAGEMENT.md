@@ -18,3 +18,11 @@
 - `RUNNINGHUB.md`
 - `SUBTITLE_BILINGUAL_PLAN.md`
 - `PRODUCTION_WORKFLOW.md`
+
+## 定稿优先级（2026-10-25）
+
+1. MV（审核状态 + 可恢复任务）
+2. RunningHub 加固
+3. 字幕 V1
+
+详见 `ITERATION_PLAN.md` V0.6。

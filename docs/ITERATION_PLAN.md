@@ -33,6 +33,36 @@
 - [ ] 成片 → ASR cues → 双语 SRT/ASS → 可选烧录
 - [ ] 详见 docs/SUBTITLE_BILINGUAL_PLAN.md
 
+## V0.6 产品迭代路线（2026-10-25 定稿 · MV 优先）
+
+用户确认顺序：**Sprint 1 MV → Sprint 2 RunningHub 加固 → Sprint 3 字幕 V1**。
+
+### Sprint 0 — 文档与基线
+
+- [x] 合入字幕 V0 + Superpowers 文档（PR #3）；关闭重叠的 #1/#2
+- [x] 本路线写入本文件与 `docs/superpowers/plans/`
+
+### Sprint 1 — MV 生产正确性（审核+续跑已落地 · 音画对齐未做）
+
+- [x] 分段审核状态：`pending` / `approved` / `submitted` / `failed`；批量与一键云端默认只提交 `approved`
+- [x] 可恢复任务：段级 `jobId`、错误摘要、取消、失败重试、刷新后断点续跑
+- [ ] （余力）音画对齐检查导出前报告
+- 实现计划：`docs/superpowers/plans/2026-10-25-mv-review-and-resume.md`
+
+### Sprint 2 — RunningHub 加固
+
+- [ ] 非导演多段：禁止静默 `segments[0]`（显式 400 或按段串行）
+- [ ] 可移植密钥/根目录（优先 `RUNNINGHUB_API_KEY`）
+- [ ] 工作流选择可测 + 任务可观测 + `RUNNINGHUB.md` 对齐
+
+### Sprint 3 — 双语字幕 V1
+
+- [ ] RH Confucius4-R2T2 → `normalizeCues`；成片入口；可选 burn；cue 可编辑再导出
+
+### 每晚轮转
+
+阻塞主路径 bug 当夜修；否则按 Sprint 1→2→3 取下一块。结果汇报到本聊天。
+
 ## 管理方式
 
 - Superpowers 驱动迭代；见 docs/PROJECT_MANAGEMENT.md
