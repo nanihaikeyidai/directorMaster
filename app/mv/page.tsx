@@ -24,6 +24,12 @@ import {
   resetReviewsForPromptChange,
   type SegmentReviewStatus,
 } from "../../lib/mv-segment-review.mjs";
+import {
+  indexesNeedingResumePoll,
+  normalizePersistedQueue,
+  restoreActiveGeneration,
+  serializeActiveGeneration,
+} from "../../lib/mv-generation-resume.mjs";
 
 const REVIEW_STATUS_LABEL: Record<SegmentReviewStatus, string> = {
   pending: "待审核",
@@ -622,11 +628,11 @@ export default function MvStudio() {
         segmentStart: Number.isFinite(Number(item.start ?? item.segmentStart)) ? Number(item.start ?? item.segmentStart) : undefined,
         segmentDuration: Number.isFinite(Number(item.duration)) ? Number(item.duration) : undefined,
       }])));
-    setGeneration(Object.fromEntries(savedVideos
+    const doneGeneration = Object.fromEntries(savedVideos
       .filter((item: any) => !item.isFallback && Number.isInteger(Number(item.index)) && item.outputPath)
       .map((item: any) => [Number(item.index) - 1, {
         provider: item.provider === "local" ? "local" : "runninghub",
-        status: "done",
+        status: "done" as const,
         message: item.message || "已保存的分段成片",
         outputPath: String(item.outputPath),
         completedAt: Number.isFinite(Number(item.completedAt)) ? Number(item.completedAt) : undefined,
@@ -637,7 +643,10 @@ export default function MvStudio() {
         height: Number.isFinite(Number(item.height)) ? Number(item.height) : undefined,
         segmentStart: Number.isFinite(Number(item.start)) ? Number(item.start) : undefined,
         segmentDuration: Number.isFinite(Number(item.duration)) ? Number(item.duration) : undefined,
-      }])));
+      }]));
+    const activeGeneration = restoreActiveGeneration(data.generationActive) as Record<number, SegmentGeneration>;
+    const mergedGeneration: Record<number, SegmentGeneration> = { ...activeGeneration, ...doneGeneration };
+    setGeneration(mergedGeneration);
     const restoredHistory: GenerationHistoryEntry[] = Array.isArray(data.generationHistory) && data.generationHistory.length
       ? data.generationHistory.filter((item: any) => Number.isInteger(Number(item.index)) && item.outputPath).map((item: any) => ({
           id: String(item.id || `${data.projectId}-history-${item.index}-${item.completedAt || "legacy"}`),
@@ -686,7 +695,23 @@ export default function MvStudio() {
       ...Object.fromEntries(Object.keys(current).filter((key) => typeof savedSettings[key] === "string").map((key) => [key, savedSettings[key]])),
     }));
     localStorage.setItem("director-mv-last-project", data.projectId);
-    setNotice(`已恢复项目「${data.projectName || data.projectId}」 · ${clock(Number(data.duration))}`);
+    const resumeTargets = indexesNeedingResumePoll(mergedGeneration);
+    for (const target of resumeTargets) {
+      void waitCloud(target.jobId, target.index).catch((error) => {
+        const message = error instanceof Error ? error.message : String(error);
+        setSegmentGeneration(target.index, { provider: "runninghub", status: "error", message, jobId: target.jobId });
+        setSegmentReviews((current) => markFailed(current, [target.index]));
+        setNotice(`SEG ${String(target.index + 1).padStart(2, "0")} 恢复轮询失败：${message}`);
+      });
+    }
+    const restoredQueue = normalizePersistedQueue(data.generationQueue) as GenerationQueueItem[];
+    if (restoredQueue.length) {
+      updateGenerationQueue([...queueRef.current.filter((item) => item.status === "queued" || item.status === "running"), ...restoredQueue]);
+      void drainGenerationQueue();
+    }
+    const resumeHint = resumeTargets.length ? ` · 已恢复 ${resumeTargets.length} 个云端任务轮询` : "";
+    const queueHint = restoredQueue.length ? ` · 已恢复 ${restoredQueue.length} 个排队任务` : "";
+    setNotice(`已恢复项目「${data.projectName || data.projectId}」 · ${clock(Number(data.duration))}${resumeHint}${queueHint}`);
   }
 
   async function saveCurrentProject() {
@@ -714,17 +739,8 @@ export default function MvStudio() {
           settings,
           promptBundle: { prompts: generatedPrompts, signature: generatedFrom },
           segmentReviews,
-          generationQueue: generationQueue
-            .filter((item) => item.status === "queued" || item.status === "running")
-            .map((item) => ({
-              id: item.id,
-              provider: item.provider,
-              indexes: item.indexes,
-              status: item.status,
-              message: item.message,
-              createdAt: item.createdAt,
-              prepared: item.prepared,
-            })),
+          generationQueue: normalizePersistedQueue(generationQueue),
+          generationActive: serializeActiveGeneration(generation),
           segmentVideos: segments.flatMap((segment, index) => {
             const current = generation[index];
             const isCurrent = current?.status === "done" && Boolean(current.outputPath);
