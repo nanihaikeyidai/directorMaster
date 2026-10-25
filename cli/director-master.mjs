@@ -5,6 +5,7 @@ import { readFileSync, writeFileSync, readdirSync, statSync, existsSync, mkdirSy
 import path from 'node:path';
 import { buildStandardBandMvPrompt } from '../lib/mv-prompt.mjs';
 import { normalizeCues, writeBilingualSubtitles } from '../lib/subtitle-cues.mjs';
+import { checkAvAlignment } from '../lib/mv-av-alignment.mjs';
 
 const argv = process.argv.slice(2);
 const command = argv.shift() || 'help';
@@ -527,6 +528,67 @@ function hasRunningHubApiKey() {
   return Boolean(String(process.env.RUNNINGHUB_API_KEY || '').trim());
 }
 
+
+function flag(name) {
+  return argv.includes('--' + name);
+}
+
+function mvAlignCheck() {
+  const manifestPath = option('manifest');
+  if (!manifestPath) throw new Error('mv-align-check 需要 --manifest <segments.json>');
+  const resolved = path.resolve(manifestPath);
+  if (!existsSync(resolved)) throw new Error('manifest 不存在：' + resolved);
+  const payload = JSON.parse(readFileSync(resolved, 'utf8'));
+  const rawSegments = Array.isArray(payload)
+    ? payload
+    : Array.isArray(payload.segments)
+      ? payload.segments
+      : null;
+  if (!rawSegments) throw new Error('manifest 须为 segments 数组，或含 segments 字段的对象');
+
+  const toleranceRaw = option('tolerance', '');
+  const durationToleranceSec = toleranceRaw === '' ? undefined : Number(toleranceRaw);
+  if (toleranceRaw !== '' && (!Number.isFinite(durationToleranceSec) || durationToleranceSec < 0)) {
+    throw new Error('--tolerance 必须是非负数字（秒）');
+  }
+
+  // --require-audio default on; --require-audio false / --no-require-audio to disable
+  let requireAudio = true;
+  if (flag('no-require-audio') || option('require-audio', 'true') === 'false') requireAudio = false;
+  if (flag('require-audio') && option('require-audio', '') === '') requireAudio = true;
+  const requireVideo = flag('require-video') || option('require-video', 'false') === 'true';
+
+  const segments = rawSegments.map((seg, i) => {
+    const expectedDuration = Number(
+      seg.expectedDuration ?? seg.duration ?? NaN,
+    );
+    const audioRaw = seg.audioDuration ?? seg.exportedDuration;
+    const videoRaw = seg.videoDuration;
+    const out = {
+      index: seg.index != null ? Number(seg.index) : i + 1,
+      expectedDuration,
+    };
+    if (audioRaw !== undefined && audioRaw !== null) out.audioDuration = Number(audioRaw);
+    if (videoRaw !== undefined && videoRaw !== null) out.videoDuration = Number(videoRaw);
+    return out;
+  });
+
+  const options = { requireAudio, requireVideo };
+  if (durationToleranceSec !== undefined) options.durationToleranceSec = durationToleranceSec;
+
+  const leadSilenceSec = payload.leadSilenceSec ?? payload.leadSilence;
+  const measuredLeadSilenceSec =
+    payload.measuredLeadSilenceSec ?? payload.measuredLeadSilence;
+  if (leadSilenceSec !== undefined && leadSilenceSec !== null) {
+    options.leadSilenceSec = Number(leadSilenceSec);
+  }
+  if (measuredLeadSilenceSec !== undefined && measuredLeadSilenceSec !== null) {
+    options.measuredLeadSilenceSec = Number(measuredLeadSilenceSec);
+  }
+
+  return checkAvAlignment(segments, options);
+}
+
 function subtitleCommand() {
   const cuesPath = option('cues');
   const outDir = option('out');
@@ -584,7 +646,12 @@ try {
   else if (command === 'voice-status') console.log(JSON.stringify(await voiceStatus(),null,2));
   else if (command === 'redub') console.log(JSON.stringify(await redubCommand(), null, 2));
   else if (command === 'subtitle') console.log(JSON.stringify(subtitleCommand(), null, 2));
-  else console.log('Director Master CLI\n  discover\n  index --root <dir>\n  skill-task --kind screenplay --script <file> [--brief <text>]\n  skill-task --kind shotlist --script <file> --platform "MiniMax H3" --confirmed true [--assets <dir>]\n  prepare --spec <project.json> --out <workflow.json>\n  run --spec <project.json> [--watch]\n  status --id <prompt-id>\n  mv-cut --audio <music.wav> --project <name> --cuts 8.4,21.7 --notes <segments.json> --people <dir> --scenes <dir> [--asset-meta <descriptions.json>]\n  voice-generate --ref <voice.wav> --text <台词> --character <角色> --emotion <情绪描述> --consent true [--watch]\n  voice-generate --ref <voice.wav> --batch <dialogue.json> --consent true [--watch]\n  voice-status --id <job-id>\n  redub --video <file> --consent true [--name <id>] [--script <script.json>] [--skip-separate] [--stop-after extract|separate|transcribe|refs|tts]\n  redub --stage init|extract|separate|transcribe|script|refs|tts|mix --job <id> [--script <file>] [--consent true]\n  subtitle --cues <cues.json> --out <dir> [--langs zh,en] [--basename subtitles]\n  subtitle --video <file>   # V0: 无 cues 且无 RUNNINGHUB_API_KEY 时明确报错，不调用云端');
+  else if (command === 'mv-align-check') {
+    const report = mvAlignCheck();
+    console.log(JSON.stringify(report, null, 2));
+    if (!report.ok) process.exitCode = 1;
+  }
+  else console.log('Director Master CLI\n  discover\n  index --root <dir>\n  skill-task --kind screenplay --script <file> [--brief <text>]\n  skill-task --kind shotlist --script <file> --platform "MiniMax H3" --confirmed true [--assets <dir>]\n  prepare --spec <project.json> --out <workflow.json>\n  run --spec <project.json> [--watch]\n  status --id <prompt-id>\n  mv-cut --audio <music.wav> --project <name> --cuts 8.4,21.7 --notes <segments.json> --people <dir> --scenes <dir> [--asset-meta <descriptions.json>]\n  voice-generate --ref <voice.wav> --text <台词> --character <角色> --emotion <情绪描述> --consent true [--watch]\n  voice-generate --ref <voice.wav> --batch <dialogue.json> --consent true [--watch]\n  voice-status --id <job-id>\n  redub --video <file> --consent true [--name <id>] [--script <script.json>] [--skip-separate] [--stop-after extract|separate|transcribe|refs|tts]\n  redub --stage init|extract|separate|transcribe|script|refs|tts|mix --job <id> [--script <file>] [--consent true]\n  subtitle --cues <cues.json> --out <dir> [--langs zh,en] [--basename subtitles]\n  subtitle --video <file>   # V0: 无 cues 且无 RUNNINGHUB_API_KEY 时明确报错，不调用云端\n  mv-align-check --manifest <segments.json> [--tolerance 0.08] [--require-video] [--require-audio|--no-require-audio]');
 } catch (error) {
   console.error('[director-master] ' + (error instanceof Error ? error.message : String(error)));
   process.exitCode = 1;
