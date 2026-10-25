@@ -1,5 +1,34 @@
 # Iteration Notes
 
+## 2026-10-26 会话 — Sprint 1 余项：MV 音画对齐检查（P0-4）
+
+### Module chosen
+**MV 音画对齐检查**（Sprint 1 剩余 P0-4）：导出/合成前纯函数报告，默认容差 80ms。
+
+### Landed
+- `lib/mv-av-alignment.mjs` (+ `.d.ts`)：`checkAvAlignment` / `formatAlignmentReport`
+  - codes：AUDIO/VIDEO_DURATION_MISMATCH、AV_MISMATCH、TAIL_TRUNCATION、LEAD_SILENCE_MISMATCH、MISSING_AUDIO/VIDEO、INVALID_DURATION
+  - 每条 issue 含中文 `message` + `suggestion`；`ok === false` 仅当存在 `severity: error`
+- CLI：`mv-align-check --manifest <json> [--tolerance 0.08] [--require-video] [--require-audio|--no-require-audio]`
+  - 字段别名：`duration`/`expectedDuration`、`exportedDuration`/`audioDuration`、顶层 lead silence
+  - stdout JSON；`!ok` → `process.exitCode = 1`
+- 示例：`examples/mv-align-fixture.json`（ok）、`examples/mv-align-fixture-bad.json`（多错误）
+- 测试：`scripts/test-mv-av-alignment.mjs` 已接入 `npm test`
+
+### Verification
+- `npm test` → 既有套件 + mv-av-alignment 全绿
+- CLI ok fixture → exit 0 / `ok:true`；bad fixture → exit 1 + issues
+- 无 RH/网络/密钥；未合 main
+
+### Remaining / next
+- UI 导出前硬门禁（可选 soft report）未做
+- P0-5 最终合成校验（顺序/空洞/重复）仍未做
+- Sprint 2：RunningHub 多段显式化 / 可移植密钥 / 可观测
+
+### Paths
+- Design: `docs/superpowers/specs/2026-10-26-mv-av-alignment-design.md`
+- Plan: `docs/superpowers/plans/2026-10-26-mv-av-alignment.md`
+
 ## 2026-10-25 会话 — Sprint 1 MV 审核状态 + 可恢复任务
 
 ### Module chosen
@@ -28,7 +57,7 @@
 5. 人为失败段出现「重试」→ 可再次入队
 
 ### Remaining / next
-- 音画对齐检查（Sprint 1 余力，未做）
+- 音画对齐检查（Sprint 1 余力）→ 已在 2026-10-26 落地 lib+CLI
 - Sprint 2：RunningHub 多段显式化 / 可移植密钥 / 可观测
 - 实机 RH 续跑未在本环境验证（无本机 Comfy/RH）
 
