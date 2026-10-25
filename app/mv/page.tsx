@@ -14,6 +14,23 @@ import {
   buildStandardBandMvPrompt,
   defaultBandMvActions,
 } from "../../lib/mv-prompt.mjs";
+import {
+  approvedIndexes,
+  approveSegment,
+  createInitialReviews,
+  filterSelectableForBatch,
+  markFailed,
+  markSubmitted,
+  resetReviewsForPromptChange,
+  type SegmentReviewStatus,
+} from "../../lib/mv-segment-review.mjs";
+
+const REVIEW_STATUS_LABEL: Record<SegmentReviewStatus, string> = {
+  pending: "待审核",
+  approved: "已审核",
+  submitted: "已提交",
+  failed: "失败",
+};
 
 type Asset = {
   id: string;
@@ -308,6 +325,7 @@ export default function MvStudio() {
   const segmentCardRefs = useRef<Record<number, HTMLElement | null>>({});
   const [highlightedSegmentIndex, setHighlightedSegmentIndex] = useState<number | null>(null);
   const [generationQueue, setGenerationQueue] = useState<GenerationQueueItem[]>([]);
+  const [segmentReviews, setSegmentReviews] = useState<SegmentReviewStatus[]>([]);
   const [batchProvider, setBatchProvider] = useState<GenerationProvider | null>(null);
   const [batchSelection, setBatchSelection] = useState<number[]>([]);
   const [workflowConfigOpen, setWorkflowConfigOpen] = useState(false);
@@ -541,6 +559,17 @@ export default function MvStudio() {
     })) : []);
     setGeneratedPrompts(Array.isArray(data.promptBundle?.prompts) ? data.promptBundle.prompts : []);
     setGeneratedFrom(String(data.promptBundle?.signature || ""));
+    {
+      const savedReviews = Array.isArray(data.segmentReviews) ? data.segmentReviews : [];
+      const restoredCount = Array.isArray(data.segments) ? data.segments.length : savedReviews.length;
+      const normalized: SegmentReviewStatus[] = createInitialReviews(restoredCount).map((_, index) => {
+        const value = savedReviews[index];
+        return value === "approved" || value === "submitted" || value === "failed" || value === "pending"
+          ? value
+          : "pending";
+      });
+      setSegmentReviews(normalized);
+    }
     const savedVideos: any[] = Array.isArray(data.segmentVideos) ? [...data.segmentVideos] : [];
     const restoredEnd = Math.min(Number(data.duration), Number(data.trimEnd || data.duration));
     const restoredCuts = uniqueCuts(data.cuts || [], Number(data.duration)).filter((cut: number) => cut > restoredTrimStart && cut < restoredEnd);
@@ -684,6 +713,18 @@ export default function MvStudio() {
           trimEnd: trimRange.end || project.duration,
           settings,
           promptBundle: { prompts: generatedPrompts, signature: generatedFrom },
+          segmentReviews,
+          generationQueue: generationQueue
+            .filter((item) => item.status === "queued" || item.status === "running")
+            .map((item) => ({
+              id: item.id,
+              provider: item.provider,
+              indexes: item.indexes,
+              status: item.status,
+              message: item.message,
+              createdAt: item.createdAt,
+              prepared: item.prepared,
+            })),
           segmentVideos: segments.flatMap((segment, index) => {
             const current = generation[index];
             const isCurrent = current?.status === "done" && Boolean(current.outputPath);
@@ -772,12 +813,27 @@ export default function MvStudio() {
   }, []);
 
   useEffect(() => {
+    setSegmentReviews((current) => {
+      if (current.length === segments.length) return current;
+      return resetReviewsForPromptChange(current, segments.length);
+    });
+  }, [segments.length]);
+
+  useEffect(() => {
+    if (promptsReady) return;
+    setSegmentReviews((current) => {
+      if (!current.length || current.every((status) => status === "pending")) return current;
+      return resetReviewsForPromptChange(current, segments.length);
+    });
+  }, [promptsReady, segments.length]);
+
+  useEffect(() => {
     if (!project) return;
     const timer = window.setTimeout(() => {
       void saveCurrentProject().catch(() => undefined);
     }, 500);
     return () => window.clearTimeout(timer);
-  }, [project, cuts, notes, settings, visualAssets, generatedPrompts, generatedFrom, trimRange, generation, generationHistory]);
+  }, [project, cuts, notes, settings, visualAssets, generatedPrompts, generatedFrom, trimRange, generation, generationHistory, segmentReviews, generationQueue]);
 
   useEffect(() => {
     saveProjectRef.current = saveCurrentProject;
@@ -1326,8 +1382,9 @@ export default function MvStudio() {
     setNotes(nextNotes);
     setGeneratedPrompts(prompts);
     setGeneratedFrom(signatureFor(nextNotes));
+    setSegmentReviews(resetReviewsForPromptChange([], prompts.length));
     setResult(null);
-      setNotice(`已按标准乐队 MV 模板生成 ${prompts.length} 段提示词，请逐段审核`);
+    setNotice(`已按标准乐队 MV 模板生成 ${prompts.length} 段提示词，请逐段审核后点「通过审核」`);
   }
 
   async function exportSegments() {
@@ -1536,7 +1593,12 @@ export default function MvStudio() {
         const nextPrompt = buildStandardBandMvPrompt({ projectName: project.projectName, segment: segments[index], note: nextNotes[index], assets: visualAssets, settings, leadSilenceSec: Number(project.leadSilenceSec || 0) });
         setGeneratedPrompts((current) => current.map((prompt, promptIndex) => promptIndex === index ? nextPrompt : prompt));
         setGeneratedFrom(signatureFor(nextNotes));
-        setNotice(`SEG ${String(index + 1).padStart(2, "0")} 已切换为「${shotTypeLabel(shotType)}」，提示词已同步更新`);
+        setSegmentReviews((current) => {
+          const next = current.length === segments.length ? [...current] : createInitialReviews(segments.length);
+          next[index] = "pending";
+          return next;
+        });
+        setNotice(`SEG ${String(index + 1).padStart(2, "0")} 已切换为「${shotTypeLabel(shotType)}」，提示词已同步更新，需重新审核`);
       } catch (error) {
         setGeneratedFrom("");
         setNotice(error instanceof Error ? error.message : String(error));
@@ -1560,13 +1622,18 @@ export default function MvStudio() {
         const nextPrompt = buildStandardBandMvPrompt({ projectName: project.projectName, segment, note: nextNotes[index], assets: visualAssets, settings, leadSilenceSec: Number(project.leadSilenceSec || 0) });
         setGeneratedPrompts((current) => current.map((prompt, promptIndex) => promptIndex === index ? nextPrompt : prompt));
         setGeneratedFrom(signatureFor(nextNotes));
+        setSegmentReviews((current) => {
+          const next = current.length === segments.length ? [...current] : createInitialReviews(segments.length);
+          next[index] = "pending";
+          return next;
+        });
       } catch (error) {
         setGeneratedFrom("");
         setNotice(error instanceof Error ? error.message : String(error));
         return;
       }
     }
-    if (announce) setNotice(`SEG ${String(index + 1).padStart(2, "0")} 镜头动作已更新；每个动作时长合计为 ${segment.duration.toFixed(2)} 秒`);
+    if (announce) setNotice(`SEG ${String(index + 1).padStart(2, "0")} 镜头动作已更新；每个动作时长合计为 ${segment.duration.toFixed(2)} 秒；提示词变更后需重新审核`);
   }
 
   function changeActionType(index: number, actionIndex: number, type: string) {
@@ -1885,9 +1952,9 @@ export default function MvStudio() {
       const autoPrompts = autoSegments.map((segment, index) => buildStandardBandMvPrompt({ projectName: project.projectName, segment, note: autoNotes[index], assets: visualAssets, settings, leadSilenceSec: Number(project.leadSilenceSec || 0) }));
       const signature = JSON.stringify({ templateVersion: BAND_MV_PROMPT_TEMPLATE_VERSION, cuts: autoCuts, duration: project.duration, notes: autoNotes, visualAssets: visualAssets.map(({ id, category, description }) => ({ id, category, description })), settings, leadSilenceSec, trimRange });
       setCuts(autoCuts); setNotes(autoNotes); setGeneratedPrompts(autoPrompts); setGeneratedFrom(signature);
-      setNotice(`已自动切成 ${autoSegments.length} 段，正在加入云端生成队列…`);
+      setSegmentReviews(resetReviewsForPromptChange([], autoSegments.length));
       setBusy("");
-      enqueueGeneration("runninghub", autoSegments.map((_, index) => index), { cuts: autoCuts, notes: autoNotes, prompts: autoPrompts });
+      setNotice(`已自动切成 ${autoSegments.length} 段并生成提示词；请逐段「通过审核」后再点云端批量生成`);
     } catch (error) {
       setBusy("");
       setNotice(error instanceof Error ? error.message : String(error));
@@ -1895,8 +1962,30 @@ export default function MvStudio() {
   }
 
   function openBatch(provider: GenerationProvider) {
-    setBatchSelection(segments.map((_, index) => index));
+    setBatchSelection(approvedIndexes(segmentReviews));
     setBatchProvider(provider);
+  }
+
+  function approveSegmentAt(index: number) {
+    const hasValidPrompt = promptsReady && Boolean(generatedPrompts[index]?.trim());
+    setSegmentReviews((current) => approveSegment(current, index, hasValidPrompt));
+    if (!hasValidPrompt) {
+      setNotice(`SEG ${String(index + 1).padStart(2, "0")} 尚无有效提示词，无法通过审核`);
+      return;
+    }
+    setNotice(`SEG ${String(index + 1).padStart(2, "0")} 已通过审核`);
+  }
+
+  function retryFailedSegment(index: number, provider: GenerationProvider = "runninghub") {
+    setSegmentReviews((current) => {
+      const next = [...current];
+      if (index >= 0 && index < next.length) next[index] = "approved";
+      return next;
+    });
+    // enqueue after state flush via microtask with bypass so we don't race
+    queueMicrotask(() => {
+      enqueueGeneration(provider, [index], undefined, { bypassReview: true });
+    });
   }
 
   function updateGenerationQueue(next: GenerationQueueItem[]) {
@@ -1908,8 +1997,18 @@ export default function MvStudio() {
     provider: GenerationProvider,
     indexes: number[],
     prepared = { cuts: [...cuts], notes: notes.map((note) => ({ ...note })), prompts: [...generatedPrompts] },
+    options: { bypassReview?: boolean } = {},
   ) {
     if (!indexes.length) return;
+    const { allowed, rejected } = options.bypassReview
+      ? { allowed: [...indexes], rejected: [] as number[] }
+      : filterSelectableForBatch(segmentReviews, indexes);
+    if (!allowed.length) {
+      setNotice(rejected.length
+        ? "所选片段均未通过审核，请先逐段点「通过审核」"
+        : "没有可提交的已审核片段");
+      return;
+    }
     if (provider === "runninghub" && !cloudWorkflowId.trim()) {
       setNotice("请先在“工作流配置”中填写 RunningHub 工作流 ID");
       setWorkflowConfigOpen(true);
@@ -1919,19 +2018,21 @@ export default function MvStudio() {
     const item: GenerationQueueItem = {
       id: crypto.randomUUID(),
       provider,
-      indexes: [...indexes].sort((a, b) => a - b),
+      indexes: [...allowed].sort((a, b) => a - b),
       status: "queued",
       message: "等待执行",
       createdAt: Date.now(),
       prepared,
     };
     updateGenerationQueue([...queueRef.current, item]);
+    setSegmentReviews((current) => markSubmitted(current, item.indexes));
     item.indexes.forEach((index) => setSegmentGeneration(index, {
       provider,
       status: "queued",
       message: `队列等待 · ${item.id.slice(0, 6)}`,
     }));
-    setNotice(`${provider === "local" ? "本地" : "云端"}任务已加入队列 · ${item.indexes.map((index) => `SEG${String(index + 1).padStart(2, "0")}`).join("、")}`);
+    const skipped = rejected.length ? `（已跳过 ${rejected.length} 个未审核段）` : "";
+    setNotice(`${provider === "local" ? "本地" : "云端"}任务已加入队列 · ${item.indexes.map((index) => `SEG${String(index + 1).padStart(2, "0")}`).join("、")}${skipped}`);
     void drainGenerationQueue();
   }
 
@@ -1969,7 +2070,10 @@ export default function MvStudio() {
             status: cancelled ? "cancelled" : "error",
             message,
           }));
-          if (!cancelled) setNotice(message);
+          if (!cancelled) {
+            setSegmentReviews((current) => markFailed(current, item.indexes));
+            setNotice(message);
+          }
         } finally {
           activeQueueItemRef.current = null;
           activeComfyRef.current = null;
@@ -2204,7 +2308,7 @@ export default function MvStudio() {
                 <div className="mv-prompt-toolbar"><p>标准模板 {BAND_MV_PROMPT_TEMPLATE_VERSION} · 每段可组合多个镜头动作并分别设定时长，系统按人物素材角色自动绑定 Picture / Subject 编号。检查动作顺序、角色和总时长。</p><div><button className="segment-fold-all" aria-pressed={allSegmentsCollapsed} onClick={() => setCollapsedSegments(allSegmentsCollapsed ? {} : Object.fromEntries(segments.map((_, index) => [index, true])))}>{allSegmentsCollapsed ? "全部展开" : "全部折叠"}</button><button className="local" disabled={!promptsReady} onClick={() => openBatch("local")}>本地批量生成</button><button className="cloud" disabled={!promptsReady} onClick={() => openBatch("runninghub")}>云端批量生成</button><button className="cloud" disabled={Boolean(busy) || Boolean(missingVisualKinds.length)} onClick={() => void generateFullMv()}>一键云端出完整 MV</button><button className="merge" disabled={Boolean(busy) || generationBusy || !mergeVideosReady} title={mergeVideosReady ? "按 SEG 顺序合并全部成片并恢复原始音轨" : "请先生成全部 SEG 视频"} onClick={() => void mergeGeneratedVideos()}>合并视频</button><button disabled={Boolean(invalidSegments.length) || Boolean(missingVisualKinds.length)} onClick={generatePrompts}>{promptsReady ? "按标准模板重新生成" : "生成标准提示词"}</button></div></div>
                 <div className="mv-prompt-list">{segments.map((segment, index) => { const isCollapsed = Boolean(collapsedSegments[index]); const currentVideo = generation[index]?.status === "done" && generation[index]?.outputPath ? generation[index] : undefined; const previewVideo = currentVideo || fallbackVideos[index]; const outputPath = previewVideo?.outputPath; const isFallbackVideo = !currentVideo && Boolean(fallbackVideos[index]); const previewUrl = outputPath ? videoPreviewUrl(outputPath, previewVideo?.completedAt || 0) : ""; return <article key={`${segment.start}-${segment.end}`} ref={(element) => { segmentCardRefs.current[index] = element; }} className={`${segment.duration > MAX_SEGMENT || segment.duration < MIN_SEGMENT ? "invalid" : ""}${highlightedSegmentIndex === index ? " generation-highlight" : ""}${isCollapsed ? " segment-collapsed" : ""}`} onDoubleClick={(event) => { if ((event.target as HTMLElement).closest("button,input,textarea,select,a,video,label")) return; setCollapsedSegments((current) => ({ ...current, [index]: false })); }}>
                   <header><div><span>SEG {String(segment.index).padStart(2, "0")}</span><b>{clock(segment.start)} → {clock(segment.end)}</b><i>{segment.duration.toFixed(3)} 秒</i></div><div><button onClick={() => { if (!audioRef.current) return; audioRef.current.currentTime = segment.start; void audioRef.current.play(); window.setTimeout(() => audioRef.current?.pause(), segment.duration * 1000); }}>试听本段</button>{outputPath && <button onClick={() => window.open(previewUrl, "_blank", "noopener,noreferrer")}>预览视频</button>}{!isCollapsed && <button disabled={!generatedPrompts[index]} onClick={() => void navigator.clipboard.writeText(generatedPrompts[index] || "")}>复制提示词</button>}<button className="segment-fold-toggle" aria-expanded={!isCollapsed} onClick={() => setCollapsedSegments((current) => ({ ...current, [index]: !current[index] }))}>{isCollapsed ? "展开编辑" : "折叠"}</button></div></header>
-                  <div className="mv-prompt-refbar"><span>{visualAssets.filter((asset) => asset.category === "人物").length} 人物</span><span>{visualAssets.filter((asset) => asset.category === "场景").length} 场景</span><span>&lt;Audio 1&gt;</span><strong>{generatedPrompts[index] ? promptsReady ? "已生成 · 可审核" : "素材或切点已变化 · 需重新生成" : "等待生成"}</strong></div>
+                  <div className="mv-prompt-refbar"><span>{visualAssets.filter((asset) => asset.category === "人物").length} 人物</span><span>{visualAssets.filter((asset) => asset.category === "场景").length} 场景</span><span>&lt;Audio 1&gt;</span><strong className={`mv-review-status ${segmentReviews[index] || "pending"}`}>{generatedPrompts[index] ? promptsReady ? REVIEW_STATUS_LABEL[segmentReviews[index] || "pending"] : "素材或切点已变化 · 需重新生成" : "等待生成"}</strong></div>
                   {!isCollapsed && <>
                   <label className="mv-shot-type"><span><b>本段镜头动作编排</b><small>可组合多个动作；主唱提供 5 种角度，吉他手、鼓手、贝斯手均有全身和手部特写。动作时长合计自动贴合片段时长。</small></span><select aria-label={`SEG ${segment.index} 镜头动作模板`} value={(notes[index] || emptyNote()).shotType} onChange={(event) => changeSegmentShotType(index, event.target.value as SegmentNote["shotType"])}><option value="auto">自动编排 · 全景 / 主唱 / 乐手</option><option value="lead">主唱角度组 · 多角度演唱特写</option><option value="guitar">吉他手组 · 全身演奏 + 手部指法</option><option value="drums">鼓手组 · 全身演奏 + 鼓槌手部</option><option value="bass">贝斯手组 · 全身演奏 + 手部指法</option><option value="audience">观众反应组 · 观众 / 舞台</option><option value="wide">乐队全景组 · 全景 / 主唱</option></select></label>
                   <div className="mv-action-editor">
@@ -2242,10 +2346,10 @@ export default function MvStudio() {
                       </div>
                     ))}
                   </div>
-                  {generatedPrompts[index] ? <textarea aria-label={`SEG ${segment.index} 最终提示词`} value={generatedPrompts[index]} onChange={(event) => setGeneratedPrompts((old) => old.map((prompt, promptIndex) => promptIndex === index ? event.target.value : prompt))} /> : <div className="mv-prompt-empty"><b>尚未生成提示词</b><span>完成切点并上传人物、场景素材后，点击上方“生成提示词”。</span></div>}
+                  {generatedPrompts[index] ? <textarea aria-label={`SEG ${segment.index} 最终提示词`} value={generatedPrompts[index]} onChange={(event) => { const value = event.target.value; setGeneratedPrompts((old) => old.map((prompt, promptIndex) => promptIndex === index ? value : prompt)); setSegmentReviews((current) => { const next = current.length === segments.length ? [...current] : createInitialReviews(segments.length); if (next[index] === "approved" || next[index] === "submitted") next[index] = "pending"; return next; }); }} /> : <div className="mv-prompt-empty"><b>尚未生成提示词</b><span>完成切点并上传人物、场景素材后，点击上方“生成提示词”。</span></div>}
                   {outputPath && <><div className="mv-video-generated-at"><b>SEG {String(segment.index).padStart(2, "0")}</b><span>{isFallbackVideo ? "旧视频回退预览" : "本段最近生成"}</span><time>{generationDate(previewVideo?.completedAt)}</time></div><video className="mv-segment-video" controls preload="none" src={previewUrl} /></>}
                   </>}
-                  <footer className="mv-segment-generate"><div>{generation[index] ? <><b className={generation[index].status}>{generation[index].message}</b>{outputPath && <a href={videoPreviewUrl(outputPath, previewVideo?.completedAt || 0)} target="_blank">打开成片</a>}{isFallbackVideo && <small>正在使用旧视频；新片段生成完成后会自动替换</small>}</> : fallbackVideos[index] ? <><b className="done">旧视频回退 · 最近一次成片</b><a href={videoPreviewUrl(outputPath || "", previewVideo?.completedAt || 0)} target="_blank">打开成片</a><small>新片段生成完成后会自动替换</small></> : <span>提示词确认后，可单独生成本段视频</span>}</div><div><button disabled={!promptsReady} onClick={() => enqueueGeneration("local", [index])}>本地生成</button><button className="cloud" disabled={!promptsReady} onClick={() => enqueueGeneration("runninghub", [index])}>云端生成</button></div></footer>
+                  <footer className="mv-segment-generate"><div>{generation[index] ? <><b className={generation[index].status}>{generation[index].message}</b>{outputPath && <a href={videoPreviewUrl(outputPath, previewVideo?.completedAt || 0)} target="_blank">打开成片</a>}{isFallbackVideo && <small>正在使用旧视频；新片段生成完成后会自动替换</small>}</> : fallbackVideos[index] ? <><b className="done">旧视频回退 · 最近一次成片</b><a href={videoPreviewUrl(outputPath || "", previewVideo?.completedAt || 0)} target="_blank">打开成片</a><small>新片段生成完成后会自动替换</small></> : <span>提示词确认并通过审核后，可单独生成本段视频</span>}</div><div><button disabled={!promptsReady || !generatedPrompts[index] || segmentReviews[index] === "approved" || segmentReviews[index] === "submitted"} onClick={() => approveSegmentAt(index)}>通过审核</button>{segmentReviews[index] === "failed" && <button className="cloud" onClick={() => retryFailedSegment(index, generation[index]?.provider || "runninghub")}>重试</button>}<button disabled={!promptsReady || segmentReviews[index] !== "approved"} onClick={() => enqueueGeneration("local", [index])}>本地生成</button><button className="cloud" disabled={!promptsReady || segmentReviews[index] !== "approved"} onClick={() => enqueueGeneration("runninghub", [index])}>云端生成</button></div></footer>
                 </article>})}</div>
               </section>
 
@@ -2296,8 +2400,8 @@ export default function MvStudio() {
       {batchProvider && <div className="mv-batch-backdrop" onPointerDown={() => setBatchProvider(null)}>
         <section className="mv-batch-modal" onPointerDown={(event) => event.stopPropagation()}>
           <header><div><small>{batchProvider === "local" ? "LOCAL DIRECTOR BATCH" : "RUNNINGHUB SERIAL BATCH"}</small><h2>{batchProvider === "local" ? "本地连续片段生成" : "云端串行生成"}</h2><p>{batchProvider === "local" ? "选中的连续片段会编译进同一个导演台工作流，并开启段间引导。" : "所选片段将逐个上传、生成和下载；前一段结束后才提交下一段。"}</p></div><button onClick={() => setBatchProvider(null)}>×</button></header>
-          <div className="mv-batch-tools"><button onClick={() => setBatchSelection(segments.map((_, index) => index))}>全选</button><button onClick={() => setBatchSelection([])}>清空</button><span>已选择 {batchSelection.length}/{segments.length} 段</span></div>
-          <div className="mv-batch-list">{segments.map((segment, index) => <label key={segment.index} className={batchSelection.includes(index) ? "selected" : ""}><input type="checkbox" checked={batchSelection.includes(index)} onChange={() => setBatchSelection((current) => current.includes(index) ? current.filter((item) => item !== index) : [...current, index])} /><b>SEG {String(segment.index).padStart(2, "0")}</b><span>{clock(segment.start)}–{clock(segment.end)}</span><i>{segment.duration.toFixed(3)} 秒</i></label>)}</div>
+          <div className="mv-batch-tools"><button onClick={() => setBatchSelection(approvedIndexes(segmentReviews))}>全选已审核</button><button onClick={() => setBatchSelection([])}>清空</button><span>已选择 {batchSelection.length}/{approvedIndexes(segmentReviews).length} 已审核段</span></div>
+          <div className="mv-batch-list">{segments.map((segment, index) => { const canSelect = segmentReviews[index] === "approved"; return <label key={segment.index} className={`${batchSelection.includes(index) ? "selected" : ""}${!canSelect ? " disabled" : ""}`}><input type="checkbox" disabled={!canSelect} checked={batchSelection.includes(index)} onChange={() => { if (!canSelect) return; setBatchSelection((current) => current.includes(index) ? current.filter((item) => item !== index) : [...current, index]); }} /><b>SEG {String(segment.index).padStart(2, "0")}</b><span>{clock(segment.start)}–{clock(segment.end)}</span><i>{canSelect ? `${segment.duration.toFixed(3)} 秒` : REVIEW_STATUS_LABEL[segmentReviews[index] || "pending"]}</i></label>; })}</div>
           <footer><div><small>执行方式</small><b>{batchProvider === "local" ? "MiniMax H3 导演台 · 4 步 · 0.6 MP" : "RunningHub · 8 步 · 0.6 MP"}</b></div><button disabled={!batchSelection.length} onClick={runBatch}>生成所选 {batchSelection.length} 段</button></footer>
         </section>
       </div>}
