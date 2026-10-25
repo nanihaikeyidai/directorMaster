@@ -39,15 +39,15 @@
   - `export function approvedIndexes(reviews: SegmentReviewStatus[]): number[]`
   - `export function filterSelectableForBatch(reviews: SegmentReviewStatus[], selected: number[]): { allowed: number[]; rejected: number[] }`
 
-- [ ] **Step 1: Write the failing test** in `scripts/test-mv-segment-review.mjs` covering: initial all pending; approve only with valid prompt; reset on prompt change; approvedIndexes; filterSelectableForBatch rejects non-approved; markSubmitted/markFailed.
+- [x] **Step 1: Write the failing test** in `scripts/test-mv-segment-review.mjs` covering: initial all pending; approve only with valid prompt; reset on prompt change; approvedIndexes; filterSelectableForBatch rejects non-approved; markSubmitted/markFailed.
 
-- [ ] **Step 2: Run** `node scripts/test-mv-segment-review.mjs` — expect FAIL (module missing).
+- [x] **Step 2: Run** `node scripts/test-mv-segment-review.mjs` — expect FAIL (module missing).
 
-- [ ] **Step 3: Implement** `lib/mv-segment-review.mjs` + `.d.ts` minimally.
+- [x] **Step 3: Implement** `lib/mv-segment-review.mjs` + `.d.ts` minimally.
 
-- [ ] **Step 4: Run test** — expect PASS. Wire into `package.json` `"test"` script.
+- [x] **Step 4: Run test** — expect PASS. Wire into `package.json` `"test"` script.
 
-- [ ] **Step 5: Commit** `feat(mv): add segment review state helpers`
+- [x] **Step 5: Commit** `feat(mv): add segment review state helpers`
 
 ---
 
@@ -68,13 +68,13 @@
 - `generateFullMv`: after auto prompts, **do not** call `enqueueGeneration`; setNotice asking user to审核并点云端批量; leave reviews pending
 - Persist `segmentReviews` inside existing project save/load payload (same place `promptBundle` / generation is saved — find `saveCurrentProject` / load and extend)
 
-- [ ] **Step 1: Add failing behavioral unit where possible**; for UI, rely on review helper tests + manual checklist in ITERATION_NOTES.
+- [x] **Step 1: Add failing behavioral unit where possible**; for UI, rely on review helper tests + manual checklist in ITERATION_NOTES.
 
-- [ ] **Step 2: Implement state, persistence, gates, labels, approve button.**
+- [x] **Step 2: Implement state, persistence, gates, labels, approve button.**
 
-- [ ] **Step 3: Smoke** — `npm test`; ensure page still typechecks if project has a check script.
+- [x] **Step 3: Smoke** — `npm test`; ensure page still typechecks if project has a check script.
 
-- [ ] **Step 4: Commit** `feat(mv): gate generation on per-segment review approval`
+- [x] **Step 4: Commit** `feat(mv): gate generation on per-segment review approval`
 
 ---
 
@@ -90,13 +90,13 @@
 - Button「重试」on `failed` segments → set review to `approved` (keep) and `enqueueGeneration` for that index only
 - Cancel remains via existing queue cancel
 
-- [ ] **Step 1: Write tests** for any extracted resume helper (e.g. which indexes need resume poll).
+- [x] **Step 1: Write tests** for any extracted resume helper (e.g. which indexes need resume poll).
 
-- [ ] **Step 2: Implement persistence + resume + retry UI.**
+- [x] **Step 2: Implement persistence + resume + retry UI.**
 
-- [ ] **Step 3: `npm test` green.**
+- [x] **Step 3: `npm test` green.**
 
-- [ ] **Step 4: Commit** `feat(mv): persist generation queue and resume cloud jobs`
+- [x] **Step 4: Commit** `feat(mv): persist generation queue and resume cloud jobs`
 
 ---
 
@@ -107,11 +107,11 @@
 - Modify: `docs/ITERATION_PLAN.md` checkboxes for completed Sprint 1 items
 - Modify: `docs/MV_REQUIREMENTS_BACKLOG.md` mark P0-2/P0-3 progress if done
 
-- [ ] **Step 1: Update docs with what shipped and how to verify.**
+- [x] **Step 1: Update docs with what shipped and how to verify.**
 
-- [ ] **Step 2: Push branch `feature/mv-review-and-resume`, open PR to main with summary + test evidence.**
+- [x] **Step 2: Push branch `feature/mv-review-and-resume`, open PR to main with summary + test evidence.**
 
-- [ ] **Step 3: Do not merge unless asked.**
+- [x] **Step 3: Do not merge unless asked.**
 
 ---
 

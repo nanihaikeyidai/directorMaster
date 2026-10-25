@@ -42,10 +42,10 @@
 - [x] 合入字幕 V0 + Superpowers 文档（PR #3）；关闭重叠的 #1/#2
 - [x] 本路线写入本文件与 `docs/superpowers/plans/`
 
-### Sprint 1 — MV 生产正确性（进行中）
+### Sprint 1 — MV 生产正确性（审核+续跑已落地 · 音画对齐未做）
 
-- [ ] 分段审核状态：`pending` / `approved` / `submitted` / `failed`；批量与一键云端默认只提交 `approved`
-- [ ] 可恢复任务：段级 `jobId`、错误摘要、取消、失败重试、刷新后断点续跑
+- [x] 分段审核状态：`pending` / `approved` / `submitted` / `failed`；批量与一键云端默认只提交 `approved`
+- [x] 可恢复任务：段级 `jobId`、错误摘要、取消、失败重试、刷新后断点续跑
 - [ ] （余力）音画对齐检查导出前报告
 - 实现计划：`docs/superpowers/plans/2026-10-25-mv-review-and-resume.md`
 
