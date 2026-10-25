@@ -16,6 +16,14 @@ export function detectRunningHubWorkflowKind(workflow: any): RunningHubWorkflowK
   throw new Error('云端工作流缺少受支持的 MiniMax H3 主节点');
 }
 
+/** Heuristic-only subtitle workflow detector; does not submit cloud jobs. */
+export function detectSubtitleWorkflowKind(workflow: any): 'asr-r2t2' | null {
+  const classes = workflowNodes(workflow).map(([, value]: any) => String(value?.class_type || ''));
+  const markers = [/confucius/i, /r2t2/i, /\basr\b/i, /speech.?to.?text/i, /whisper/i];
+  return classes.some((classType) => markers.some((re) => re.test(classType))) ? 'asr-r2t2' : null;
+}
+
+
 function assetFileName(asset: any) {
   return String(asset?.fileName || path.basename(String(asset?.path || ''))).trim();
 }

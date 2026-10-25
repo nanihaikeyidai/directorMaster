@@ -1,0 +1,9 @@
+{
+  "sourceLang": "zh",
+  "targetLang": "en",
+  "cues": [
+    { "startMs": 1000, "endMs": 2500, "text": "跟着灯光向前走", "translation": "Walk forward with the lights" },
+    { "startMs": 2600, "endMs": 4200, "text": "别回头", "translation": "Don't look back" },
+    { "startMs": 5000, "endMs": 6800, "text": "雨还在下", "translation": "The rain is still falling" }
+  ]
+}
