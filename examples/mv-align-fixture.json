@@ -1,0 +1,19 @@
+{
+  "version": 1,
+  "leadSilenceSec": 0.5,
+  "measuredLeadSilenceSec": 0.52,
+  "segments": [
+    {
+      "index": 1,
+      "duration": 8.4,
+      "exportedDuration": 8.4,
+      "videoDuration": 8.41
+    },
+    {
+      "index": 2,
+      "expectedDuration": 10.2,
+      "audioDuration": 10.15,
+      "videoDuration": 10.2
+    }
+  ]
+}

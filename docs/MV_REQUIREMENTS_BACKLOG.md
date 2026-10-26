@@ -30,3 +30,9 @@
 ## 建议下一迭代
 
 优先实现 P0-2（分段审核状态）和 P0-3（可恢复任务），再做 P1-1（歌词导入）。这三项能直接降低“提示词看起来正确但生成错段”以及批量失败后重复劳动的风险。
+
+## Sprint 1 进度（2026-10-25 → 2026-10-26）
+
+- P0-2 分段审核状态：**已实现**（`lib/mv-segment-review.mjs` + MV 页门禁 / 批量默认已审核 / 一键停在 pending）
+- P0-3 生成任务可恢复：**已实现**（`generationActive` + `generationQueue` 持久化、jobId 续轮询、失败「重试」）；实机 RH 续跑待本机验证
+- P0-4 音画对齐检查：**已实现**（`lib/mv-av-alignment.mjs` + CLI `mv-align-check`；容差 80ms；UI 硬门禁仍可选）

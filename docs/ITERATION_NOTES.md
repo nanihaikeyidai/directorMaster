@@ -1,5 +1,70 @@
 # Iteration Notes
 
+## 2026-10-26 会话 — Sprint 1 余项：MV 音画对齐检查（P0-4）
+
+### Module chosen
+**MV 音画对齐检查**（Sprint 1 剩余 P0-4）：导出/合成前纯函数报告，默认容差 80ms。
+
+### Landed
+- `lib/mv-av-alignment.mjs` (+ `.d.ts`)：`checkAvAlignment` / `formatAlignmentReport`
+  - codes：AUDIO/VIDEO_DURATION_MISMATCH、AV_MISMATCH、TAIL_TRUNCATION、LEAD_SILENCE_MISMATCH、MISSING_AUDIO/VIDEO、INVALID_DURATION
+  - 每条 issue 含中文 `message` + `suggestion`；`ok === false` 仅当存在 `severity: error`
+- CLI：`mv-align-check --manifest <json> [--tolerance 0.08] [--require-video] [--require-audio|--no-require-audio]`
+  - 字段别名：`duration`/`expectedDuration`、`exportedDuration`/`audioDuration`、顶层 lead silence
+  - stdout JSON；`!ok` → `process.exitCode = 1`
+- 示例：`examples/mv-align-fixture.json`（ok）、`examples/mv-align-fixture-bad.json`（多错误）
+- 测试：`scripts/test-mv-av-alignment.mjs` 已接入 `npm test`
+
+### Verification
+- `npm test` → 既有套件 + mv-av-alignment 全绿
+- CLI ok fixture → exit 0 / `ok:true`；bad fixture → exit 1 + issues
+- 无 RH/网络/密钥；未合 main
+
+### Remaining / next
+- UI 导出前硬门禁（可选 soft report）未做
+- P0-5 最终合成校验（顺序/空洞/重复）仍未做
+- Sprint 2：RunningHub 多段显式化 / 可移植密钥 / 可观测
+
+### Paths
+- Design: `docs/superpowers/specs/2026-10-26-mv-av-alignment-design.md`
+- Plan: `docs/superpowers/plans/2026-10-26-mv-av-alignment.md`
+
+## 2026-10-25 会话 — Sprint 1 MV 审核状态 + 可恢复任务
+
+### Module chosen
+**MV 生产正确性**（定稿优先）：分段审核门禁 + 生成队列持久化 / jobId 续跑 / 失败重试。
+
+### Landed
+- `lib/mv-segment-review.mjs`：`pending|approved|submitted|failed` 纯函数 + 批量过滤
+- `app/mv/page.tsx`：
+  - 每段「通过审核」+ 状态标签（待审核/已审核/已提交/失败）
+  - `enqueueGeneration` / 批量弹窗只接受 `approved`；无一 approved 则提示不入队
+  - 「一键云端出完整 MV」自动切段+提示词后**停在 pending**，不再自动入队
+  - 项目保存：`segmentReviews` / `generationQueue`（queued）/ `generationActive`
+  - 恢复项目：按 jobId 续 `waitCloud`；恢复排队项并 `drain`；失败段「重试」
+- `lib/mv-generation-resume.mjs`：resume 索引、队列规范化、active 序列化/恢复
+- 测试：`test-mv-segment-review` + `test-mv-generation-resume` 已接入 `npm test`
+
+### Verification
+- `npm test` → mv-prompt + redub + subtitle + segment-review + generation-resume 全绿
+- 未合 main；推送 `feature/mv-review-and-resume` → PR #4
+
+### Manual checklist（需本机导演台）
+1. 生成提示词 → 未点「通过审核」时本地/云端/批量均不可提交
+2. 审核 2 段 → 批量默认只勾已审核；未审核 checkbox 禁用
+3. 一键完整 MV → 只出提示词并提示去审核，不入队
+4. 提交云端后刷新：有 jobId 的 running 段应继续轮询（需本地 RH 服务）
+5. 人为失败段出现「重试」→ 可再次入队
+
+### Remaining / next
+- 音画对齐检查（Sprint 1 余力）→ 已在 2026-10-26 落地 lib+CLI
+- Sprint 2：RunningHub 多段显式化 / 可移植密钥 / 可观测
+- 实机 RH 续跑未在本环境验证（无本机 Comfy/RH）
+
+### Paths
+- Design: `docs/superpowers/specs/2026-10-25-mv-review-and-resume-design.md`
+- Plan: `docs/superpowers/plans/2026-10-25-mv-review-and-resume.md`
+
 ## 2026-10-25 00:00 Asia/Shanghai — Subtitle V0 offline cues
 
 ### Module chosen
