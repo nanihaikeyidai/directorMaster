@@ -1,6 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import path from 'node:path';
 import { patchDirectorProject, validateDirectorReferences } from '../lib/workflow';
+import { assertSegmentCountForKind } from '../lib/runninghub-guards.mjs';
 
 export type RunningHubWorkflowKind = 'feihou-remix' | 'mv-reference' | 'director';
 
@@ -152,6 +153,8 @@ function finalizeDirectorWorkflow(workflow: any) {
 
 export function adaptRunningHubWorkflow(original: any, segments: any[], settings: any, finalize = false) {
   const kind = detectRunningHubWorkflowKind(original);
+  // Single-segment workflows must not silently drop segments[1..]; fail with a 400 instead.
+  assertSegmentCountForKind(kind, Array.isArray(segments) ? segments.length : 0);
   let workflow: any;
   if (kind === 'feihou-remix') workflow = patchFeiHouRemixWorkflow(original, segments[0], settings);
   else if (kind === 'mv-reference') workflow = patchMvReferenceWorkflow(original, segments[0], settings);

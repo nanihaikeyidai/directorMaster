@@ -5,8 +5,10 @@ import { execFile } from 'node:child_process';
 import { promisify } from 'node:util';
 import { randomUUID } from 'node:crypto';
 import { adaptRunningHubWorkflow } from './runninghub-workflow-adapters';
+import { redactSecret, resolveDirectorRoot, resolveRunningHubKeySource } from '../lib/runninghub-guards.mjs';
 
-const root = path.resolve('D:/HermesWorkspace/directorMaster');
+// Portable root: DIRECTOR_MASTER_ROOT, else the dev server's working directory (repo root under `npm run dev`).
+const root = resolveDirectorRoot(process.env);
 const jobs = path.join(root, 'workspace/runninghub');
 const templatePath = path.join(root, 'workspace/workflows/runninghub-director-api.json');
 const shortDramaCloudWorkflowRoot = path.join(root, 'workspace/workflows/short-drama/cloud');
@@ -22,11 +24,14 @@ const allowedWorkflowIds = new Set([defaultWorkflowId, mvWorkflowId]);
 const sizes: Record<string, number[]> = { '0.2':[608,352], '0.3':[736,416], '0.4':[864,480], '0.5':[960,544], '0.6':[1056,608], '0.7':[1152,640], '0.8':[1216,672], '0.9':[1280,736], '1':[1376,768] };
 const inflight = new Map<string, Promise<any>>();
 async function key() {
-  if (process.env.RUNNINGHUB_API_KEY) return process.env.RUNNINGHUB_API_KEY;
-  const script = "$s=Get-Content -Raw -LiteralPath 'C:\\Users\\Administrator\\.codex\\secrets\\runninghub-api-key.dpapi'|ConvertTo-SecureString;$p=[Runtime.InteropServices.Marshal]::SecureStringToBSTR($s);try{[Console]::Write([Runtime.InteropServices.Marshal]::PtrToStringBSTR($p))}finally{[Runtime.InteropServices.Marshal]::ZeroFreeBSTR($p)}";
+  const source = resolveRunningHubKeySource(process.env);
+  if (source.type === 'env') return String(process.env.RUNNINGHUB_API_KEY).trim();
+  if (source.type === 'missing') throw new Error(source.message);
+  const file = String((source as { file?: string }).file || '').replace(/'/g, "''");
+  const script = `$s=Get-Content -Raw -LiteralPath '${file}'|ConvertTo-SecureString;$p=[Runtime.InteropServices.Marshal]::SecureStringToBSTR($s);try{[Console]::Write([Runtime.InteropServices.Marshal]::PtrToStringBSTR($p))}finally{[Runtime.InteropServices.Marshal]::ZeroFreeBSTR($p)}`;
   const env=Object.fromEntries(Object.entries(process.env).filter(([name])=>name.toLowerCase()!=='psmodulepath'));
   try { return (await promisify(execFile)('powershell.exe', ['-NoProfile','-EncodedCommand',Buffer.from(script,'utf16le').toString('base64')], { windowsHide:true,env })).stdout.trim(); }
-  catch(error:any) { throw new Error('RunningHub 密钥不可用（'+String(error.code||error.name)+'），请配置 RUNNINGHUB_API_KEY 或当前用户的 DPAPI 凭据'); }
+  catch(error:any) { throw new Error('RunningHub 密钥不可用（'+String(error.code||error.name)+'），请配置 RUNNINGHUB_API_KEY 或 RUNNINGHUB_DPAPI_FILE'); }
 }
 async function call(endpoint: string, body: any, secret: string): Promise<any> {
   const response = await fetch(apiBase + endpoint, { method:'POST', headers:{ 'content-type':'application/json', Authorization:'Bearer '+secret }, body:JSON.stringify({...body,apiKey:secret}), signal:AbortSignal.timeout(120000) });
@@ -55,14 +60,16 @@ export async function runningHubAccountStatus() {
 }
 async function save(job: any) {
   await fs.mkdir(jobs,{recursive:true});
+  job.updatedAt = new Date().toISOString();
   const target = path.join(jobs, job.id+'.json');
   const temporary = target+'.'+randomUUID()+'.tmp';
   await fs.writeFile(temporary,JSON.stringify(job,null,2)); await fs.rename(temporary,target);
 }
 export async function cloudConfig() {
   let configured = false, error = ''; try { configured = Boolean(await key()); } catch(e) {error=String(e);}
+  const keySource = resolveRunningHubKeySource(process.env).type;
   const shortDramaWorkflows = await listWorkflowFiles(shortDramaCloudWorkflowRoot);
-  return { configured, error, templatePath, shortDramaTemplatePath, shortDramaCloudWorkflowRoot, shortDramaWorkflows, mvTemplatePath, mvWorkflowRoot, mvCloudWorkflowRoot, workflowId:defaultWorkflowId, mvWorkflowId, instanceType:'plus', steps:8, megapixels:0.6 };
+  return { configured, error, keySource, root, templatePath, shortDramaTemplatePath, shortDramaCloudWorkflowRoot, shortDramaWorkflows, mvTemplatePath, mvWorkflowRoot, mvCloudWorkflowRoot, workflowId:defaultWorkflowId, mvWorkflowId, instanceType:'plus', steps:8, megapixels:0.6 };
 }
 
 async function listWorkflowFiles(directory: string) {
@@ -128,14 +135,15 @@ export async function submitCloud(request: any) {
     }
   }
   const preview = adaptRunningHubWorkflow(template, segments, settings);
-  const job = { id:randomUUID(),provider:'runninghub',productType,workflowId,workflowPath:selectedTemplatePath,workflowKind:preview.kind,status:'UPLOADING',stage:'上传素材',percent:5,createdAt:new Date().toISOString(),settings,sequenceNos:request.sequenceNos||[],taskId:'',outputs:[] } as any;
+  const job = { id:randomUUID(),provider:'runninghub',productType,workflowId,workflowPath:selectedTemplatePath,workflowKind:preview.kind,status:'UPLOADING',stage:'上传素材',percent:5,createdAt:new Date().toISOString(),settings,sequenceNos:request.sequenceNos||[],taskId:'',outputs:[],segmentCount:segments.length } as any;
   job.episode=episode;
   if (projectId) job.projectId = projectId;
   await save(job);
   // Keep submission work alive independently of the browser connection.
   void (async()=>{
+    let secret='';
     try {
-      const secret=await key(), uploaded=new Map<string,string>();
+      secret=await key(); const uploaded=new Map<string,string>();
       const assets=segments.flatMap((s:any)=>[...s.pictures,...s.audios]);
       for (const asset of assets) {
         if (!uploaded.has(asset.path)) {
@@ -159,7 +167,7 @@ export async function submitCloud(request: any) {
       const result=await call('/task/openapi/create',{workflowId,instanceType:'plus',workflow:JSON.stringify(workflow),nodeInfoList:[]},secret);
       if(result.code!==0||!result.data?.taskId) throw new Error('RunningHub 提交失败：'+result.msg);
       job.taskId=result.data.taskId;job.status=result.data.taskStatus||'RUNNING';job.stage='云端排队 / 生成中';job.percent=40;await save(job);
-    } catch(error) { job.status='FAILED';job.error=error instanceof Error?error.message:String(error);job.stage='生成失败';await save(job); }
+    } catch(error) { job.status='FAILED';job.error=redactSecret(error instanceof Error?error.message:String(error),secret);job.stage='生成失败';await save(job); }
   })();
   return job;
 }

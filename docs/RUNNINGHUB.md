@@ -25,7 +25,9 @@
 
 ## 凭据与文件
 
-密钥只由本机服务从 `RUNNINGHUB_API_KEY` 或当前 Windows 用户的 DPAPI 读取。浏览器、任务记录、日志和 Git 中不得出现明文密钥。任务与实际提交工作流位于 `workspace/runninghub`，成片按任务 ID 分目录归档；该目录默认不提交到 Git。
+密钥只由本机服务读取，优先级：`RUNNINGHUB_API_KEY` > Windows `RUNNINGHUB_DPAPI_FILE` > `%USERPROFILE%\.codex\secrets\runninghub-api-key.dpapi`；都没有时返回中文指引。项目根为 `DIRECTOR_MASTER_ROOT`，未设置则取启动 `npm run dev` 的目录（不再写死 `D:/`）。`/config` 返回 `keySource`（`env`/`dpapi`/`missing`，不含密钥）与 `root`。
+
+像素幻想（`mv-reference`）与肥猴 Remix（`feihou-remix`）一次只吃一段：多段请求返回 HTTP 400 `RH_MULTI_SEGMENT_UNSUPPORTED`，不再静默只取第 1 段；请逐段提交。任务记录带 `updatedAt`、`segmentCount`，失败信息会脱敏。浏览器、任务记录、日志和 Git 中不得出现明文密钥。任务与实际提交工作流位于 `workspace/runninghub`，成片按任务 ID 分目录归档；该目录默认不提交到 Git。
 
 CLI（需要先运行本地 Director Master 服务）：
 
