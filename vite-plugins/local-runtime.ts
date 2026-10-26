@@ -2359,8 +2359,11 @@ export function localRuntime(): Plugin {
           }
           return send(res, 404, { error: "未知本地接口" });
         } catch (error) {
-          return send(res, 500, {
+          const status = Number((error as { status?: unknown })?.status);
+          const code = (error as { code?: unknown })?.code;
+          return send(res, status >= 400 && status < 500 ? status : 500, {
             error: error instanceof Error ? error.message : String(error),
+            ...(typeof code === "string" && code.startsWith("RH_") ? { code } : {}),
           });
         }
       });
