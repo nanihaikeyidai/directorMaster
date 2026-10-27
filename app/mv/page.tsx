@@ -125,7 +125,7 @@ type RecentProject = {
   segments: number;
   visualAssets: number;
 };
-type WorkflowCatalogItem = { path: string; fileName: string; nodeCount: number; classes: string[]; invalid?: boolean };
+type WorkflowCatalogItem = { path: string; fileName: string; nodeCount: number; classes: string[]; invalid?: boolean; kind?: string | null; singleSegment?: boolean };
 type WorkflowCatalog = { local: WorkflowCatalogItem[]; cloud: WorkflowCatalogItem[] };
 type RunningHubAccount = { coins: number; walletBalance?: string; currency: string; runningTasks: number; checkedAt: string };
 
@@ -2430,14 +2430,14 @@ export default function MvStudio() {
               <label>本地工作流 JSON 路径<input value={localWorkflowPath} onChange={(event) => rememberWorkflowPath(event.target.value)} placeholder="D:\\...\\minimax_h3_director.json" /></label>
               <div className="mv-workflow-actions"><button onClick={() => workflowInputRef.current?.click()}>浏览选择 JSON</button><button className="primary" onClick={() => void validateLocalWorkflowPath()}>检查路径</button><input ref={workflowInputRef} hidden type="file" accept="application/json,.json" onChange={(event) => { const file = event.target.files?.[0]; if (file) void importLocalWorkflow(file, "local"); }} /></div>
               <div className={`mv-workflow-status ${workflowMessage.includes("通过") ? "ok" : workflowMessage && !workflowMessage.includes("正在") && !workflowMessage.includes("修改") ? "error" : ""}`}>{workflowMessage || "当前默认工作流：" + LOCAL_WORKFLOW_PATH}</div>
-              <div className="mv-workflow-catalog"><small>已归档本地工作流</small>{workflowCatalog.local.length ? workflowCatalog.local.map((item) => <button key={item.path} className={localWorkflowPath === item.path ? "selected" : ""} onClick={() => rememberWorkflowPath(item.path)}><b>{item.fileName}</b><span>{item.nodeCount} 节点</span></button>) : <span>目录暂无 JSON</span>}</div>
+              <div className="mv-workflow-catalog"><small>已归档本地工作流</small>{workflowCatalog.local.length ? workflowCatalog.local.map((item) => <button key={item.path} className={localWorkflowPath === item.path ? "selected" : ""} onClick={() => rememberWorkflowPath(item.path)}><b>{item.fileName}</b><span>{item.nodeCount} 节点{item.kind ? ` · ${item.kind}` : ""}{item.singleSegment ? " · 单段" : ""}</span></button>) : <span>目录暂无 JSON</span>}</div>
               <p className="mv-workflow-note">本地生成读取 <code>workspace/workflows/mv/local</code> 下的工作流，需包含 <code>MiniMaxH3Director</code> 节点。</p>
             </> : <>
               <label>云端工作流 JSON 路径<select value={cloudWorkflowPath} onChange={(event) => rememberCloudWorkflowPath(event.target.value)}><option value={CLOUD_WORKFLOW_PATH}>{CLOUD_WORKFLOW_PATH}</option>{workflowCatalog.cloud.filter((item) => item.path !== CLOUD_WORKFLOW_PATH).map((item) => <option key={item.path} value={item.path}>{item.fileName}</option>)}</select><input value={cloudWorkflowPath} onChange={(event) => rememberCloudWorkflowPath(event.target.value)} placeholder="workspace\\workflows\\mv\\cloud\\workflow.json" /></label>
               <label>RunningHub 工作流 ID<input value={cloudWorkflowId} onChange={(event) => rememberCloudWorkflowId(event.target.value)} placeholder="从 RunningHub API 页面复制数字 ID" /></label>
               <div className="mv-workflow-actions"><button onClick={() => cloudWorkflowInputRef.current?.click()}>导入云端 API JSON</button><button className="primary" onClick={() => void validateCloudWorkflowPath()}>检查云端工作流</button><input ref={cloudWorkflowInputRef} hidden type="file" accept="application/json,.json" onChange={(event) => { const file = event.target.files?.[0]; if (file) void importLocalWorkflow(file, "cloud"); }} /></div>
               <div className={`mv-workflow-status ${workflowMessage.includes("通过") ? "ok" : workflowMessage && !workflowMessage.includes("正在") && !workflowMessage.includes("修改") ? "error" : ""}`}>{workflowMessage || "当前云端工作流：" + CLOUD_WORKFLOW_PATH}</div>
-              <div className="mv-workflow-catalog"><small>已归档云端工作流</small>{workflowCatalog.cloud.length ? workflowCatalog.cloud.map((item) => <button key={item.path} className={cloudWorkflowPath === item.path ? "selected" : ""} onClick={() => rememberCloudWorkflowPath(item.path)}><b>{item.fileName}</b><span>{item.nodeCount} 节点{item.invalid ? " · JSON 无效" : ""}</span></button>) : <span>目录暂无 JSON</span>}</div>
+              <div className="mv-workflow-catalog"><small>已归档云端工作流</small>{workflowCatalog.cloud.length ? workflowCatalog.cloud.map((item) => <button key={item.path} className={cloudWorkflowPath === item.path ? "selected" : ""} onClick={() => rememberCloudWorkflowPath(item.path)}><b>{item.fileName}</b><span>{item.nodeCount} 节点{item.kind ? ` · ${item.kind}` : ""}{item.singleSegment ? " · 单段" : ""}{item.invalid ? " · JSON 无效" : ""}</span></button>) : <span>目录暂无 JSON</span>}</div>
               <p className="mv-workflow-note">云端工作流读取 <code>workspace/workflows/mv/cloud</code>。附带的 Remix API JSON 不包含 RunningHub ID，必须填写 RunningHub API 页面中的数字 ID；生成时会自动上传当前片段的图片和音频素材。</p>
             </>}
           </div>

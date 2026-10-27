@@ -45,6 +45,10 @@ type JobState = {
   promptId?: string;
   error?: string;
   output?: string;
+  elapsedSec?: number | null;
+  workflowKind?: string;
+  segmentCount?: number;
+  terminal?: boolean;
 };
 type SkillJobState = {
   stage: string;
@@ -431,7 +435,7 @@ function EpisodeCanvas({episode}:{episode:string}) {
   const [cloudMP, setCloudMP] = useState(0.6);
   const [shortDramaCloudWorkflowPath, setShortDramaCloudWorkflowPath] = useState(SHORT_DRAMA_CLOUD_WORKFLOW_PATH);
   const [shortDramaCloudWorkflowId, setShortDramaCloudWorkflowId] = useState('2090979599860719618');
-  const [shortDramaCloudWorkflows, setShortDramaCloudWorkflows] = useState<{path:string;fileName:string;nodeCount:number;invalid?:boolean}[]>([]);
+  const [shortDramaCloudWorkflows, setShortDramaCloudWorkflows] = useState<{path:string;fileName:string;nodeCount:number;invalid?:boolean;kind?:string|null;singleSegment?:boolean}[]>([]);
   const [shortDramaWorkflowMessage, setShortDramaWorkflowMessage] = useState('');
   const shortDramaWorkflowInputRef = useRef<HTMLInputElement>(null);
   useEffect(() => {
@@ -481,7 +485,18 @@ function EpisodeCanvas({episode}:{episode:string}) {
         const response=await fetch('/api/local/runninghub/jobs?id='+encodeURIComponent(id));
         const current:any=await response.json();
         if(!response.ok) throw new Error(current.error||'云端状态查询失败');
-        setJob({stage:current.stage,percent:current.percent,promptId:current.taskId,error:current.error,output:current.outputs?.map((o:any)=>o.path).join('\n')});
+        const summary = current.summary || {};
+        setJob({
+          stage: current.stage,
+          percent: current.percent,
+          promptId: current.taskId,
+          error: summary.error || current.error,
+          output: current.outputs?.map((o: any) => o.path).join('\n'),
+          elapsedSec: summary.elapsedSec ?? null,
+          workflowKind: summary.workflowKind,
+          segmentCount: summary.segmentCount,
+          terminal: summary.terminal,
+        });
         if(current.status==='SUCCESS') {
           const primary=current.outputs[0],sequenceNo=current.sequenceNos[0]||7;
           setVideoResults((old)=>({...old,[sequenceNo]:{...primary,sequenceNo,promptId:current.taskId,parameters:{width:current.settings.width,height:current.settings.height,fps:24}}}));
@@ -4416,6 +4431,14 @@ function EpisodeCanvas({episode}:{episode:string}) {
                 <i style={{ width: job.percent + "%" }} />
               </div>
               <p>Prompt ID · {job.promptId || "尚未提交"}</p>
+              {provider === 'runninghub' && (
+                <>
+                  <p>耗时 · {job.elapsedSec == null ? '—' : `${job.elapsedSec}s`}</p>
+                  <p>工作流 kind · {job.workflowKind || '—'}</p>
+                  <p>段数 · {job.segmentCount == null ? '—' : job.segmentCount}</p>
+                  <p>终态 · {job.terminal ? '是' : '否'}</p>
+                </>
+              )}
               {job.error && <pre className="error-box">{job.error}</pre>}
               {job.output && <pre className="output-box">{job.output}</pre>}
             </article>
@@ -4465,8 +4488,13 @@ function EpisodeCanvas({episode}:{episode:string}) {
                 <h3>短剧云端工作流</h3>
                 <label>短剧 API JSON<select value={shortDramaCloudWorkflowPath} onChange={e=>saveShortDramaCloudWorkflow(e.target.value,shortDramaCloudWorkflowId)}>
                   {!shortDramaCloudWorkflows.some(item=>item.path===shortDramaCloudWorkflowPath)&&<option value={shortDramaCloudWorkflowPath}>{shortDramaCloudWorkflowPath}</option>}
-                  {shortDramaCloudWorkflows.map(item=><option key={item.path} value={item.path}>{item.fileName}{item.invalid?' · JSON 无效':''}</option>)}
+                  {shortDramaCloudWorkflows.map(item=><option key={item.path} value={item.path}>{item.fileName}{item.kind?` · ${item.kind}`:''}{item.singleSegment?' · 单段':''}{item.invalid?' · JSON 无效':''}</option>)}
                 </select></label>
+                {(() => {
+                  const selected = shortDramaCloudWorkflows.find(item => item.path === shortDramaCloudWorkflowPath);
+                  if (!selected?.singleSegment) return null;
+                  return <p className="error-box">{`此工作流「${selected.kind}」一次只支持单段，多段请逐段提交，否则会返回 400。`}</p>;
+                })()}
                 <label>短剧 RunningHub 工作流 ID<input value={shortDramaCloudWorkflowId} onChange={e=>saveShortDramaCloudWorkflow(shortDramaCloudWorkflowPath,e.target.value)} placeholder="短剧云端 API ID" /></label>
                 <div className="settings-actions"><button onClick={()=>shortDramaWorkflowInputRef.current?.click()}>导入短剧云端 API JSON</button><button onClick={()=>void checkShortDramaCloudWorkflow()}>检查配置</button><input ref={shortDramaWorkflowInputRef} hidden type="file" accept="application/json,.json" onChange={e=>{const file=e.target.files?.[0];if(file)void importShortDramaCloudWorkflow(file)}} /></div>
                 <p className="workspace-note">短剧默认使用 h3_director_api_920（ID 2090979599860719618）；此配置与 MV 页面中的像素幻想云端工作流独立保存。</p>
