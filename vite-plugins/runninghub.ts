@@ -5,7 +5,7 @@ import { execFile } from 'node:child_process';
 import { promisify } from 'node:util';
 import { randomUUID } from 'node:crypto';
 import { adaptRunningHubWorkflow } from './runninghub-workflow-adapters';
-import { redactSecret, resolveDirectorRoot, resolveRunningHubKeySource } from '../lib/runninghub-guards.mjs';
+import { annotateWorkflowListing, attachJobSummary, redactSecret, resolveDirectorRoot, resolveRunningHubKeySource } from '../lib/runninghub-guards.mjs';
 
 // Portable root: DIRECTOR_MASTER_ROOT, else the dev server's working directory (repo root under `npm run dev`).
 const root = resolveDirectorRoot(process.env);
@@ -69,7 +69,8 @@ export async function cloudConfig() {
   let configured = false, error = ''; try { configured = Boolean(await key()); } catch(e) {error=String(e);}
   const keySource = resolveRunningHubKeySource(process.env).type;
   const shortDramaWorkflows = await listWorkflowFiles(shortDramaCloudWorkflowRoot);
-  return { configured, error, keySource, root, templatePath, shortDramaTemplatePath, shortDramaCloudWorkflowRoot, shortDramaWorkflows, mvTemplatePath, mvWorkflowRoot, mvCloudWorkflowRoot, workflowId:defaultWorkflowId, mvWorkflowId, instanceType:'plus', steps:8, megapixels:0.6 };
+  const mvWorkflows = await listWorkflowFiles(mvCloudWorkflowRoot);
+  return { configured, error, keySource, root, templatePath, shortDramaTemplatePath, shortDramaCloudWorkflowRoot, shortDramaWorkflows, mvTemplatePath, mvWorkflowRoot, mvCloudWorkflowRoot, mvWorkflows, workflowId:defaultWorkflowId, mvWorkflowId, instanceType:'plus', steps:8, megapixels:0.6 };
 }
 
 async function listWorkflowFiles(directory: string) {
@@ -82,9 +83,10 @@ async function listWorkflowFiles(directory: string) {
     const filePath = path.join(directory, fileName);
     try {
       const parsed = JSON.parse(await fs.readFile(filePath, 'utf8'));
-      return { path: filePath, fileName, nodeCount: Object.keys(parsed).length };
+      const entry = { path: filePath, fileName, nodeCount: Object.keys(parsed).length };
+      return annotateWorkflowListing(entry, parsed);
     } catch {
-      return { path: filePath, fileName, nodeCount: 0, invalid: true };
+      return { path: filePath, fileName, nodeCount: 0, invalid: true, kind: null, singleSegment: false };
     }
   }));
 }
@@ -104,7 +106,7 @@ export async function listCloudJobs() {
   await fs.mkdir(jobs,{recursive:true});
   const files=(await fs.readdir(jobs)).filter(name=>/^[\da-f-]{36}\.json$/.test(name));
   const items=await Promise.all(files.map(async name=>JSON.parse(await fs.readFile(path.join(jobs,name),'utf8'))));
-  return items.sort((a,b)=>b.createdAt.localeCompare(a.createdAt)).slice(0,50);
+  return items.sort((a,b)=>b.createdAt.localeCompare(a.createdAt)).slice(0,50).map((job)=>attachJobSummary(job, { secret: '' }));
 }
 export async function submitCloud(request: any) {
   const episode=request.episode||'ep02';if(!/^ep\d{2}$/.test(episode))throw new Error('集数格式无效');
@@ -176,7 +178,7 @@ export async function cloudStatus(id: string) {
   if(inflight.has(id)) return inflight.get(id);
   const pending=(async()=>{
     const job=JSON.parse(await fs.readFile(path.join(jobs,id+'.json'),'utf8'));
-    if(!job.taskId || ['SUCCESS','FAILED','CANCELLED'].includes(job.status)) return job;
+    if(!job.taskId || ['SUCCESS','FAILED','CANCELLED'].includes(job.status)) return attachJobSummary(job, { secret: '' });
     const secret=await key(), result=await call('/task/openapi/status',{taskId:job.taskId},secret);
     if(result.code!==0) throw new Error('状态查询失败：'+result.msg);
     job.status=result.data;job.stage=result.data==='QUEUED'?'云端排队':'云端生成中';
@@ -207,7 +209,7 @@ export async function cloudStatus(id: string) {
         job.percent=100;job.stage='生成完成';job.costCoins=output.data[0]?.consumeCoins;
       }
     }
-    await save(job);return job;
+    await save(job);return attachJobSummary(job, { secret: '' });
   })();
   inflight.set(id,pending);try{return await pending;}finally{inflight.delete(id);}
 }
