@@ -38,11 +38,13 @@ npm run director -- status --provider runninghub --id <本地任务ID>
 
 主要 API：
 
-- `GET /api/local/runninghub/config`：工作流目录、模板和本地配置状态。
+- `GET /api/local/runninghub/config`：工作流目录、模板和本地配置状态；`shortDramaWorkflows` / `mvWorkflows` 每项含 `kind`（`director`/`mv-reference`/`feihou-remix`/null）、`singleSegment`（boolean）；无效 JSON 为 `kind:null`、`singleSegment:false`、`invalid:true`。
 - `GET /api/local/runninghub/account`：查询当前账户的 RunningHub 币、钱包余额和运行中任务数。
 - `POST /api/local/runninghub/jobs`：提交 `{productType, workflowPath, workflowId, episode, segments, sequenceNos, settings}`。
-- `GET /api/local/runninghub/jobs?id=<本地任务ID>`：查询并归档成片。
+- `GET /api/local/runninghub/jobs` 与 `?id=<本地任务ID>`：列表/单条均附加 `summary`（`summarizeCloudJob`：elapsedSec、workflowKind、segmentCount、terminal、脱敏 error）。
 - `DELETE /api/local/runninghub/jobs?id=<本地任务ID>`：取消当前任务。
+
+前端：任务中心展示耗时 / kind / 段数 / 终态；短剧设置在选中 `singleSegment` 模板时预检警告；MV `/api/local/workflows` 与目录按钮同样带 `kind`/`singleSegment`。
 
 任务状态来自云端；百分比只表示上传、提交和完成阶段，不代表采样精确进度。刷新页面可恢复最近任务。显存不足时显示服务端原因，不自动改参数或付费重试；临时查询失败应查询同一任务，不要重新提交。
 

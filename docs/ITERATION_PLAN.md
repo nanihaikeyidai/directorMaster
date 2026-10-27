@@ -53,8 +53,8 @@
 
 - [x] 非导演多段：禁止静默 `segments[0]`（显式 400 `RH_MULTI_SEGMENT_UNSUPPORTED`；MV 前端本就逐段入队）
 - [x] 可移植密钥/根目录（`RUNNINGHUB_API_KEY` > `RUNNINGHUB_DPAPI_FILE` > `%USERPROFILE%`；根 `DIRECTOR_MASTER_ROOT` > 启动目录）
-- [ ] 工作流选择可测 + 任务可观测 + `RUNNINGHUB.md` 对齐（已做：`updatedAt`/`segmentCount`/脱敏错误/`summarizeCloudJob`；未做：UI 展示、kind 预检）
-- 实现计划：`docs/superpowers/plans/2026-10-27-rh-hardening-guards.md`
+- [x] 工作流选择可测 + 任务可观测 + `RUNNINGHUB.md` 对齐（listing `kind`/`singleSegment`、jobs `summary`、任务中心/短剧预检/MV 目录 UI）
+- 实现计划：`docs/superpowers/plans/2026-10-27-rh-hardening-guards.md`、`docs/superpowers/plans/2026-10-28-rh-observability-kind.md`
 
 ### Sprint 3 — 双语字幕 V1
 

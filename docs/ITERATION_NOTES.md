@@ -1,5 +1,36 @@
 # Iteration Notes
 
+## 2026-10-28 会话 — Sprint 2 余项：kind 预检 + summarizeCloudJob UI/API
+
+### Module chosen
+**视频生成 / RunningHub 可观测**（Sprint 2 收尾）：listing 带 kind、任务摘要进 API/任务中心、单段模板预检。
+
+### Acceptance
+- listing / config 项含 `kind` 与 `singleSegment`；无效 JSON 不含假 kind
+- jobs GET 列表与单条含 `summary`（elapsedSec/terminal/脱敏 error）
+- 任务中心可见耗时与 kind；短剧单段模板有预检文案；MV 目录显示 kind
+- `npm test` 全绿；无密钥/大文件入仓
+
+### Landed
+- `lib/runninghub-guards.mjs`：`isSingleSegmentKind` / `inferWorkflowKindFromNodes` / `annotateWorkflowListing` / `attachJobSummary`（TDD）
+- `runninghub.ts`：`listWorkflowFiles` 注解 kind；`cloudConfig.mvWorkflows`；`listCloudJobs`/`cloudStatus` 附加 summary
+- `local-runtime.ts` `listMvWorkflowFiles`：kind + singleSegment（保留 classes）
+- `app/page.tsx`：JobState 摘要字段、monitorCloud、任务中心卡片、短剧单段警告
+- `app/mv/page.tsx`：目录按钮显示 kind · 单段
+- Docs：`RUNNINGHUB.md` / `ITERATION_PLAN.md` Sprint 2 勾选 / 本笔记
+
+### Verification
+- `npm test` 全绿；eslint 改动文件；无 RH 付费调用
+
+### Remaining / next
+- Sprint 3 字幕 V1 起步（RH Confucius4-R2T2 → normalizeCues）
+- 短剧页若选单段模板做多段批量：可后续做前端自动逐段串行（现为 400 + 预检文案）
+
+### Paths
+- Design: `docs/superpowers/specs/2026-10-28-rh-observability-kind-design.md`
+- Plan: `docs/superpowers/plans/2026-10-28-rh-observability-kind.md`
+
+
 ## 2026-10-27 会话 — Sprint 2 RH 加固：多段守卫 + 可移植密钥/根 + 可观测基础
 
 ### Module chosen
