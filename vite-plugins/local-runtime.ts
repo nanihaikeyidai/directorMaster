@@ -25,6 +25,7 @@ import {
   normalizeTimeline,
   validateTimeline,
 } from "../lib/redub-timeline.mjs";
+import { inferWorkflowKindFromNodes, isSingleSegmentKind } from "../lib/runninghub-guards.mjs";
 
 const execFileAsync = promisify(execFile);
 
@@ -579,9 +580,10 @@ async function listMvWorkflowFiles() {
         const parsed = JSON.parse(await fs.readFile(filePath, "utf8"));
         const nodes = Array.isArray(parsed.nodes) ? parsed.nodes : Object.values(parsed);
         const classes = Array.from(new Set(nodes.map((node: any) => String(node?.class_type || node?.type || "")).filter(Boolean)));
-        return { path: filePath, fileName, nodeCount: nodes.length, classes };
+        const kind = inferWorkflowKindFromNodes(parsed);
+        return { path: filePath, fileName, nodeCount: nodes.length, classes, kind, singleSegment: isSingleSegmentKind(kind) };
       } catch {
-        return { path: filePath, fileName, nodeCount: 0, classes: [], invalid: true };
+        return { path: filePath, fileName, nodeCount: 0, classes: [], invalid: true, kind: null, singleSegment: false };
       }
     }));
   };
@@ -2359,8 +2361,11 @@ export function localRuntime(): Plugin {
           }
           return send(res, 404, { error: "未知本地接口" });
         } catch (error) {
-          return send(res, 500, {
+          const status = Number((error as { status?: unknown })?.status);
+          const code = (error as { code?: unknown })?.code;
+          return send(res, status >= 400 && status < 500 ? status : 500, {
             error: error instanceof Error ? error.message : String(error),
+            ...(typeof code === "string" && code.startsWith("RH_") ? { code } : {}),
           });
         }
       });

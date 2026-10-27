@@ -1,5 +1,66 @@
 # Iteration Notes
 
+## 2026-10-28 会话 — Sprint 2 余项：kind 预检 + summarizeCloudJob UI/API
+
+### Module chosen
+**视频生成 / RunningHub 可观测**（Sprint 2 收尾）：listing 带 kind、任务摘要进 API/任务中心、单段模板预检。
+
+### Acceptance
+- listing / config 项含 `kind` 与 `singleSegment`；无效 JSON 不含假 kind
+- jobs GET 列表与单条含 `summary`（elapsedSec/terminal/脱敏 error）
+- 任务中心可见耗时与 kind；短剧单段模板有预检文案；MV 目录显示 kind
+- `npm test` 全绿；无密钥/大文件入仓
+
+### Landed
+- `lib/runninghub-guards.mjs`：`isSingleSegmentKind` / `inferWorkflowKindFromNodes` / `annotateWorkflowListing` / `attachJobSummary`（TDD）
+- `runninghub.ts`：`listWorkflowFiles` 注解 kind；`cloudConfig.mvWorkflows`；`listCloudJobs`/`cloudStatus` 附加 summary
+- `local-runtime.ts` `listMvWorkflowFiles`：kind + singleSegment（保留 classes）
+- `app/page.tsx`：JobState 摘要字段、monitorCloud、任务中心卡片、短剧单段警告
+- `app/mv/page.tsx`：目录按钮显示 kind · 单段
+- Docs：`RUNNINGHUB.md` / `ITERATION_PLAN.md` Sprint 2 勾选 / 本笔记
+
+### Verification
+- `npm test` 全绿；eslint 改动文件；无 RH 付费调用
+
+### Remaining / next
+- Sprint 3 字幕 V1 起步（RH Confucius4-R2T2 → normalizeCues）
+- 短剧页若选单段模板做多段批量：可后续做前端自动逐段串行（现为 400 + 预检文案）
+
+### Paths
+- Design: `docs/superpowers/specs/2026-10-28-rh-observability-kind-design.md`
+- Plan: `docs/superpowers/plans/2026-10-28-rh-observability-kind.md`
+
+
+## 2026-10-27 会话 — Sprint 2 RH 加固：多段守卫 + 可移植密钥/根 + 可观测基础
+
+### Module chosen
+**视频生成 / RunningHub 加固**（Sprint 1 已收尾，按定稿进入 Sprint 2）。最高风险：单段工作流静默丢段仍扣费。
+
+### Acceptance
+- 单段工作流收到多段 → 400 `RH_MULTI_SEGMENT_UNSUPPORTED`，在上传/提交前拦截
+- 根目录与密钥路径可移植，env 优先；密钥不出现在返回/日志
+- `npm test` 全绿、改动文件 lint 通过、tsc 无新增错误
+
+### Landed
+- `lib/runninghub-guards.mjs`（+ `.d.ts`）：`assertSegmentCountForKind` / `resolveDirectorRoot` / `resolveRunningHubKeySource` / `redactSecret` / `summarizeCloudJob`
+- `runninghub-workflow-adapters.ts` 入口守卫；`runninghub.ts` 可移植根与密钥、`updatedAt`、`segmentCount`、错误脱敏、`/config` 带 `keySource`/`root`
+- `local-runtime.ts`：错误带 `status` 4xx 时按原码返回并附 `RH_*` code（原来一律 500）
+- 测试 `scripts/test-runninghub-guards.mjs` 接入 `npm test`
+
+### Verification
+- `npm test` 全绿；eslint 改动文件无报错；`tsc` 仅既存 TS2769（fetch overload，基线就有）
+- 无 RH 调用、无付费；adapter 集成路径未在本机实跑（无 Comfy/RH、Node 20 无法直接载 TS）
+
+### Remaining / next
+- 任务中心/MV 页展示 `summarizeCloudJob`（耗时、终态、脱敏错误）
+- `/config` 工作流列表带 `kind`，前端选择单段模板时提前提示
+- 短剧页若选到单段模板做多段批量，需前端改为逐段串行（目前会收到 400 提示）
+- 本机 Windows 需确认：从仓库根启动 `npm run dev`，或设置 `DIRECTOR_MASTER_ROOT`
+
+### Paths
+- Design: `docs/superpowers/specs/2026-10-27-rh-hardening-guards-design.md`
+- Plan: `docs/superpowers/plans/2026-10-27-rh-hardening-guards.md`
+
 ## 2026-10-26 会话 — Sprint 1 余项：MV 音画对齐检查（P0-4）
 
 ### Module chosen
