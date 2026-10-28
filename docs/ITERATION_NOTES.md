@@ -1,5 +1,38 @@
 # Iteration Notes
 
+## 2026-10-29 会话 — Sprint 3 night-1：RH ASR 离线解析 → cues + patch + CLI --asr
+
+### Module chosen
+**视频后期配字幕 / Sprint 3 V1 night-1**：离线将 RunningHub/Confucius-like ASR JSON 映射为 cue，支持 cue patch，CLI `--asr` 导出双语字幕。无 RH 付费/网络 ASR。
+
+### Acceptance
+1. `parseRhAsrOutput(raw, options?)` → cue 形状，且 `normalizeCues` 成功
+2. 支持 segments(秒) / sentences(ms) / result 嵌套 / 数组 / plain timed 透传 / 无时间戳 text+durationMs 弱切分（`needsReview` + `source:'weak-split'`）
+3. `applyCuePatches(cues, patches)` 不可变；拒 OOB / 非法时间
+4. CLI `subtitle --asr <json> --out <dir> [--langs] [--duration-ms] [--basename]` 离线双语导出
+5. `--video` 无 --cues/--asr：无 key → 明确错误；有 key → 提示 V1 live 未接线、用 `--asr`（不调 RH）
+6. `scripts/test-subtitle-asr.mjs` + fixtures 接入 `npm test`
+7. Design/plan/ITERATION_*/SUBTITLE 文档更新
+8. 无完整 RH submit / 无 UI 页（adapters 仅注释指向 lib）
+
+### Landed
+- `lib/subtitle-asr.mjs` (+ `.d.ts`)
+- fixtures `scripts/fixtures/rh-asr-*.json`
+- CLI `--asr` / `--duration-ms`；`--video` 错误文案升级
+- Docs：`docs/superpowers/specs/2026-10-29-subtitle-v1-asr-parse-design.md`、`plans/2026-10-29-subtitle-v1-asr-parse.md`
+
+### Verification
+- `npm test`（含 test-subtitle-asr）全绿；无密钥/大文件入仓；无 RH 调用
+
+### Remaining / next night
+- Live RH adapter（密钥后门禁 submit/poll）+ 成片入口
+- 可选 ffmpeg burn
+- UI cue 编辑再导出
+
+### Paths
+- Design: `docs/superpowers/specs/2026-10-29-subtitle-v1-asr-parse-design.md`
+- Plan: `docs/superpowers/plans/2026-10-29-subtitle-v1-asr-parse.md`
+
 ## 2026-10-26 会话 — Sprint 1 余项：MV 音画对齐检查（P0-4）
 
 ### Module chosen

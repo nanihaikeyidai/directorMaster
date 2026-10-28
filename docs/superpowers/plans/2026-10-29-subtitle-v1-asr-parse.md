@@ -37,8 +37,8 @@
 - Create: `scripts/fixtures/rh-asr-array.json`
 - Create: `scripts/fixtures/rh-asr-untimed-text.json`
 
-- [ ] Assert `parseRhAsrOutput` for each shape; weak-split needs `durationMs` + `needsReview`/`source:'weak-split'`; plain timed pass-through; `applyCuePatches` happy + OOB + inverted; `normalizeCues(result.cues)` succeeds
-- [ ] Run `node scripts/test-subtitle-asr.mjs` → FAIL (module missing)
+- [x] Assert `parseRhAsrOutput` for each shape; weak-split needs `durationMs` + `needsReview`/`source:'weak-split'`; plain timed pass-through; `applyCuePatches` happy + OOB + inverted; `normalizeCues(result.cues)` succeeds
+- [x] Run `node scripts/test-subtitle-asr.mjs` → FAIL (module missing)
 
 ### Task 2: Implement `lib/subtitle-asr.mjs`
 
@@ -46,8 +46,8 @@
 - Create: `lib/subtitle-asr.mjs`
 - Create: `lib/subtitle-asr.d.ts`
 
-- [ ] Implement parser + patch per design
-- [ ] Pass `scripts/test-subtitle-asr.mjs`
+- [x] Implement parser + patch per design
+- [x] Pass `scripts/test-subtitle-asr.mjs`
 
 ### Task 3: CLI + package wire
 
@@ -55,11 +55,11 @@
 - Modify: `cli/director-master.mjs`
 - Modify: `package.json`
 
-- [ ] `--asr` path writes bilingual exports; passes `--duration-ms`
-- [ ] Mutual exclusion `--asr` vs `--cues`
-- [ ] `--video` without cues/asr: no key → V0 message; key present → "V1 live RH not wired tonight / use --asr" (no network)
-- [ ] `npm test` includes subtitle-asr
-- [ ] Dry-run CLI on a fixture
+- [x] `--asr` path writes bilingual exports; passes `--duration-ms`
+- [x] Mutual exclusion `--asr` vs `--cues`
+- [x] `--video` without cues/asr: no key → V0 message; key present → "V1 live RH not wired tonight / use --asr" (no network)
+- [x] `npm test` includes subtitle-asr
+- [x] Dry-run CLI on a fixture
 
 ### Task 4: Docs
 
@@ -69,11 +69,11 @@
 - Update: `docs/SUBTITLE_BILINGUAL_PLAN.md` V1 status note
 - Spec/plan already written
 
-- [ ] Docs reflect night-1 slice done; live RH still open
+- [x] Docs reflect night-1 slice done; live RH still open
 
 ### Task 5: Verify + finish branch
 
-- [ ] `npm test` green
-- [ ] eslint changed files if project uses it
-- [ ] Commit, push `-u origin HEAD`, `gh pr create` targeting main
-- [ ] Do **not** merge Sprint 2 PRs #6/#7
+- [x] `npm test` green
+- [x] eslint changed files if project uses it
+- [x] Commit, push `-u origin HEAD`, `gh pr create` targeting main
+- [x] Do **not** merge Sprint 2 PRs #6/#7

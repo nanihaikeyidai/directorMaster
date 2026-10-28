@@ -57,7 +57,9 @@
 
 ### Sprint 3 — 双语字幕 V1
 
-- [ ] RH Confucius4-R2T2 → `normalizeCues`；成片入口；可选 burn；cue 可编辑再导出
+- [x] Night-1 离线：`parseRhAsrOutput` / `applyCuePatches` + CLI `--asr`（RH 形状 → `normalizeCues`；无网络）
+- [ ] Live RH Confucius4-R2T2 提交/轮询（需密钥；成片入口）
+- [ ] 可选 burn；UI cue 编辑再导出
 
 ### 每晚轮转
 
