@@ -10,14 +10,15 @@
     "build": "vinext build",
     "start": "vinext start",
     "lint": "eslint . --ignore-pattern dist --ignore-pattern .next --ignore-pattern share-site",
-    "test": "node scripts/test-mv-prompt.mjs && node scripts/test-redub-timeline.mjs && node scripts/test-subtitle-cues.mjs && node scripts/test-mv-segment-review.mjs && node scripts/test-mv-generation-resume.mjs && node scripts/test-mv-av-alignment.mjs",
+    "test": "node scripts/test-mv-prompt.mjs && node scripts/test-redub-timeline.mjs && node scripts/test-subtitle-cues.mjs && node scripts/test-mv-segment-review.mjs && node scripts/test-mv-generation-resume.mjs && node scripts/test-mv-av-alignment.mjs && node scripts/test-subtitle-asr.mjs",
     "test:mv-prompt": "node scripts/test-mv-prompt.mjs",
     "test:redub": "node scripts/test-redub-timeline.mjs",
     "director": "node cli/director-master.mjs",
     "test:subtitle": "node scripts/test-subtitle-cues.mjs",
     "test:mv-segment-review": "node scripts/test-mv-segment-review.mjs",
     "test:mv-generation-resume": "node scripts/test-mv-generation-resume.mjs",
-    "test:mv-av-alignment": "node scripts/test-mv-av-alignment.mjs"
+    "test:mv-av-alignment": "node scripts/test-mv-av-alignment.mjs",
+    "test:subtitle-asr": "node scripts/test-subtitle-asr.mjs"
   },
   "dependencies": {
     "next": "16.2.6",

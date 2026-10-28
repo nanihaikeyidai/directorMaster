@@ -1,6 +1,6 @@
 # 双语字幕功能规划
 
-状态：V0 已落地（离线 cue + SRT/ASS；云端 ASR 仍为规划）  
+状态：V0 已落地；V1 night-1 已落地离线 RH ASR 解析 → cues + patch + CLI `--asr`（仍无 live RH 提交）  
 提出日期：2026-10-24  
 参考工作流：[Confucius4-R2T2 语音转录（RunningHub）](https://www.runninghub.cn/post/2104649076645130241)（post / 候选 workflowId：`2104649076645130241`）  
 模型背景：网易有道 [Confucius4-R2T2](https://huggingface.co/netease-youdao/Confucius4-R2T2) —— 低延迟流式 ASR，中英优化，可输出稳定文本；RH 帖用于云端反推/跑通，不必本机部署大模型。
@@ -99,3 +99,8 @@ npm run director -- subtitle --job <runninghub-local-job-id> --langs zh,en --bur
 ## V0 落地说明（2026-10-25）
 
 已实现离线契约：`lib/subtitle-cues.mjs`、CLI `subtitle --cues`、adapter 启发式 `detectSubtitleWorkflowKind`。云端 RunningHub ASR 与烧录仍按上表 V1 推进。
+
+
+## V1 night-1 落地说明（2026-10-29）
+
+已实现离线 RH/Confucius-like ASR 输出解析：`lib/subtitle-asr.mjs`（`parseRhAsrOutput`、`applyCuePatches`）、CLI `subtitle --asr`、fixtures + `scripts/test-subtitle-asr.mjs`。`--video` 在有密钥时仍不调用云端，明确提示改用 `--asr`。Live RH 提交、成片入口、烧录、UI 编辑器留待后续 nightly。

@@ -1,0 +1,4 @@
+[
+  { "start": 0.0, "end": 1.2, "text": "第一句" },
+  { "startMs": 1500, "endMs": 2800, "text": "第二句", "translation": "Second line" }
+]

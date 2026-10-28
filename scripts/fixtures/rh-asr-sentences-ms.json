@@ -1,0 +1,6 @@
+{
+  "sentences": [
+    { "begin_time": 1000, "end_time": 2500, "text": "跟着灯光向前走" },
+    { "start_ms": 2600, "end_ms": 4200, "text": "别回头" }
+  ]
+}
