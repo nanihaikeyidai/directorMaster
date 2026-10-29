@@ -16,7 +16,12 @@ export function detectRunningHubWorkflowKind(workflow: any): RunningHubWorkflowK
   throw new Error('云端工作流缺少受支持的 MiniMax H3 主节点');
 }
 
-/** Heuristic-only subtitle workflow detector; does not submit cloud jobs. */
+/** Heuristic-only subtitle workflow detector; does not submit cloud jobs.
+ * Offline ASR parse/patch: lib/subtitle-asr.mjs (parseRhAsrOutput / applyCuePatches).
+ * Live RH ASR pipeline (key-gated, injectable): lib/subtitle-rh-asr.mjs — CLI --video/--dry-run/--watch.
+ * Burn / UI cue editor: still open.
+ */
+
 export function detectSubtitleWorkflowKind(workflow: any): 'asr-r2t2' | null {
   const classes = workflowNodes(workflow).map(([, value]: any) => String(value?.class_type || ''));
   const markers = [/confucius/i, /r2t2/i, /\basr\b/i, /speech.?to.?text/i, /whisper/i];
