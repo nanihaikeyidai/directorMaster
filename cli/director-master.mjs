@@ -6,6 +6,12 @@ import path from 'node:path';
 import { buildStandardBandMvPrompt } from '../lib/mv-prompt.mjs';
 import { normalizeCues, writeBilingualSubtitles } from '../lib/subtitle-cues.mjs';
 import { parseRhAsrOutput } from '../lib/subtitle-asr.mjs';
+import {
+  hasSubtitleAsrKey,
+  runSubtitleAsrPipeline,
+  createSubtitleAsrRhDeps,
+  DEFAULT_SUBTITLE_ASR_WORKFLOW_ID,
+} from '../lib/subtitle-rh-asr.mjs';
 import { checkAvAlignment } from '../lib/mv-av-alignment.mjs';
 
 const argv = process.argv.slice(2);
@@ -590,7 +596,7 @@ function mvAlignCheck() {
   return checkAvAlignment(segments, options);
 }
 
-function subtitleCommand() {
+async function subtitleCommand() {
   const cuesPath = option('cues');
   const asrPath = option('asr');
   const outDir = option('out');
@@ -599,24 +605,62 @@ function subtitleCommand() {
   const sourceLang = langs[0] || 'zh';
   const targetLang = langs[1] || (sourceLang === 'zh' ? 'en' : 'zh');
   const basename = option('basename', 'subtitles') || 'subtitles';
+  const workflowId = option('workflow-id', '') || undefined;
   const durationMsRaw = option('duration-ms', '');
   const durationMs = durationMsRaw === '' ? undefined : Number(durationMsRaw);
   if (durationMsRaw !== '' && (!Number.isFinite(durationMs) || durationMs <= 0)) {
     throw new Error('--duration-ms 必须是正数毫秒');
   }
+  const dryRun = flag('dry-run') || option('dry-run', '') === 'true';
+  const watch = flag('watch');
 
   if (cuesPath && asrPath) {
     throw new Error('subtitle 不能同时使用 --cues 与 --asr，请二选一');
   }
+  if ((cuesPath || asrPath) && videoPath) {
+    throw new Error('subtitle 的 --video 成片入口请勿与 --cues/--asr 同时使用');
+  }
 
   if (!cuesPath && !asrPath) {
-    if (videoPath) {
-      if (!hasRunningHubApiKey()) {
-        throw new Error('字幕云端 ASR 需要 RUNNINGHUB_API_KEY；当前未配置。可改用离线：--cues <json> --out <dir> 或 --asr <rh-asr.json> --out <dir>（本命令不会调用 RunningHub）。');
-      }
-      throw new Error('Subtitle V1 live RH ASR 尚未接入（今晚未接线）；请使用离线 --asr <rh-asr.json> --out <dir> 或 --cues <json> --out <dir>，勿依赖 --video 直连云端。');
+    if (!videoPath) {
+      throw new Error('subtitle 需要 --cues <json> --out <dir> 或 --asr <rh-asr.json> --out <dir>（离线导出），或 --video <file> --out <dir> [--dry-run|--watch]');
     }
-    throw new Error('subtitle 需要 --cues <json> --out <dir> 或 --asr <rh-asr.json> --out <dir>（离线导出），或配置密钥后使用未来的 --video 云端路径');
+    if (!hasSubtitleAsrKey() && !hasRunningHubApiKey()) {
+      throw new Error('字幕云端 ASR 需要 RUNNINGHUB_API_KEY；当前未配置。可改用离线：--cues <json> --out <dir> 或 --asr <rh-asr.json> --out <dir>（本命令不会调用 RunningHub）。');
+    }
+    if (!outDir) throw new Error('subtitle --video 需要 --out <dir>');
+    const resolvedVideo = path.resolve(videoPath);
+    const resolvedOut = path.resolve(outDir);
+    // Default and --dry-run: never call live RH. --watch without --dry-run wires real deps.
+    const useLive = watch && !dryRun;
+    const deps = useLive
+      ? createSubtitleAsrRhDeps()
+      : {
+          getApiKey: async () => String(process.env.RUNNINGHUB_API_KEY || '').trim() || 'dry-run-placeholder',
+          uploadFile: async () => { throw new Error('dry-run/plan 路径不应 upload'); },
+          createTask: async () => { throw new Error('dry-run/plan 路径不应 create'); },
+          getStatus: async () => { throw new Error('dry-run/plan 路径不应 status'); },
+          getOutputs: async () => { throw new Error('dry-run/plan 路径不应 outputs'); },
+        };
+    const result = await runSubtitleAsrPipeline(
+      {
+        videoPath: resolvedVideo,
+        outDir: resolvedOut,
+        langs,
+        basename,
+        workflowId: workflowId || DEFAULT_SUBTITLE_ASR_WORKFLOW_ID,
+        durationMs,
+        dryRun: !useLive,
+      },
+      deps,
+    );
+    return {
+      ...result,
+      sourceLang,
+      targetLang,
+      mode: useLive ? 'watch' : 'dry-run',
+      workflowId: result.workflowId || workflowId || DEFAULT_SUBTITLE_ASR_WORKFLOW_ID,
+    };
   }
   if (!outDir) throw new Error('subtitle 需要 --out <dir>');
 
@@ -685,13 +729,13 @@ try {
   else if (command === 'voice-generate') console.log(JSON.stringify(await voiceGenerate(),null,2));
   else if (command === 'voice-status') console.log(JSON.stringify(await voiceStatus(),null,2));
   else if (command === 'redub') console.log(JSON.stringify(await redubCommand(), null, 2));
-  else if (command === 'subtitle') console.log(JSON.stringify(subtitleCommand(), null, 2));
+  else if (command === 'subtitle') console.log(JSON.stringify(await subtitleCommand(), null, 2));
   else if (command === 'mv-align-check') {
     const report = mvAlignCheck();
     console.log(JSON.stringify(report, null, 2));
     if (!report.ok) process.exitCode = 1;
   }
-  else console.log('Director Master CLI\n  discover\n  index --root <dir>\n  skill-task --kind screenplay --script <file> [--brief <text>]\n  skill-task --kind shotlist --script <file> --platform "MiniMax H3" --confirmed true [--assets <dir>]\n  prepare --spec <project.json> --out <workflow.json>\n  run --spec <project.json> [--watch]\n  status --id <prompt-id>\n  mv-cut --audio <music.wav> --project <name> --cuts 8.4,21.7 --notes <segments.json> --people <dir> --scenes <dir> [--asset-meta <descriptions.json>]\n  voice-generate --ref <voice.wav> --text <台词> --character <角色> --emotion <情绪描述> --consent true [--watch]\n  voice-generate --ref <voice.wav> --batch <dialogue.json> --consent true [--watch]\n  voice-status --id <job-id>\n  redub --video <file> --consent true [--name <id>] [--script <script.json>] [--skip-separate] [--stop-after extract|separate|transcribe|refs|tts]\n  redub --stage init|extract|separate|transcribe|script|refs|tts|mix --job <id> [--script <file>] [--consent true]\n  subtitle --cues <cues.json> --out <dir> [--langs zh,en] [--basename subtitles]\n  subtitle --asr <rh-asr.json> --out <dir> [--langs zh,en] [--duration-ms N] [--basename subtitles]\n  subtitle --video <file>   # 无 --cues/--asr：无 key 报错；有 key 但未接线则提示用 --asr，不调用云端\n  mv-align-check --manifest <segments.json> [--tolerance 0.08] [--require-video] [--require-audio|--no-require-audio]');
+  else console.log('Director Master CLI\n  discover\n  index --root <dir>\n  skill-task --kind screenplay --script <file> [--brief <text>]\n  skill-task --kind shotlist --script <file> --platform "MiniMax H3" --confirmed true [--assets <dir>]\n  prepare --spec <project.json> --out <workflow.json>\n  run --spec <project.json> [--watch]\n  status --id <prompt-id>\n  mv-cut --audio <music.wav> --project <name> --cuts 8.4,21.7 --notes <segments.json> --people <dir> --scenes <dir> [--asset-meta <descriptions.json>]\n  voice-generate --ref <voice.wav> --text <台词> --character <角色> --emotion <情绪描述> --consent true [--watch]\n  voice-generate --ref <voice.wav> --batch <dialogue.json> --consent true [--watch]\n  voice-status --id <job-id>\n  redub --video <file> --consent true [--name <id>] [--script <script.json>] [--skip-separate] [--stop-after extract|separate|transcribe|refs|tts]\n  redub --stage init|extract|separate|transcribe|script|refs|tts|mix --job <id> [--script <file>] [--consent true]\n  subtitle --cues <cues.json> --out <dir> [--langs zh,en] [--basename subtitles]\n  subtitle --asr <rh-asr.json> --out <dir> [--langs zh,en] [--duration-ms N] [--basename subtitles]\n  subtitle --video <file> --out <dir> [--langs zh,en] [--basename subtitles] [--workflow-id ID] [--duration-ms N] [--dry-run] [--watch]\n  # --video：无 key 报错；默认/--dry-run 只写 asr-job-plan.json（planned，不调 RH）；--watch 接线 live RH（勿在 nightly 付费重试）\n  mv-align-check --manifest <segments.json> [--tolerance 0.08] [--require-video] [--require-audio|--no-require-audio]');
 } catch (error) {
   console.error('[director-master] ' + (error instanceof Error ? error.message : String(error)));
   process.exitCode = 1;

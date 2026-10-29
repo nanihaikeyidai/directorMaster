@@ -1,5 +1,38 @@
 # Iteration Notes
 
+## 2026-10-30 会话 — Sprint 3 night-2：Live RH ASR adapter（key-gated）+ CLI 成片入口
+
+### Module chosen
+**视频后期配字幕 / Sprint 3 V1 night-2**：`lib/subtitle-rh-asr.mjs` 可注入 deps 的 RH ASR 流水线 + CLI `--video` 成片入口。默认/`--dry-run` 仅写 `asr-job-plan.json`（`planned`）；`--watch` 接线真实传输但本夜验证不调用付费 RH。
+
+### Acceptance
+1. `DEFAULT_SUBTITLE_ASR_WORKFLOW_ID` = `2104649076645130241`；`hasSubtitleAsrKey` / `resolveSubtitleAsrConfig` / `buildSubtitleAsrSubmitBody` / `extractAsrRawFromCloudOutputs` / `runSubtitleAsrPipeline(input, deps)`
+2. 缺钥抛清晰中英错误；永不返回/打印 API key
+3. dryRun → `planned` + plan JSON；happy mock → cues 写出；FAILED / poll cap 覆盖
+4. `scripts/test-subtitle-rh-asr.mjs` 接入 `npm test`（无 fetch）
+5. CLI `--video --out [--dry-run|--watch|--workflow-id|--duration-ms|…]`；移除「尚未接入」文案
+6. adapters 一句话指向 lib；docs/spec/plan/ITERATION_*/SUBTITLE 更新
+7. 无实机 RH 付费调用
+
+### Landed
+- `lib/subtitle-rh-asr.mjs` (+ `.d.ts`)
+- `scripts/test-subtitle-rh-asr.mjs`
+- CLI 成片入口 + help
+- Docs：`docs/superpowers/specs/2026-10-30-subtitle-v1-rh-live-design.md`、`plans/2026-10-30-subtitle-v1-rh-live.md`
+
+### Verification
+- `npm test` 全绿；CLI dry-run 用假 video 路径；无 RH HTTP
+
+### Remaining / next night
+- 可选 ffmpeg burn-in
+- UI cue 编辑再导出
+- （可选）实机冒烟需用户显式授权密钥与付费
+
+### Paths
+- Design: `docs/superpowers/specs/2026-10-30-subtitle-v1-rh-live-design.md`
+- Plan: `docs/superpowers/plans/2026-10-30-subtitle-v1-rh-live.md`
+
+
 ## 2026-10-29 会话 — Sprint 3 night-1：RH ASR 离线解析 → cues + patch + CLI --asr
 
 ### Module chosen

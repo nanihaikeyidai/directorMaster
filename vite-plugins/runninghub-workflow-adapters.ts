@@ -18,7 +18,8 @@ export function detectRunningHubWorkflowKind(workflow: any): RunningHubWorkflowK
 
 /** Heuristic-only subtitle workflow detector; does not submit cloud jobs.
  * Offline ASR parse/patch: lib/subtitle-asr.mjs (parseRhAsrOutput / applyCuePatches).
- * Live RH Confucius4-R2T2 submit / 成片入口 / burn: next night — not wired here.
+ * Live RH ASR pipeline (key-gated, injectable): lib/subtitle-rh-asr.mjs — CLI --video/--dry-run/--watch.
+ * Burn / UI cue editor: still open.
  */
 
 export function detectSubtitleWorkflowKind(workflow: any): 'asr-r2t2' | null {
