@@ -1,6 +1,6 @@
 # 双语字幕功能规划
 
-状态：V0 已落地；V1 night-1 离线 ASR 解析；V1 night-2 live RH adapter（key-gated）+ CLI `--video` 成片入口（默认 dry-run/planned；`--watch` 已接线，nightly 不实调付费）  
+状态：V0 已落地；V1 night-1 离线 ASR 解析；V1 night-2 live RH adapter（key-gated）+ CLI `--video`；V1 night-3 可选 ffmpeg burn-in（CLI `--burn`；缺 ffmpeg → skipped）  
 提出日期：2026-10-24  
 参考工作流：[Confucius4-R2T2 语音转录（RunningHub）](https://www.runninghub.cn/post/2104649076645130241)（post / 候选 workflowId：`2104649076645130241`）  
 模型背景：网易有道 [Confucius4-R2T2](https://huggingface.co/netease-youdao/Confucius4-R2T2) —— 低延迟流式 ASR，中英优化，可输出稳定文本；RH 帖用于云端反推/跑通，不必本机部署大模型。
@@ -109,3 +109,7 @@ npm run director -- subtitle --job <runninghub-local-job-id> --langs zh,en --bur
 ## V1 night-2 落地说明（2026-10-30）
 
 已实现 key-gated injectable live RH ASR 编排：`lib/subtitle-rh-asr.mjs`（`hasSubtitleAsrKey` / `resolveSubtitleAsrConfig` / `buildSubtitleAsrSubmitBody` / `extractAsrRawFromCloudOutputs` / `runSubtitleAsrPipeline` / `createSubtitleAsrRhDeps`）。CLI `subtitle --video --out [--dry-run|--watch]`：默认与 `--dry-run` 写 `asr-job-plan.json`（`planned`，无网络）；`--watch` 镜像 `runninghub.ts` 传输层。测试仅 mock deps。烧录与 UI cue 编辑仍开放。
+
+## V1 night-3 落地说明（2026-10-31）
+
+可选硬字幕烧录：`lib/subtitle-burn.mjs`（`escapeSubtitlesFilterPath` / `buildBurnFfmpegArgs` / `resolveBurnSubtitleFile` prefer `*.bilingual.ass` / `probeFfmpeg` / `burnSubtitlesIntoVideo` injectable）。CLI `subtitle … --burn --video <clip>`；与 `--cues`/`--asr` 联用时放开 `--video` 互斥。软导出仍不依赖 ffmpeg；缺二进制 → `burn.status=skipped` reason `ffmpeg-not-found`。ASR `planned` 路径 → `no-cues-yet`。默认输出 `<out>/<basename>.burned.mp4`。无 RH 付费调用。下一夜：UI cue 编辑再导出。

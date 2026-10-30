@@ -1,5 +1,35 @@
 # Iteration Notes
 
+## 2026-10-31 会话 — Sprint 3 night-3：可选 ffmpeg burn-in + CLI --burn
+
+### Module chosen
+**视频后期配字幕 / Sprint 3 V1 night-3**：`lib/subtitle-burn.mjs`（可注入 exec）+ CLI `--burn`。软字幕导出不依赖 ffmpeg；缺 ffmpeg → `burn.status=skipped` reason `ffmpeg-not-found`。无 RH 付费/网络。
+
+### Acceptance
+1. `escapeSubtitlesFilterPath` / `buildBurnFfmpegArgs`（ASS 无 force_style；SRT 有）/ `resolveBurnSubtitleFile`（prefer bilingual.ass）/ `probeFfmpeg` / `burnSubtitlesIntoVideo`
+2. 缺 ffmpeg → skipped；mock happy → burned + escaped path in args
+3. CLI `--burn`：与 `--cues`/`--asr` 联用时允许 `--video`（片源）；缺 video 清晰报错；ASR planned → `no-cues-yet`
+4. 默认输出 `<outDir>/<basename>.burned.mp4`
+5. `scripts/test-subtitle-burn.mjs` 接入 `npm test`
+6. 无 RH 调用；不提交大 mp4 / 密钥
+
+### Landed
+- `lib/subtitle-burn.mjs` (+ `.d.ts`)
+- `scripts/test-subtitle-burn.mjs`
+- CLI `--burn` + help；互斥放宽（仅 burn 时）
+- Docs：design/plan（已有）+ 本笔记 + ITERATION_PLAN / SUBTITLE_BILINGUAL_PLAN
+
+### Verification
+- `npm test` 全绿（含 burn 套件）；可选本机 ffmpeg 冒烟后删除 mp4
+
+### Remaining / next night
+- UI cue 编辑再导出
+- （可选）实机 RH ASR 冒烟需用户显式授权付费
+
+### Paths
+- Design: `docs/superpowers/specs/2026-10-31-subtitle-v1-burn-design.md`
+- Plan: `docs/superpowers/plans/2026-10-31-subtitle-v1-burn.md`
+
 ## 2026-10-30 会话 — Sprint 3 night-2：Live RH ASR adapter（key-gated）+ CLI 成片入口
 
 ### Module chosen

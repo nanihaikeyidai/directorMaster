@@ -12,6 +12,10 @@ import {
   createSubtitleAsrRhDeps,
   DEFAULT_SUBTITLE_ASR_WORKFLOW_ID,
 } from '../lib/subtitle-rh-asr.mjs';
+import {
+  resolveBurnSubtitleFile,
+  burnSubtitlesIntoVideo,
+} from '../lib/subtitle-burn.mjs';
 import { checkAvAlignment } from '../lib/mv-av-alignment.mjs';
 
 const argv = process.argv.slice(2);
@@ -613,17 +617,43 @@ async function subtitleCommand() {
   }
   const dryRun = flag('dry-run') || option('dry-run', '') === 'true';
   const watch = flag('watch');
+  const burn = flag('burn');
+  const burnOut = option('burn-out', '') || undefined;
 
   if (cuesPath && asrPath) {
     throw new Error('subtitle 不能同时使用 --cues 与 --asr，请二选一');
   }
-  if ((cuesPath || asrPath) && videoPath) {
-    throw new Error('subtitle 的 --video 成片入口请勿与 --cues/--asr 同时使用');
+  // Allow --video with --cues/--asr ONLY when --burn (video is burn source, not ASR pipeline).
+  if ((cuesPath || asrPath) && videoPath && !burn) {
+    throw new Error('subtitle 的 --video 成片入口请勿与 --cues/--asr 同时使用（若要烧录硬字幕请加 --burn）');
+  }
+  if (burn && (cuesPath || asrPath) && !videoPath) {
+    throw new Error('subtitle --burn 与 --cues/--asr 联用时需要 --video <clip.mp4> 作为烧录片源');
+  }
+
+  async function maybeBurn(written, resolvedOut, resolvedVideo) {
+    if (!burn) return undefined;
+    if (!resolvedVideo) {
+      throw new Error('subtitle --burn 需要 --video <clip.mp4>');
+    }
+    const subtitlePath = resolveBurnSubtitleFile({
+      outDir: resolvedOut,
+      basename,
+      written,
+    });
+    const outputPath = burnOut
+      ? path.resolve(burnOut)
+      : path.join(resolvedOut, `${basename}.burned.mp4`);
+    return burnSubtitlesIntoVideo({
+      videoPath: resolvedVideo,
+      subtitlePath,
+      outputPath,
+    });
   }
 
   if (!cuesPath && !asrPath) {
     if (!videoPath) {
-      throw new Error('subtitle 需要 --cues <json> --out <dir> 或 --asr <rh-asr.json> --out <dir>（离线导出），或 --video <file> --out <dir> [--dry-run|--watch]');
+      throw new Error('subtitle 需要 --cues <json> --out <dir> 或 --asr <rh-asr.json> --out <dir>（离线导出），或 --video <file> --out <dir> [--dry-run|--watch] [--burn]');
     }
     if (!hasSubtitleAsrKey() && !hasRunningHubApiKey()) {
       throw new Error('字幕云端 ASR 需要 RUNNINGHUB_API_KEY；当前未配置。可改用离线：--cues <json> --out <dir> 或 --asr <rh-asr.json> --out <dir>（本命令不会调用 RunningHub）。');
@@ -654,17 +684,31 @@ async function subtitleCommand() {
       },
       deps,
     );
-    return {
+    const base = {
       ...result,
       sourceLang,
       targetLang,
       mode: useLive ? 'watch' : 'dry-run',
       workflowId: result.workflowId || workflowId || DEFAULT_SUBTITLE_ASR_WORKFLOW_ID,
     };
+    if (burn) {
+      if (result.status === 'planned' || !result.files?.ass) {
+        return { ...base, burn: { status: 'skipped', reason: 'no-cues-yet', outputPath: null } };
+      }
+      const written = {
+        ass: result.files?.ass,
+        srtSource: result.files?.srtSource,
+        srtTarget: result.files?.srtTarget,
+      };
+      const burnResult = await maybeBurn(written, resolvedOut, resolvedVideo);
+      return { ...base, burn: burnResult };
+    }
+    return base;
   }
   if (!outDir) throw new Error('subtitle 需要 --out <dir>');
 
   const resolvedOut = path.resolve(outDir);
+  const resolvedVideo = videoPath ? path.resolve(videoPath) : undefined;
 
   if (asrPath) {
     const resolvedAsr = path.resolve(asrPath);
@@ -683,7 +727,7 @@ async function subtitleCommand() {
       targetLang: (payload && payload.targetLang) || targetLang,
       basename,
     });
-    return {
+    const base = {
       status: 'written',
       cueCount: cues.length,
       sourceLang: (payload && payload.sourceLang) || sourceLang,
@@ -692,6 +736,11 @@ async function subtitleCommand() {
       needsReview: parsed.needsReview || false,
       ...written,
     };
+    if (burn) {
+      const burnResult = await maybeBurn(written, resolvedOut, resolvedVideo);
+      return { ...base, burn: burnResult };
+    }
+    return base;
   }
 
   const resolvedCues = path.resolve(cuesPath);
@@ -703,13 +752,18 @@ async function subtitleCommand() {
     targetLang: payload.targetLang || targetLang,
     basename,
   });
-  return {
+  const base = {
     status: 'written',
     cueCount: cues.length,
     sourceLang: payload.sourceLang || sourceLang,
     targetLang: payload.targetLang || targetLang,
     ...written,
   };
+  if (burn) {
+    const burnResult = await maybeBurn(written, resolvedOut, resolvedVideo);
+    return { ...base, burn: burnResult };
+  }
+  return base;
 }
 
 try {
@@ -735,7 +789,7 @@ try {
     console.log(JSON.stringify(report, null, 2));
     if (!report.ok) process.exitCode = 1;
   }
-  else console.log('Director Master CLI\n  discover\n  index --root <dir>\n  skill-task --kind screenplay --script <file> [--brief <text>]\n  skill-task --kind shotlist --script <file> --platform "MiniMax H3" --confirmed true [--assets <dir>]\n  prepare --spec <project.json> --out <workflow.json>\n  run --spec <project.json> [--watch]\n  status --id <prompt-id>\n  mv-cut --audio <music.wav> --project <name> --cuts 8.4,21.7 --notes <segments.json> --people <dir> --scenes <dir> [--asset-meta <descriptions.json>]\n  voice-generate --ref <voice.wav> --text <台词> --character <角色> --emotion <情绪描述> --consent true [--watch]\n  voice-generate --ref <voice.wav> --batch <dialogue.json> --consent true [--watch]\n  voice-status --id <job-id>\n  redub --video <file> --consent true [--name <id>] [--script <script.json>] [--skip-separate] [--stop-after extract|separate|transcribe|refs|tts]\n  redub --stage init|extract|separate|transcribe|script|refs|tts|mix --job <id> [--script <file>] [--consent true]\n  subtitle --cues <cues.json> --out <dir> [--langs zh,en] [--basename subtitles]\n  subtitle --asr <rh-asr.json> --out <dir> [--langs zh,en] [--duration-ms N] [--basename subtitles]\n  subtitle --video <file> --out <dir> [--langs zh,en] [--basename subtitles] [--workflow-id ID] [--duration-ms N] [--dry-run] [--watch]\n  # --video：无 key 报错；默认/--dry-run 只写 asr-job-plan.json（planned，不调 RH）；--watch 接线 live RH（勿在 nightly 付费重试）\n  mv-align-check --manifest <segments.json> [--tolerance 0.08] [--require-video] [--require-audio|--no-require-audio]');
+  else console.log('Director Master CLI\n  discover\n  index --root <dir>\n  skill-task --kind screenplay --script <file> [--brief <text>]\n  skill-task --kind shotlist --script <file> --platform "MiniMax H3" --confirmed true [--assets <dir>]\n  prepare --spec <project.json> --out <workflow.json>\n  run --spec <project.json> [--watch]\n  status --id <prompt-id>\n  mv-cut --audio <music.wav> --project <name> --cuts 8.4,21.7 --notes <segments.json> --people <dir> --scenes <dir> [--asset-meta <descriptions.json>]\n  voice-generate --ref <voice.wav> --text <台词> --character <角色> --emotion <情绪描述> --consent true [--watch]\n  voice-generate --ref <voice.wav> --batch <dialogue.json> --consent true [--watch]\n  voice-status --id <job-id>\n  redub --video <file> --consent true [--name <id>] [--script <script.json>] [--skip-separate] [--stop-after extract|separate|transcribe|refs|tts]\n  redub --stage init|extract|separate|transcribe|script|refs|tts|mix --job <id> [--script <file>] [--consent true]\n  subtitle --cues <cues.json> --out <dir> [--langs zh,en] [--basename subtitles] [--burn --video <clip.mp4>]\n  subtitle --asr <rh-asr.json> --out <dir> [--langs zh,en] [--duration-ms N] [--basename subtitles] [--burn --video <clip.mp4>]\n  subtitle --video <file> --out <dir> [--langs zh,en] [--basename subtitles] [--workflow-id ID] [--duration-ms N] [--dry-run] [--watch] [--burn]\n  # --video：无 key 报错；默认/--dry-run 只写 asr-job-plan.json（planned，不调 RH）；--watch 接线 live RH（勿在 nightly 付费重试）\n  # --burn：软字幕写出后可选 ffmpeg 硬字幕；缺 ffmpeg 则 burn.status=skipped；默认输出 <out>/<basename>.burned.mp4\n  mv-align-check --manifest <segments.json> [--tolerance 0.08] [--require-video] [--require-audio|--no-require-audio]');
 } catch (error) {
   console.error('[director-master] ' + (error instanceof Error ? error.message : String(error)));
   process.exitCode = 1;
