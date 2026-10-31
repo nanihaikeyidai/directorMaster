@@ -82,6 +82,13 @@ const enters = buildFolkSoloMvPrompt({
 });
 assert.match(enters, /00:07\.000|begins singing only when/i);
 assert.match(enters, /closed/i);
+assert.match(enters, /hybrid|before .* use only wide|guitar-hands coverage with no singer face/i);
+assert.match(enters, /00:07\.000/);
+// Shot before vocal onset must not demand face CU as the focus target line for shot 1.
+const shot1 = enters.split('[Shot 2]')[0];
+assert.match(shot1, /场地远景|琴弦手部|hands|wide|venue/i);
+assert.doesNotMatch(shot1, /【动作类型：歌手面部特写】/);
+
 
 assert.throws(
   () =>

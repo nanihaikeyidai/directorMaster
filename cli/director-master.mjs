@@ -3,13 +3,16 @@ import { execFileSync } from 'node:child_process';
 import { createHash } from 'node:crypto';
 import { readFileSync, writeFileSync, readdirSync, statSync, existsSync, mkdirSync, copyFileSync } from 'node:fs';
 import path from 'node:path';
-import { buildStandardBandMvPrompt } from '../lib/mv-prompt.mjs';
+import { fileURLToPath } from 'node:url';
+import { buildStandardBandMvPrompt, buildFolkSoloMvPrompt } from '../lib/mv-prompt.mjs';
+import { resolveMvProject, runMvGenerate } from '../lib/mv-cloud-generate.mjs';
 import { normalizeCues, writeBilingualSubtitles } from '../lib/subtitle-cues.mjs';
 import { checkAvAlignment } from '../lib/mv-av-alignment.mjs';
 
 const argv = process.argv.slice(2);
 const command = argv.shift() || 'help';
-const DIRECTOR_WORKSPACE = path.resolve('D:\\HermesWorkspace\\directorMaster');
+const REPO_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
+const DIRECTOR_WORKSPACE = path.resolve(process.env.DIRECTOR_MASTER_ROOT || REPO_ROOT);
 const option = (name, fallback = '') => {
   const index = argv.indexOf('--' + name);
   return index >= 0 ? argv[index + 1] : fallback;
@@ -319,8 +322,11 @@ function safeMvId(value) {
   return id;
 }
 
-function mvPrompt(projectName,segment,note={},visualAssets=[]) {
-  return buildStandardBandMvPrompt({ projectName, segment, note, assets: visualAssets });
+function mvPrompt(projectName,segment,note={},visualAssets=[],template='band',settings={}) {
+  const input = { projectName, segment, note, assets: visualAssets, settings };
+  if (template === 'folk-solo') return buildFolkSoloMvPrompt(input);
+  if (template === 'band') return buildStandardBandMvPrompt(input);
+  throw new Error('--template 仅支持 band 或 folk-solo');
 }
 
 function mvCut() {
@@ -328,6 +334,11 @@ function mvCut() {
   if(!existsSync(input)||!statSync(input).isFile()) throw new Error('音频文件不存在：'+input);
   const projectName=option('project',path.basename(input,path.extname(input)));
   const projectId=safeMvId(projectName);
+  const template=String(option('template','band')||'band').trim();
+  if(!['band','folk-solo'].includes(template)) throw new Error('--template 仅支持 band 或 folk-solo');
+  const vocalStartSec=option('vocal-start','');
+  const settings={};
+  if(vocalStartSec!=='') settings.vocalStartSec=String(vocalStartSec);
   const probe=JSON.parse(execFileSync('ffprobe',['-v','error','-select_streams','a:0','-show_entries','format=duration:stream=codec_name,sample_rate,channels','-of','json',input],{encoding:'utf8',windowsHide:true}));
   const duration=Number(probe.format?.duration||0);
   if(!Number.isFinite(duration)||duration<=0) throw new Error('未检测到有效音轨');
@@ -370,9 +381,9 @@ function mvCut() {
     const segment={index:index+1,start:Number(start.toFixed(3)),end:Number(end.toFixed(3)),duration:Number(length.toFixed(3))};
     const fileName=`segment-${String(segment.index).padStart(2,'0')}_${segment.start.toFixed(3)}-${segment.end.toFixed(3)}.wav`,outputPath=path.join(outputRoot,fileName);
     execFileSync('ffmpeg',['-hide_banner','-loglevel','error','-y','-ss',String(segment.start),'-t',String(segment.duration),'-i',sourcePath,'-vn','-acodec','pcm_s16le',outputPath],{windowsHide:true});
-    return {...segment,...notes[index],fileName,path:outputPath,prompt:mvPrompt(projectName,segment,notes[index],visualAssets)};
+    return {...segment,...notes[index],fileName,path:outputPath,prompt:mvPrompt(projectName,segment,notes[index],visualAssets,template,settings)};
   });
-  const manifest={version:1,projectId,projectName,sourceName:path.basename(sourcePath),sourcePath,duration,cuts,visualAssets,segments,outputRoot,createdAt:new Date().toISOString()};
+  const manifest={version:1,projectId,projectName,template,settings,sourceName:path.basename(sourcePath),sourcePath,duration,cuts,visualAssets,segments,outputRoot,createdAt:new Date().toISOString()};
   const projectFile=path.join(root,'project.json');
   writeFileSync(projectFile,JSON.stringify(manifest,null,2));writeFileSync(path.join(outputRoot,'segments.json'),JSON.stringify(manifest,null,2));
   return {status:'exported',projectId,projectFile,outputRoot,segments};
@@ -651,7 +662,28 @@ try {
     console.log(JSON.stringify(report, null, 2));
     if (!report.ok) process.exitCode = 1;
   }
-  else console.log('Director Master CLI\n  discover\n  index --root <dir>\n  skill-task --kind screenplay --script <file> [--brief <text>]\n  skill-task --kind shotlist --script <file> --platform "MiniMax H3" --confirmed true [--assets <dir>]\n  prepare --spec <project.json> --out <workflow.json>\n  run --spec <project.json> [--watch]\n  status --id <prompt-id>\n  mv-cut --audio <music.wav> --project <name> --cuts 8.4,21.7 --notes <segments.json> --people <dir> --scenes <dir> [--asset-meta <descriptions.json>]\n  voice-generate --ref <voice.wav> --text <台词> --character <角色> --emotion <情绪描述> --consent true [--watch]\n  voice-generate --ref <voice.wav> --batch <dialogue.json> --consent true [--watch]\n  voice-status --id <job-id>\n  redub --video <file> --consent true [--name <id>] [--script <script.json>] [--skip-separate] [--stop-after extract|separate|transcribe|refs|tts]\n  redub --stage init|extract|separate|transcribe|script|refs|tts|mix --job <id> [--script <file>] [--consent true]\n  subtitle --cues <cues.json> --out <dir> [--langs zh,en] [--basename subtitles]\n  subtitle --video <file>   # V0: 无 cues 且无 RUNNINGHUB_API_KEY 时明确报错，不调用云端\n  mv-align-check --manifest <segments.json> [--tolerance 0.08] [--require-video] [--require-audio|--no-require-audio]');
+  else if (command === 'mv-generate') {
+    const watch = argv.includes('--watch');
+    const dryRun = argv.includes('--dry-run') || !watch;
+    const { projectFile, manifest } = resolveMvProject(option('project'), DIRECTOR_WORKSPACE);
+    const apiKey = String(process.env.RUNNINGHUB_API_KEY || '').replace(/[^0-9a-fA-F]/g,'').trim();
+    if (watch && !apiKey) throw new Error('mv-generate --watch 需要 RUNNINGHUB_API_KEY');
+    const result = await runMvGenerate({
+      manifest,
+      projectFile,
+      apiKey,
+      watch,
+      dryRun,
+      workflowId: option('workflow-id', '2087128116820013058'),
+      outDir: option('out', ''),
+      settings: {
+        steps: Number(option('steps', '8')),
+        megapixels: Number(option('megapixels', '0.6')),
+      },
+    });
+    console.log(JSON.stringify(result, null, 2));
+  }
+  else console.log('Director Master CLI\n  discover\n  index --root <dir>\n  skill-task --kind screenplay --script <file> [--brief <text>]\n  skill-task --kind shotlist --script <file> --platform "MiniMax H3" --confirmed true [--assets <dir>]\n  prepare --spec <project.json> --out <workflow.json>\n  run --spec <project.json> [--watch]\n  status --id <prompt-id>\n  mv-cut --audio <music.wav> --project <name> --cuts 8.4,21.7 --notes <segments.json> --people <dir> --scenes <dir> [--template band|folk-solo] [--vocal-start <sec>] [--asset-meta <descriptions.json>]\n  mv-generate --project <id|project.json> [--dry-run|--watch] [--workflow-id ID] [--out dir]\n  voice-generate --ref <voice.wav> --text <台词> --character <角色> --emotion <情绪描述> --consent true [--watch]\n  voice-generate --ref <voice.wav> --batch <dialogue.json> --consent true [--watch]\n  voice-status --id <job-id>\n  redub --video <file> --consent true [--name <id>] [--script <script.json>] [--skip-separate] [--stop-after extract|separate|transcribe|refs|tts]\n  redub --stage init|extract|separate|transcribe|script|refs|tts|mix --job <id> [--script <file>] [--consent true]\n  subtitle --cues <cues.json> --out <dir> [--langs zh,en] [--basename subtitles]\n  subtitle --video <file>   # V0: 无 cues 且无 RUNNINGHUB_API_KEY 时明确报错，不调用云端\n  mv-align-check --manifest <segments.json> [--tolerance 0.08] [--require-video] [--require-audio|--no-require-audio]');
 } catch (error) {
   console.error('[director-master] ' + (error instanceof Error ? error.message : String(error)));
   process.exitCode = 1;
