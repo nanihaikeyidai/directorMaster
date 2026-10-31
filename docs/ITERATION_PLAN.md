@@ -63,6 +63,13 @@
 
 阻塞主路径 bug 当夜修；否则按 Sprint 1→2→3 取下一块。结果汇报到本聊天。
 
+### MV 提示词模板库（Approach A）
+
+- [x] folk-solo（`buildFolkSoloMvPrompt` + CLI `--template folk-solo`；feature 分支 / PR #11 栈）
+- [x] folk-duo（`buildFolkDuoMvPrompt` + CLI `--template folk-duo`；本夜 `feature/folk-duo-mv-prompt`）
+- [ ] 下一曲风变体 / UI 模板 picker（后续 nightly）
+
+
 ## 管理方式
 
 - Superpowers 驱动迭代；见 docs/PROJECT_MANAGEMENT.md
