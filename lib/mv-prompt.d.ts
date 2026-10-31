@@ -46,3 +46,14 @@ export function buildStandardBandMvPrompt(input: {
 export function defaultBandMvActions(shotType?: string, duration?: number): { type: string; duration: number }[];
 
 export const BAND_MV_PROMPT_TEMPLATE_VERSION: "band-live-ref2va-v8-timed-multi-action-role-mapping";
+
+export function buildFolkSoloMvPrompt(input: {
+  projectName: string;
+  segment: BandMvSegment;
+  note?: BandMvNote;
+  assets: BandMvAsset[];
+  settings?: BandMvSettings;
+  leadSilenceSec?: number;
+}): string;
+
+export const FOLK_SOLO_MV_PROMPT_TEMPLATE_VERSION: string;
