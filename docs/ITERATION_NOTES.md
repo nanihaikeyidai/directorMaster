@@ -1,5 +1,31 @@
 # Iteration Notes
 
+## 2026-11-01 00:00 Asia/Shanghai — MV folk-duo 提示词模板 + CLI
+
+### Module chosen
+**MV / folk-duo 模板库扩展**（用户定稿方案 A：扩展 `lib/mv-prompt.mjs` + CLI；folk-solo 之后落地 folk-duo；参考 BV1dsxM6EEKn 吉他手+主唱）。无 RH 付费。
+
+### Landed
+- `buildFolkDuoMvPrompt` + `FOLK_DUO_MV_PROMPT_TEMPLATE_VERSION=folk-duo-ref2va-v1`
+- 角色启发式（主唱/singer vs 吉他/guitar）；≥2 人物 + ≥1 场景；禁 identical-twin/copy，允许两张不同定妆
+- 切镜：句中不切；无人声=场地远景或吉他手手部（不对主唱脸）；人声优先主唱脸 CU + 吉他手点缀；`vocal_enters` 混成
+- CLI：`mv-cut --template folk-duo`（allowlist `band|folk-solo|folk-duo`）
+- 测试：`scripts/test-folk-duo-mv-prompt.mjs` 接入 `npm test`
+- Docs：design/plan + `docs/FOLK_DUO_MV_PROMPT_STANDARD.md`
+
+### Verification
+- `node scripts/test-folk-duo-mv-prompt.mjs` → ok
+- `npm test` 全绿（含 band / folk-solo / folk-duo）
+- 无 RunningHub / 无密钥 / 无大媒体提交
+
+### Remaining / next night
+- 下一曲风模板变体 **或** UI 模板下拉选择器 **或** Sprint 2 open PR 合并卫生（#4 / #6–#11 仍 open）
+- folk-solo PR #11 与本 folk-duo 分支为堆叠关系，合入时注意 base
+
+### Paths
+- Design: `docs/superpowers/specs/2026-11-01-folk-duo-mv-prompt-design.md`
+- Plan: `docs/superpowers/plans/2026-11-01-folk-duo-mv-prompt.md`
+
 ## 2026-10-26 会话 — Sprint 1 余项：MV 音画对齐检查（P0-4）
 
 ### Module chosen
