@@ -57,3 +57,14 @@ export function buildFolkSoloMvPrompt(input: {
 }): string;
 
 export const FOLK_SOLO_MV_PROMPT_TEMPLATE_VERSION: string;
+
+export function buildFolkDuoMvPrompt(input: {
+  projectName: string;
+  segment: BandMvSegment;
+  note?: BandMvNote;
+  assets: BandMvAsset[];
+  settings?: BandMvSettings;
+  leadSilenceSec?: number;
+}): string;
+
+export const FOLK_DUO_MV_PROMPT_TEMPLATE_VERSION: string;
