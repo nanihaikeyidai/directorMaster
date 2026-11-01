@@ -68,3 +68,25 @@ export function buildFolkDuoMvPrompt(input: {
 }): string;
 
 export const FOLK_DUO_MV_PROMPT_TEMPLATE_VERSION: string;
+
+export function buildPianoBalladMvPrompt(input: {
+  projectName: string;
+  segment: BandMvSegment;
+  note?: BandMvNote;
+  assets: BandMvAsset[];
+  settings?: BandMvSettings;
+  leadSilenceSec?: number;
+}): string;
+
+export const PIANO_BALLAD_MV_PROMPT_TEMPLATE_VERSION: string;
+
+export type MvPromptTemplateId = "band" | "folk-solo" | "folk-duo" | "piano-ballad";
+export interface MvPromptTemplateEntry {
+  id: MvPromptTemplateId;
+  label: string;
+  version: string;
+  build: typeof buildPianoBalladMvPrompt;
+}
+export const MV_PROMPT_TEMPLATES: Readonly<Record<MvPromptTemplateId, MvPromptTemplateEntry>>;
+export function listMvPromptTemplates(): Array<{ id: MvPromptTemplateId; label: string; version: string }>;
+export function buildMvPromptForTemplate(templateId: string, input: Parameters<typeof buildPianoBalladMvPrompt>[0]): string;

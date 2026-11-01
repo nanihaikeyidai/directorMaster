@@ -1,5 +1,32 @@
 # Iteration Notes
 
+## 2026-11-02 00:00 Asia/Shanghai — MV piano-ballad 模板 + 模板注册表
+
+### Module chosen
+**MV / 模板库扩展**（每晚至少新增一类曲风模板）。folk-duo 已落地，本晚加第四类 **piano-ballad（钢琴自弹自唱）**，并把 CLI 的模板 if/else 收敛为注册表，后续加曲风只需注册一项。无 RH 付费。
+
+### 验收标准
+- 无人声段只出场地远景/琴键手部/琴槌细节，不出歌手面部特写；人声段首镜为面部特写；vocal_enters 起点前不对脸、起点后切脸
+- 句中不切；人设表/缺场景报错；六段顺序正确
+- 注册表含 band/folk-solo/folk-duo/piano-ballad，`buildMvPromptForTemplate('folk-solo')` 与原函数输出一致；未知模板报错并列出可选项
+- `npm test` 全绿
+
+### Landed
+- `buildPianoBalladMvPrompt` + `PIANO_BALLAD_MV_PROMPT_TEMPLATE_VERSION=piano-ballad-ref2va-v1`
+- `MV_PROMPT_TEMPLATES` / `listMvPromptTemplates()` / `buildMvPromptForTemplate()`（+ d.ts）
+- CLI：`mv-cut --template piano-ballad`（allowlist 来自注册表）；新增 `mv-templates` 列出模板，方便 AI 调用
+- 测试 `scripts/test-piano-ballad-mv-prompt.mjs` 接入 `npm test`；文档 `docs/PIANO_BALLAD_MV_PROMPT_STANDARD.md`
+
+### Verification
+- `npm test` 全绿（band / folk-solo / folk-duo / piano-ballad / redub / subtitle / review / resume / align）
+- `node cli/director-master.mjs mv-templates` 输出 4 个模板
+- 无 RunningHub / 无密钥 / 无大媒体
+
+### Remaining / next night
+- UI 模板下拉直接读 `listMvPromptTemplates()`
+- 下一曲风：电子/舞曲（dance-performance）或 摇滚独唱 / 说唱
+- open PR 合并卫生：#4、#6–#12 仍 open，本 PR 堆叠在 #12 之上
+
 ## 2026-11-01 00:00 Asia/Shanghai — MV folk-duo 提示词模板 + CLI
 
 ### Module chosen
