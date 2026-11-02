@@ -80,7 +80,18 @@ export function buildPianoBalladMvPrompt(input: {
 
 export const PIANO_BALLAD_MV_PROMPT_TEMPLATE_VERSION: string;
 
-export type MvPromptTemplateId = "band" | "folk-solo" | "folk-duo" | "piano-ballad";
+export function buildRockSoloMvPrompt(input: {
+  projectName: string;
+  segment: BandMvSegment;
+  note?: BandMvNote;
+  assets: BandMvAsset[];
+  settings?: BandMvSettings;
+  leadSilenceSec?: number;
+}): string;
+
+export const ROCK_SOLO_MV_PROMPT_TEMPLATE_VERSION: string;
+
+export type MvPromptTemplateId = "band" | "folk-solo" | "folk-duo" | "piano-ballad" | "rock-solo";
 export interface MvPromptTemplateEntry {
   id: MvPromptTemplateId;
   label: string;

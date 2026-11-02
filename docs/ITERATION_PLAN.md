@@ -66,8 +66,10 @@
 ### MV 提示词模板库（Approach A）
 
 - [x] folk-solo（`buildFolkSoloMvPrompt` + CLI `--template folk-solo`；feature 分支 / PR #11 栈）
-- [x] folk-duo（`buildFolkDuoMvPrompt` + CLI `--template folk-duo`；本夜 `feature/folk-duo-mv-prompt`）
-- [ ] 下一曲风变体 / UI 模板 picker（后续 nightly）
+- [x] folk-duo（`buildFolkDuoMvPrompt` + CLI `--template folk-duo`；feature 分支 / PR #12 栈）
+- [x] piano-ballad（`buildPianoBalladMvPrompt` + 注册表 + CLI `mv-templates`；feature 分支 / PR #13 栈）
+- [x] rock-solo（`buildRockSoloMvPrompt` + 注册表；本夜 `feature/rock-solo-mv-template`）
+- [ ] 下一：UI 模板 picker 读注册表 / dance-edm（电子舞曲）及其他曲风变体
 
 
 ## 管理方式
