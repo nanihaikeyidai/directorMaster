@@ -1,5 +1,32 @@
 # Iteration Notes
 
+## 2026-11-03 00:00 Asia/Shanghai — MV rock-solo 模板（第五类）
+
+### Module chosen
+**MV / 模板库扩展**（每晚至少新增一类曲风模板）。piano-ballad 已落地，本晚加第五类 **rock-solo（摇滚独唱 · 电吉他舞台弹唱）**，挂进既有 `MV_PROMPT_TEMPLATES` 注册表。无 RH 付费。
+
+### 验收标准
+- 无人声段只出舞台远景 / 电吉他手部·琴颈 / 音箱踏板细节，不出歌手面部特写；人声段首镜为面部特写；vocal_enters 起点前不对脸、起点后切脸
+- 句中不切；人设表/缺场景报错；六段顺序正确
+- 注册表含 band/folk-solo/folk-duo/piano-ballad/rock-solo，`buildMvPromptForTemplate('rock-solo')` 可用；未知模板报错并列出可选项
+- `npm test` 全绿；`mv-templates` 输出 5 个模板
+
+### Landed
+- `buildRockSoloMvPrompt` + `ROCK_SOLO_MV_PROMPT_TEMPLATE_VERSION=rock-solo-ref2va-v1`
+- 注册表追加 `rock-solo`（label：摇滚独唱（电吉他舞台））；`listMvPromptTemplates` / `buildMvPromptForTemplate` 自动覆盖
+- CLI：`mv-cut --template` help 列出 rock-solo（allowlist 来自注册表）
+- 测试 `scripts/test-rock-solo-mv-prompt.mjs` 接入 `npm test`；文档 `docs/ROCK_SOLO_MV_PROMPT_STANDARD.md`
+
+### Verification
+- `npm test` 全绿（band / folk-solo / folk-duo / piano-ballad / rock-solo / redub / subtitle / review / resume / align）
+- `node cli/director-master.mjs mv-templates` 输出 5 个模板
+- 无 RunningHub / 无密钥 / 无大媒体
+
+### Remaining / next night
+- UI 模板下拉直接读 `listMvPromptTemplates()`
+- 下一曲风：电子舞曲（dance-edm）或其他变体
+- open PR 合并卫生：#4、#6–#13 仍 open，本 PR 堆叠在 piano-ballad #13 之上
+
 ## 2026-11-02 00:00 Asia/Shanghai — MV piano-ballad 模板 + 模板注册表
 
 ### Module chosen
