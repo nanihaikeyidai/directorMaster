@@ -68,8 +68,9 @@
 - [x] folk-solo（`buildFolkSoloMvPrompt` + CLI `--template folk-solo`；feature 分支 / PR #11 栈）
 - [x] folk-duo（`buildFolkDuoMvPrompt` + CLI `--template folk-duo`；feature 分支 / PR #12 栈）
 - [x] piano-ballad（`buildPianoBalladMvPrompt` + 注册表 + CLI `mv-templates`；feature 分支 / PR #13 栈）
-- [x] rock-solo（`buildRockSoloMvPrompt` + 注册表；本夜 `feature/rock-solo-mv-template`）
-- [ ] 下一：UI 模板 picker 读注册表 / dance-edm（电子舞曲）及其他曲风变体
+- [x] rock-solo（`buildRockSoloMvPrompt` + 注册表；`feature/rock-solo-mv-template`）
+- [x] UI 模板 picker（`listMvPromptTemplates` 下拉 + `buildMvPromptForTemplate` + `promptTemplateId` 持久化；本夜 `feature/mv-ui-template-picker`）
+- [ ] 下一：dance-edm（电子舞曲）及其他曲风变体 / open PR 合并卫生
 
 
 ## 管理方式
