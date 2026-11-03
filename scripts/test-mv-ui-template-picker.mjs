@@ -38,3 +38,12 @@ assert.match(runtimeSrc, /promptTemplateId/);
 assert.match(runtimeSrc, /listMvPromptTemplates/);
 assert.match(runtimeSrc, /normalizeMvPromptTemplateId/);
 console.log("ok - API source wiring");
+
+// --- Task 3: MV page source wiring ---
+const pageSrc = readFileSync(join(root, "app/mv/page.tsx"), "utf8");
+assert.match(pageSrc, /listMvPromptTemplates/);
+assert.match(pageSrc, /buildMvPromptForTemplate/);
+assert.match(pageSrc, /promptTemplateId/);
+assert.match(pageSrc, /aria-label="MV 提示词模板"/);
+assert.match(pageSrc, /<select[\s\S]*aria-label="MV 提示词模板"|aria-label="MV 提示词模板"[\s\S]*<select/);
+console.log("ok - MV page source wiring");

@@ -10,9 +10,11 @@ import {
   type DirectorSettings,
 } from "../../lib/workflow";
 import {
-  BAND_MV_PROMPT_TEMPLATE_VERSION,
-  buildStandardBandMvPrompt,
   defaultBandMvActions,
+  listMvPromptTemplates,
+  buildMvPromptForTemplate,
+  normalizeMvPromptTemplateId,
+  MV_PROMPT_TEMPLATES,
 } from "../../lib/mv-prompt.mjs";
 import { isShortDramaEnabled, navItems } from "../../lib/features.mjs";
 import {
@@ -302,6 +304,8 @@ export default function MvStudio() {
   const [notes, setNotes] = useState<SegmentNote[]>([]);
   const [generatedPrompts, setGeneratedPrompts] = useState<string[]>([]);
   const [generatedFrom, setGeneratedFrom] = useState("");
+  const [promptTemplateId, setPromptTemplateId] = useState("band");
+  const mvPromptTemplates = useMemo(() => listMvPromptTemplates(), []);
   const [visualAssets, setVisualAssets] = useState<Asset[]>([]);
   const [currentTime, setCurrentTime] = useState(0);
   const [playing, setPlaying] = useState(false);
@@ -393,7 +397,8 @@ export default function MvStudio() {
   );
   function signatureFor(currentNotes: SegmentNote[]) {
     return JSON.stringify({
-      templateVersion: BAND_MV_PROMPT_TEMPLATE_VERSION,
+      templateId: promptTemplateId,
+      templateVersion: MV_PROMPT_TEMPLATES[promptTemplateId]?.version || promptTemplateId,
       cuts,
       duration: project?.duration || 0,
       // 歌词、分镜导演词和镜头类型都会影响最终提示词。
@@ -566,6 +571,7 @@ export default function MvStudio() {
     })) : []);
     setGeneratedPrompts(Array.isArray(data.promptBundle?.prompts) ? data.promptBundle.prompts : []);
     setGeneratedFrom(String(data.promptBundle?.signature || ""));
+    setPromptTemplateId(normalizeMvPromptTemplateId(data.promptTemplateId));
     {
       const savedReviews = Array.isArray(data.segmentReviews) ? data.segmentReviews : [];
       const restoredCount = Array.isArray(data.segments) ? data.segments.length : savedReviews.length;
@@ -738,6 +744,7 @@ export default function MvStudio() {
           trimStart: trimRange.start,
           trimEnd: trimRange.end || project.duration,
           settings,
+          promptTemplateId,
           promptBundle: { prompts: generatedPrompts, signature: generatedFrom },
           segmentReviews,
           generationQueue: normalizePersistedQueue(generationQueue),
@@ -1389,7 +1396,7 @@ export default function MvStudio() {
       shotActions: actionsForSegment(notes[index] || emptyNote(), segment.duration),
     }));
     const prompts = segments.map((segment, index) =>
-      buildStandardBandMvPrompt({
+      buildMvPromptForTemplate(promptTemplateId, {
         projectName: project.projectName,
         segment,
         note: nextNotes[index],
@@ -1609,7 +1616,7 @@ export default function MvStudio() {
     setNotes(nextNotes);
     if (generatedPrompts[index]) {
       try {
-        const nextPrompt = buildStandardBandMvPrompt({ projectName: project.projectName, segment: segments[index], note: nextNotes[index], assets: visualAssets, settings, leadSilenceSec: Number(project.leadSilenceSec || 0) });
+        const nextPrompt = buildMvPromptForTemplate(promptTemplateId, { projectName: project.projectName, segment: segments[index], note: nextNotes[index], assets: visualAssets, settings, leadSilenceSec: Number(project.leadSilenceSec || 0) });
         setGeneratedPrompts((current) => current.map((prompt, promptIndex) => promptIndex === index ? nextPrompt : prompt));
         setGeneratedFrom(signatureFor(nextNotes));
         setSegmentReviews((current) => {
@@ -1638,7 +1645,7 @@ export default function MvStudio() {
     setNotes(nextNotes);
     if (generatedPrompts[index]) {
       try {
-        const nextPrompt = buildStandardBandMvPrompt({ projectName: project.projectName, segment, note: nextNotes[index], assets: visualAssets, settings, leadSilenceSec: Number(project.leadSilenceSec || 0) });
+        const nextPrompt = buildMvPromptForTemplate(promptTemplateId, { projectName: project.projectName, segment, note: nextNotes[index], assets: visualAssets, settings, leadSilenceSec: Number(project.leadSilenceSec || 0) });
         setGeneratedPrompts((current) => current.map((prompt, promptIndex) => promptIndex === index ? nextPrompt : prompt));
         setGeneratedFrom(signatureFor(nextNotes));
         setSegmentReviews((current) => {
@@ -1968,8 +1975,8 @@ export default function MvStudio() {
       if (autoSegments.some((segment) => segment.duration > MAX_SEGMENT + 0.001 || segment.duration < MIN_SEGMENT))
         throw new Error("自动切段仍有超出 15 秒的片段，请手动调整");
       const autoNotes = autoSegments.map((segment, index) => ({ ...(notes[index] || emptyNote()), shotActions: actionsForSegment(notes[index] || emptyNote(), segment.duration) }));
-      const autoPrompts = autoSegments.map((segment, index) => buildStandardBandMvPrompt({ projectName: project.projectName, segment, note: autoNotes[index], assets: visualAssets, settings, leadSilenceSec: Number(project.leadSilenceSec || 0) }));
-      const signature = JSON.stringify({ templateVersion: BAND_MV_PROMPT_TEMPLATE_VERSION, cuts: autoCuts, duration: project.duration, notes: autoNotes, visualAssets: visualAssets.map(({ id, category, description }) => ({ id, category, description })), settings, leadSilenceSec, trimRange });
+      const autoPrompts = autoSegments.map((segment, index) => buildMvPromptForTemplate(promptTemplateId, { projectName: project.projectName, segment, note: autoNotes[index], assets: visualAssets, settings, leadSilenceSec: Number(project.leadSilenceSec || 0) }));
+      const signature = JSON.stringify({ templateId: promptTemplateId, templateVersion: MV_PROMPT_TEMPLATES[promptTemplateId]?.version || promptTemplateId, cuts: autoCuts, duration: project.duration, notes: autoNotes, visualAssets: visualAssets.map(({ id, category, description }) => ({ id, category, description })), settings, leadSilenceSec, trimRange });
       setCuts(autoCuts); setNotes(autoNotes); setGeneratedPrompts(autoPrompts); setGeneratedFrom(signature);
       setSegmentReviews(resetReviewsForPromptChange([], autoSegments.length));
       setBusy("");
@@ -2324,7 +2331,20 @@ export default function MvStudio() {
 
             <div className="mv-grid">
               <section className="mv-panel mv-prompts"><div className="mv-panel-title"><div><small>PROMPT REVIEW</small><h2>分段最终提示词</h2></div><b>{generatedPrompts.length}/{segments.length}</b></div>
-                <div className="mv-prompt-toolbar"><p>标准模板 {BAND_MV_PROMPT_TEMPLATE_VERSION} · 每段可组合多个镜头动作并分别设定时长，系统按人物素材角色自动绑定 Picture / Subject 编号。检查动作顺序、角色和总时长。</p><div><button className="segment-fold-all" aria-pressed={allSegmentsCollapsed} onClick={() => setCollapsedSegments(allSegmentsCollapsed ? {} : Object.fromEntries(segments.map((_, index) => [index, true])))}>{allSegmentsCollapsed ? "全部展开" : "全部折叠"}</button><button className="local" disabled={!promptsReady} onClick={() => openBatch("local")}>本地批量生成</button><button className="cloud" disabled={!promptsReady} onClick={() => openBatch("runninghub")}>云端批量生成</button><button className="cloud" disabled={Boolean(busy) || Boolean(missingVisualKinds.length)} onClick={() => void generateFullMv()}>一键云端出完整 MV</button><button className="merge" disabled={Boolean(busy) || generationBusy || !mergeVideosReady} title={mergeVideosReady ? "按 SEG 顺序合并全部成片并恢复原始音轨" : "请先生成全部 SEG 视频"} onClick={() => void mergeGeneratedVideos()}>合并视频</button><button disabled={Boolean(invalidSegments.length) || Boolean(missingVisualKinds.length)} onClick={generatePrompts}>{promptsReady ? "按标准模板重新生成" : "生成标准提示词"}</button></div></div>
+                                <div className="mv-prompt-toolbar"><p>提示词模板{" "}
+                  <select
+                    aria-label="MV 提示词模板"
+                    value={promptTemplateId}
+                    onChange={(e) => setPromptTemplateId(normalizeMvPromptTemplateId(e.target.value))}
+                    disabled={Boolean(busy) || generationBusy}
+                  >
+                    {mvPromptTemplates.map((t) => (
+                      <option key={t.id} value={t.id}>{t.label}</option>
+                    ))}
+                  </select>
+                  {" · "}{MV_PROMPT_TEMPLATES[promptTemplateId]?.version || promptTemplateId}
+                  {" · 每段可组合多个镜头动作并分别设定时长，系统按人物素材角色自动绑定 Picture / Subject 编号。检查动作顺序、角色和总时长。"}
+                </p><div><button className="segment-fold-all" aria-pressed={allSegmentsCollapsed} onClick={() => setCollapsedSegments(allSegmentsCollapsed ? {} : Object.fromEntries(segments.map((_, index) => [index, true])))}>{allSegmentsCollapsed ? "全部展开" : "全部折叠"}</button><button className="local" disabled={!promptsReady} onClick={() => openBatch("local")}>本地批量生成</button><button className="cloud" disabled={!promptsReady} onClick={() => openBatch("runninghub")}>云端批量生成</button><button className="cloud" disabled={Boolean(busy) || Boolean(missingVisualKinds.length)} onClick={() => void generateFullMv()}>一键云端出完整 MV</button><button className="merge" disabled={Boolean(busy) || generationBusy || !mergeVideosReady} title={mergeVideosReady ? "按 SEG 顺序合并全部成片并恢复原始音轨" : "请先生成全部 SEG 视频"} onClick={() => void mergeGeneratedVideos()}>合并视频</button><button disabled={Boolean(invalidSegments.length) || Boolean(missingVisualKinds.length)} onClick={generatePrompts}>{promptsReady ? "按标准模板重新生成" : "生成标准提示词"}</button></div></div>
                 <div className="mv-prompt-list">{segments.map((segment, index) => { const isCollapsed = Boolean(collapsedSegments[index]); const currentVideo = generation[index]?.status === "done" && generation[index]?.outputPath ? generation[index] : undefined; const previewVideo = currentVideo || fallbackVideos[index]; const outputPath = previewVideo?.outputPath; const isFallbackVideo = !currentVideo && Boolean(fallbackVideos[index]); const previewUrl = outputPath ? videoPreviewUrl(outputPath, previewVideo?.completedAt || 0) : ""; return <article key={`${segment.start}-${segment.end}`} ref={(element) => { segmentCardRefs.current[index] = element; }} className={`${segment.duration > MAX_SEGMENT || segment.duration < MIN_SEGMENT ? "invalid" : ""}${highlightedSegmentIndex === index ? " generation-highlight" : ""}${isCollapsed ? " segment-collapsed" : ""}`} onDoubleClick={(event) => { if ((event.target as HTMLElement).closest("button,input,textarea,select,a,video,label")) return; setCollapsedSegments((current) => ({ ...current, [index]: false })); }}>
                   <header><div><span>SEG {String(segment.index).padStart(2, "0")}</span><b>{clock(segment.start)} → {clock(segment.end)}</b><i>{segment.duration.toFixed(3)} 秒</i></div><div><button onClick={() => { if (!audioRef.current) return; audioRef.current.currentTime = segment.start; void audioRef.current.play(); window.setTimeout(() => audioRef.current?.pause(), segment.duration * 1000); }}>试听本段</button>{outputPath && <button onClick={() => window.open(previewUrl, "_blank", "noopener,noreferrer")}>预览视频</button>}{!isCollapsed && <button disabled={!generatedPrompts[index]} onClick={() => void navigator.clipboard.writeText(generatedPrompts[index] || "")}>复制提示词</button>}<button className="segment-fold-toggle" aria-expanded={!isCollapsed} onClick={() => setCollapsedSegments((current) => ({ ...current, [index]: !current[index] }))}>{isCollapsed ? "展开编辑" : "折叠"}</button></div></header>
                   <div className="mv-prompt-refbar"><span>{visualAssets.filter((asset) => asset.category === "人物").length} 人物</span><span>{visualAssets.filter((asset) => asset.category === "场景").length} 场景</span><span>&lt;Audio 1&gt;</span><strong className={`mv-review-status ${segmentReviews[index] || "pending"}`}>{generatedPrompts[index] ? promptsReady ? REVIEW_STATUS_LABEL[segmentReviews[index] || "pending"] : "素材或切点已变化 · 需重新生成" : "等待生成"}</strong></div>
