@@ -30,3 +30,11 @@ assert.ok(MV_PROMPT_TEMPLATES.band);
 assert.equal(typeof buildMvPromptForTemplate, "function");
 
 console.log("ok - normalizeMvPromptTemplateId + registry");
+
+// --- Task 2: API source wiring ---
+const runtimeSrc = readFileSync(join(root, "vite-plugins/local-runtime.ts"), "utf8");
+assert.match(runtimeSrc, /\/api\/local\/mv\/templates/);
+assert.match(runtimeSrc, /promptTemplateId/);
+assert.match(runtimeSrc, /listMvPromptTemplates/);
+assert.match(runtimeSrc, /normalizeMvPromptTemplateId/);
+console.log("ok - API source wiring");

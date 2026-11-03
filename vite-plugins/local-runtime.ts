@@ -25,6 +25,10 @@ import {
   normalizeTimeline,
   validateTimeline,
 } from "../lib/redub-timeline.mjs";
+import {
+  listMvPromptTemplates,
+  normalizeMvPromptTemplateId,
+} from "../lib/mv-prompt.mjs";
 
 const execFileAsync = promisify(execFile);
 
@@ -261,6 +265,9 @@ async function createMvProject(request: any) {
       segments: [],
       visualAssets: copiedVisualAssets,
       settings: replacing ? previousManifest?.settings : undefined,
+      promptTemplateId: normalizeMvPromptTemplateId(
+        request.promptTemplateId ?? previousManifest?.promptTemplateId,
+      ),
       promptBundle: { prompts: [], signature: "" },
       createdAt: replacing ? previousManifest?.createdAt || now : now,
       updatedAt: now,
@@ -1808,6 +1815,8 @@ export function localRuntime(): Plugin {
             const origin = req.headers.origin;
             if (origin && new URL(origin).host !== req.headers.host)
               return send(res, 403, { error: "不允许跨站访问 MV 工作区" });
+            if (url.pathname === "/api/local/mv/templates" && req.method === "GET")
+              return send(res, 200, { templates: listMvPromptTemplates() });
             if (
               url.pathname === "/api/local/mv/projects" &&
               req.method === "POST"
@@ -1841,6 +1850,9 @@ export function localRuntime(): Plugin {
                 : current.cuts;
               const updated = {
                 ...current,
+                promptTemplateId: normalizeMvPromptTemplateId(
+                  request.promptTemplateId ?? current.promptTemplateId,
+                ),
                 trimStart: Math.max(0, Number(request.trimStart ?? current.trimStart ?? 0)),
                 trimEnd: Math.min(Number(current.duration), Number(request.trimEnd ?? current.trimEnd ?? current.duration)),
                 cuts,
