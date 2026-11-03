@@ -14,6 +14,7 @@ import {
   buildStandardBandMvPrompt,
   defaultBandMvActions,
 } from "../../lib/mv-prompt.mjs";
+import { isShortDramaEnabled, navItems } from "../../lib/features.mjs";
 import {
   approvedIndexes,
   approveSegment,
@@ -2254,8 +2255,8 @@ export default function MvStudio() {
   return (
     <main className="mv-app" onPointerDown={() => { if (cutMenu) setCutMenu(null); }}>
       <header className="mv-topbar">
-        <a className="mv-brand" href="/"><span>DM</span><b>DIRECTOR MASTER</b></a>
-        <nav><a href="/">导演画布</a><a className="active" href="/mv">MV 制作</a><a href="/voice">声音克隆</a></nav>
+        <a className="mv-brand" href="/"><span>MV</span><b>MV MASTER</b></a>
+        <nav>{navItems(isShortDramaEnabled({ NEXT_PUBLIC_FEATURE_SHORT_DRAMA: process.env.NEXT_PUBLIC_FEATURE_SHORT_DRAMA })).map((item) => <a key={item.href} className={item.href === "/" ? "active" : undefined} href={item.href}>{item.label}</a>)}</nav>
         {project && <div className={`mv-save-status ${projectSaveStatus}`} title="编辑后自动保存，并每 5 分钟进行一次周期保存">
           <span>{projectSaveStatus === "saving" ? "正在保存…" : projectSaveStatus === "error" ? "保存失败" : projectSaveStatus === "saved" ? `已保存 ${lastProjectSavedAt ? new Date(lastProjectSavedAt).toLocaleTimeString() : ""}` : "自动保存已开启"}</span>
           <button disabled={projectSaveStatus === "saving"} onClick={() => void saveCurrentProject().catch(() => undefined)}>{projectSaveStatus === "saving" ? "保存中" : "保存项目"}</button>
