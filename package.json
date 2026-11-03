@@ -10,7 +10,7 @@
     "build": "vinext build",
     "start": "vinext start",
     "lint": "eslint . --ignore-pattern dist --ignore-pattern .next --ignore-pattern share-site",
-    "test": "node scripts/test-mv-master-features.mjs && node scripts/test-mv-prompt.mjs && node scripts/test-folk-mv-prompt.mjs && node scripts/test-folk-duo-mv-prompt.mjs && node scripts/test-piano-ballad-mv-prompt.mjs && node scripts/test-rock-solo-mv-prompt.mjs && node scripts/test-redub-timeline.mjs && node scripts/test-subtitle-cues.mjs && node scripts/test-mv-segment-review.mjs && node scripts/test-mv-generation-resume.mjs && node scripts/test-mv-av-alignment.mjs",
+    "test": "node scripts/test-mv-master-features.mjs && node scripts/test-mv-prompt.mjs && node scripts/test-folk-mv-prompt.mjs && node scripts/test-folk-duo-mv-prompt.mjs && node scripts/test-piano-ballad-mv-prompt.mjs && node scripts/test-rock-solo-mv-prompt.mjs && node scripts/test-mv-ui-template-picker.mjs && node scripts/test-redub-timeline.mjs && node scripts/test-subtitle-cues.mjs && node scripts/test-mv-segment-review.mjs && node scripts/test-mv-generation-resume.mjs && node scripts/test-mv-av-alignment.mjs",
     "test:mv-prompt": "node scripts/test-mv-prompt.mjs",
     "test:redub": "node scripts/test-redub-timeline.mjs",
     "director": "node cli/director-master.mjs",
@@ -21,7 +21,8 @@
     "test:folk-mv-prompt": "node scripts/test-folk-mv-prompt.mjs",
     "test:folk-duo-mv-prompt": "node scripts/test-folk-duo-mv-prompt.mjs",
     "test:piano-ballad-mv-prompt": "node scripts/test-piano-ballad-mv-prompt.mjs",
-    "test:rock-solo-mv-prompt": "node scripts/test-rock-solo-mv-prompt.mjs"
+    "test:rock-solo-mv-prompt": "node scripts/test-rock-solo-mv-prompt.mjs",
+    "test:mv-ui-template-picker": "node scripts/test-mv-ui-template-picker.mjs"
   },
   "dependencies": {
     "next": "16.2.6",

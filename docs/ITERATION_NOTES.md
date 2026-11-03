@@ -1,5 +1,32 @@
 # Iteration Notes
 
+## 2026-11-04 00:00 Asia/Shanghai — MV UI 模板下拉读注册表
+
+### Module chosen
+**MV / UI 模板 picker**（CLI 注册表已有 band/folk-solo/folk-duo/piano-ballad/rock-solo，本晚把 `app/mv/page.tsx` 从硬编码 band 接到 `listMvPromptTemplates` / `buildMvPromptForTemplate`）。无 RH 付费。
+
+### 验收标准
+- `normalizeMvPromptTemplateId`：空/未知 → `band`；已注册 id 原样返回
+- `GET /api/local/mv/templates` → `{ templates: listMvPromptTemplates() }`
+- 项目持久化 `promptTemplateId`（create/PUT 规范化）；恢复项目时 soft-normalize
+- MV 页工具栏 `<select aria-label="MV 提示词模板">`；生成走 `buildMvPromptForTemplate`；signature 含 templateId+version
+- `npm test` 全绿；无 RH / 无密钥 / 无大媒体
+
+### Landed
+- `normalizeMvPromptTemplateId` + d.ts
+- local-runtime：GET templates；create/PUT 写 `promptTemplateId`
+- `app/mv/page.tsx`：模板下拉、生成路径、signature、save/restore
+- 测试 `scripts/test-mv-ui-template-picker.mjs` 接入 `npm test`
+- Design/plan：`docs/superpowers/specs/2026-11-04-mv-ui-template-picker-design.md`、`docs/superpowers/plans/2026-11-04-mv-ui-template-picker.md`
+
+### Verification
+- `npm test` 全绿（含 mv-ui-template-picker）
+- 无 RunningHub / 无密钥 / 无大媒体
+
+### Remaining / next night
+- 下一曲风：dance-edm（电子舞曲）或其他变体
+- open PR 合并卫生：#4、#6–#15 仍可能 open；本 PR 堆叠在 mv-master-rebrand (#15) 之上
+
 ## 2026-11-03 00:00 Asia/Shanghai — MV rock-solo 模板（第五类）
 
 ### Module chosen

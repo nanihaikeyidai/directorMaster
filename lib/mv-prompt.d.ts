@@ -99,5 +99,6 @@ export interface MvPromptTemplateEntry {
   build: typeof buildPianoBalladMvPrompt;
 }
 export const MV_PROMPT_TEMPLATES: Readonly<Record<MvPromptTemplateId, MvPromptTemplateEntry>>;
+export function normalizeMvPromptTemplateId(raw?: string | null): MvPromptTemplateId;
 export function listMvPromptTemplates(): Array<{ id: MvPromptTemplateId; label: string; version: string }>;
 export function buildMvPromptForTemplate(templateId: string, input: Parameters<typeof buildPianoBalladMvPrompt>[0]): string;
