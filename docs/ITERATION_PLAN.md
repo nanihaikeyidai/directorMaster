@@ -70,7 +70,8 @@
 - [x] piano-ballad（`buildPianoBalladMvPrompt` + 注册表 + CLI `mv-templates`；feature 分支 / PR #13 栈）
 - [x] rock-solo（`buildRockSoloMvPrompt` + 注册表；`feature/rock-solo-mv-template`）
 - [x] UI 模板 picker（`listMvPromptTemplates` 下拉 + `buildMvPromptForTemplate` + `promptTemplateId` 持久化；本夜 `feature/mv-ui-template-picker`）
-- [ ] 下一：dance-edm（电子舞曲）及其他曲风变体 / open PR 合并卫生
+- [x] dance-edm（`buildDanceEdmMvPrompt` + 注册表；`feature/dance-edm-mv-template`，base UI picker）
+- [ ] 下一：说唱（rap-hiphop）或其他曲风变体 / open PR 合并卫生
 
 
 ## 管理方式
