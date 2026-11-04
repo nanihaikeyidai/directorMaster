@@ -18,12 +18,13 @@ assert.equal(normalizeMvPromptTemplateId(null), "band");
 assert.equal(normalizeMvPromptTemplateId("   "), "band");
 assert.equal(normalizeMvPromptTemplateId("folk-solo"), "folk-solo");
 assert.equal(normalizeMvPromptTemplateId("rock-solo"), "rock-solo");
+assert.equal(normalizeMvPromptTemplateId("dance-edm"), "dance-edm");
 assert.equal(normalizeMvPromptTemplateId("nope"), "band");
 
 const listed = listMvPromptTemplates();
-assert.ok(listed.length >= 5, `expected >=5 templates, got ${listed.length}`);
+assert.ok(listed.length >= 6, `expected >=6 templates, got ${listed.length}`);
 const ids = listed.map((t) => t.id);
-for (const id of ["band", "folk-solo", "folk-duo", "piano-ballad", "rock-solo"]) {
+for (const id of ["band", "folk-solo", "folk-duo", "piano-ballad", "rock-solo", "dance-edm"]) {
   assert.ok(ids.includes(id), `registry missing ${id}`);
 }
 assert.ok(MV_PROMPT_TEMPLATES.band);

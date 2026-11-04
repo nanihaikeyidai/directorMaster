@@ -1,5 +1,32 @@
 # Iteration Notes
 
+## 2026-11-05 00:00 Asia/Shanghai — MV dance-edm 模板（第六类）
+
+### Module chosen
+**MV / 模板库扩展**（每晚至少新增一类曲风模板）。UI picker 已落地，本晚加第六类 **dance-edm（电子舞曲 · 舞台/俱乐部独唱表演）**，挂进既有 `MV_PROMPT_TEMPLATES` 注册表。无 RH 付费。
+
+### 验收标准
+- 无人声段只出俱乐部/LED/舞台远景 / deck·controller 手部 / 雾与激光剪影，不出歌手面部特写；人声段首镜为面部特写；vocal_enters 起点前不对脸、起点后切脸
+- 句中不切；人设表/缺场景报错；六段顺序正确
+- 注册表含 band/folk-solo/folk-duo/piano-ballad/rock-solo/dance-edm，`buildMvPromptForTemplate('dance-edm')` 可用；未知模板报错并列出可选项
+- `npm test` 全绿；`mv-templates` 输出 6 个模板
+
+### Landed
+- `buildDanceEdmMvPrompt` + `DANCE_EDM_MV_PROMPT_TEMPLATE_VERSION=dance-edm-ref2va-v1`
+- 注册表追加 `dance-edm`（label：电子舞曲（舞台/俱乐部））；`listMvPromptTemplates` / `buildMvPromptForTemplate` / UI picker 自动覆盖
+- CLI：`mv-cut --template` help 列出 dance-edm（allowlist 来自注册表）
+- 测试 `scripts/test-dance-edm-mv-prompt.mjs` 接入 `npm test`；软更新 UI picker 期望 id；文档 `docs/DANCE_EDM_MV_PROMPT_STANDARD.md`
+- Design/plan：`docs/superpowers/specs/2026-11-05-dance-edm-mv-prompt-design.md`、`docs/superpowers/plans/2026-11-05-dance-edm-mv-prompt.md`
+
+### Verification
+- `npm test` 全绿（含 dance-edm + mv-ui-template-picker）
+- `node cli/director-master.mjs mv-templates` 输出 6 个模板
+- 无 RunningHub / 无密钥 / 无大媒体
+
+### Remaining / next night
+- 下一曲风：说唱（rap-hiphop）或其他变体，或 vocal-duo / live-band 变体
+- open PR 合并卫生：#4、#6–#16 仍可能 open；本 PR 堆叠在 mv-ui-template-picker (#16) 之上
+
 ## 2026-11-04 00:00 Asia/Shanghai — MV UI 模板下拉读注册表
 
 ### Module chosen
