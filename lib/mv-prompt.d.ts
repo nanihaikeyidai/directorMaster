@@ -102,7 +102,18 @@ export function buildDanceEdmMvPrompt(input: {
 
 export const DANCE_EDM_MV_PROMPT_TEMPLATE_VERSION: string;
 
-export type MvPromptTemplateId = "band" | "folk-solo" | "folk-duo" | "piano-ballad" | "rock-solo" | "dance-edm";
+export function buildRapHiphopMvPrompt(input: {
+  projectName: string;
+  segment: BandMvSegment;
+  note?: BandMvNote;
+  assets: BandMvAsset[];
+  settings?: BandMvSettings;
+  leadSilenceSec?: number;
+}): string;
+
+export const RAP_HIPHOP_MV_PROMPT_TEMPLATE_VERSION: string;
+
+export type MvPromptTemplateId = "band" | "folk-solo" | "folk-duo" | "piano-ballad" | "rock-solo" | "dance-edm" | "rap-hiphop";
 export interface MvPromptTemplateEntry {
   id: MvPromptTemplateId;
   label: string;
