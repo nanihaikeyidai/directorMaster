@@ -1,5 +1,21 @@
 # Iteration Notes
 
+## 2026-11-06 00:00 Asia/Shanghai — MV rap-hiphop 模板（第七类）
+
+**模块**：MV / 模板库扩展。最高优先级未完成项判断：主路径无阻塞 bug，UI picker 已读注册表，按 nightly 计划扩展下一曲风 **rap-hiphop（说唱嘻哈 · 街头/舞台独唱）**。
+
+**验收标准**
+- 注册表含 7 个模板，`buildMvPromptForTemplate('rap-hiphop')` 可用；UI picker / `mv-templates` / `mv-cut --template rap-hiphop` 自动可用
+- 无人声段不对脸（街头远景/搓碟/涂鸦霓虹/逆光剪影）；人声段首镜面部特写并要求 dense-syllable 逐字口型；切点只在小节/乐句边界
+
+**完成**
+- `buildRapHiphopMvPrompt` + `RAP_HIPHOP_MV_PROMPT_TEMPLATE_VERSION=rap-hiphop-ref2va-v1`，`.d.ts`、CLI help、`npm test` 接入
+- 文档 `docs/RAP_HIPHOP_MV_PROMPT_STANDARD.md`；spec/plan `docs/superpowers/{specs,plans}/2026-11-06-rap-hiphop-mv-prompt*.md`
+
+**验证**：`npm test` 全绿；`mv-templates` 输出 7 个。代码侧无 RH 付费（每晚 15s 口型试片另计）。
+
+**下一晚**：MV 一键「音乐 → 自动推荐模板」（按 BPM/人声密度建议曲风）或 open PR #4、#6–#18 合并卫生。
+
 ## 2026-11-05 00:00 Asia/Shanghai — MV dance-edm 模板（第六类）
 
 ### Module chosen
