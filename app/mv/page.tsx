@@ -14,6 +14,7 @@ import {
   buildStandardBandMvPrompt,
   defaultBandMvActions,
 } from "../../lib/mv-prompt.mjs";
+import { isShortDramaEnabled, navItems } from "../../lib/features.mjs";
 import {
   approvedIndexes,
   approveSegment,
@@ -829,6 +830,7 @@ export default function MvStudio() {
   }, []);
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- sync review slots with segment count
     setSegmentReviews((current) => {
       if (current.length === segments.length) return current;
       return resetReviewsForPromptChange(current, segments.length);
@@ -837,6 +839,7 @@ export default function MvStudio() {
 
   useEffect(() => {
     if (promptsReady) return;
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- reset reviews when prompts go stale
     setSegmentReviews((current) => {
       if (!current.length || current.every((status) => status === "pending")) return current;
       return resetReviewsForPromptChange(current, segments.length);
@@ -1821,7 +1824,7 @@ export default function MvStudio() {
   }
 
   async function generateLocal(selectedIndexes: number[], prepared?: { cuts: number[]; notes: SegmentNote[]; prompts: string[] }) {
-    selectedIndexes.forEach((index) => setSegmentGeneration(index, { provider: "local", status: "preparing", message: "准备导演台工作流" }));
+    selectedIndexes.forEach((index) => setSegmentGeneration(index, { provider: "local", status: "preparing", message: "准备本地 MV 工作流" }));
     try {
       const inputs = await prepareGeneration(selectedIndexes, prepared?.cuts, prepared?.notes, prepared?.prompts);
       const discoverResponse = await fetch("/api/local/comfyui/discover");
@@ -1846,7 +1849,7 @@ export default function MvStudio() {
       const workflowPath = localWorkflowPath.trim() || LOCAL_WORKFLOW_PATH;
       const templateResponse = await fetch(`/api/local/workflow?path=${encodeURIComponent(workflowPath)}`);
       const template = await templateResponse.json();
-      if (!templateResponse.ok) throw new Error(template.error || `导演台工作流读取失败：${workflowPath}`);
+      if (!templateResponse.ok) throw new Error(template.error || `本地 MV 工作流读取失败：${workflowPath}`);
       const compiled = patchDirectorProject(template, inputs, {
         ...localDirectorSettings,
         continuityEnabled: selectedIndexes.length > 1,
@@ -2254,8 +2257,8 @@ export default function MvStudio() {
   return (
     <main className="mv-app" onPointerDown={() => { if (cutMenu) setCutMenu(null); }}>
       <header className="mv-topbar">
-        <a className="mv-brand" href="/"><span>DM</span><b>DIRECTOR MASTER</b></a>
-        <nav><a href="/">导演画布</a><a className="active" href="/mv">MV 制作</a><a href="/voice">声音克隆</a></nav>
+        <a className="mv-brand" href="/"><span>MV</span><b>MV MASTER</b></a>
+        <nav>{navItems(isShortDramaEnabled({ NEXT_PUBLIC_FEATURE_SHORT_DRAMA: process.env.NEXT_PUBLIC_FEATURE_SHORT_DRAMA })).map((item) => <a key={item.href} className={item.href === "/" ? "active" : undefined} href={item.href}>{item.label}</a>)}</nav>
         {project && <div className={`mv-save-status ${projectSaveStatus}`} title="编辑后自动保存，并每 5 分钟进行一次周期保存">
           <span>{projectSaveStatus === "saving" ? "正在保存…" : projectSaveStatus === "error" ? "保存失败" : projectSaveStatus === "saved" ? `已保存 ${lastProjectSavedAt ? new Date(lastProjectSavedAt).toLocaleTimeString() : ""}` : "自动保存已开启"}</span>
           <button disabled={projectSaveStatus === "saving"} onClick={() => void saveCurrentProject().catch(() => undefined)}>{projectSaveStatus === "saving" ? "保存中" : "保存项目"}</button>
@@ -2391,14 +2394,14 @@ export default function MvStudio() {
 
             <section className="mv-panel mv-generation-history">
               <div className="mv-panel-title"><div><small>COMPLETED SEGMENTS · CLICK TO LOCATE</small><h2>生成历史</h2></div><b>{generationHistory.length} 条</b></div>
-              {generationHistory.length ? <div className="mv-generation-history-list">{[...generationHistory].reverse().map((entry) => <button key={entry.id} className="mv-generation-history-item" onClick={() => jumpToGeneration(entry)} title="滚动定位到对应片段"><span className="mv-history-seg">SEG {String(entry.index).padStart(2, "0")}</span><span className="mv-history-version">{entry.attempt > 1 ? `重新生成 · 第 ${entry.attempt} 次` : "首次生成"}</span><span className="mv-history-provider">{entry.provider === "local" ? "本地导演台" : "RunningHub 云端"}</span><span className={`mv-history-cost ${entry.provider}`}>{entry.provider === "local" ? "不计费" : entry.costCoins == null ? "费用待同步" : `消耗 ${formatRhCoins(entry.costCoins)} RH 币`}</span><time>{generationDate(entry.completedAt)}</time><i>定位 ↗</i></button>)}</div> : <div className="mv-queue-empty">完成的分段视频会记录在这里；点击记录可直接定位到对应 SEG。</div>}
+              {generationHistory.length ? <div className="mv-generation-history-list">{[...generationHistory].reverse().map((entry) => <button key={entry.id} className="mv-generation-history-item" onClick={() => jumpToGeneration(entry)} title="滚动定位到对应片段"><span className="mv-history-seg">SEG {String(entry.index).padStart(2, "0")}</span><span className="mv-history-version">{entry.attempt > 1 ? `重新生成 · 第 ${entry.attempt} 次` : "首次生成"}</span><span className="mv-history-provider">{entry.provider === "local" ? "本地 ComfyUI" : "RunningHub 云端"}</span><span className={`mv-history-cost ${entry.provider}`}>{entry.provider === "local" ? "不计费" : entry.costCoins == null ? "费用待同步" : `消耗 ${formatRhCoins(entry.costCoins)} RH 币`}</span><time>{generationDate(entry.completedAt)}</time><i>定位 ↗</i></button>)}</div> : <div className="mv-queue-empty">完成的分段视频会记录在这里；点击记录可直接定位到对应 SEG。</div>}
             </section>
 
             <section className="mv-panel mv-generation-queue">
               <div className="mv-panel-title"><div><small>GENERATION QUEUE · FIFO</small><h2>生成队列</h2></div><b>{generationQueue.filter((item) => item.status === "queued" || item.status === "running").length} 进行中 / 排队</b></div>
               {generationQueue.length ? <div className="mv-queue-list">{[...generationQueue].reverse().map((item) => <article key={item.id} className={`mv-queue-item ${item.status}`}>
                 <span className={`mv-queue-indicator ${item.status}`} />
-                <div className="mv-queue-info"><strong>{item.provider === "local" ? "本地导演台" : "RunningHub 云端"}</strong><span>{item.indexes.map((index) => `SEG ${String(index + 1).padStart(2, "0")}`).join(" · ")}</span></div>
+                <div className="mv-queue-info"><strong>{item.provider === "local" ? "本地 ComfyUI" : "RunningHub 云端"}</strong><span>{item.indexes.map((index) => `SEG ${String(index + 1).padStart(2, "0")}`).join(" · ")}</span></div>
                 <div className={`mv-queue-message ${item.status}`}>{item.message}</div>
                 <time>{new Date(item.createdAt).toLocaleTimeString("zh-CN", { hour: "2-digit", minute: "2-digit", second: "2-digit" })}</time>
                 {(item.status === "queued" || item.status === "running") && <button className="mv-queue-cancel" onClick={() => void cancelGenerationQueueItem(item)}>取消</button>}
@@ -2415,10 +2418,10 @@ export default function MvStudio() {
       {historyOpen && <div className="mv-batch-backdrop" onPointerDown={() => setHistoryOpen(false)}><section className="mv-history-modal" onPointerDown={(event) => event.stopPropagation()}><header><div><small>SAVED MV WORKSPACES</small><h2>历史项目</h2><p>导入前会自动保存当前项目；项目素材、切点、提示词和音轨设置会一起恢复。</p></div><button onClick={() => setHistoryOpen(false)}>×</button></header><div className="mv-history-list">{recentProjects.map((item) => <article key={item.projectId} className={project?.projectId === item.projectId ? "active" : ""}><div><b>{item.projectName}</b><small>{item.sourceName}</small><span>更新于 {item.updatedAt ? new Date(item.updatedAt).toLocaleString() : "未知"}</span></div><dl><div><dt>时长</dt><dd>{clock(Number(item.duration))}</dd></div><div><dt>分段</dt><dd>{item.segments || 1}</dd></div><div><dt>素材</dt><dd>{item.visualAssets}</dd></div><div><dt>前置空白</dt><dd>{Number(item.leadSilenceSec || 0).toFixed(1)}s</dd></div></dl><button disabled={Boolean(busy) || project?.projectId === item.projectId} onClick={() => void importHistoryProject(item.projectId)}>{project?.projectId === item.projectId ? "当前项目" : "一键导入"}</button></article>)}</div>{!recentProjects.length && <p className="mv-empty">还没有已保存的 MV 项目。</p>}</section></div>}
       {batchProvider && <div className="mv-batch-backdrop" onPointerDown={() => setBatchProvider(null)}>
         <section className="mv-batch-modal" onPointerDown={(event) => event.stopPropagation()}>
-          <header><div><small>{batchProvider === "local" ? "LOCAL DIRECTOR BATCH" : "RUNNINGHUB SERIAL BATCH"}</small><h2>{batchProvider === "local" ? "本地连续片段生成" : "云端串行生成"}</h2><p>{batchProvider === "local" ? "选中的连续片段会编译进同一个导演台工作流，并开启段间引导。" : "所选片段将逐个上传、生成和下载；前一段结束后才提交下一段。"}</p></div><button onClick={() => setBatchProvider(null)}>×</button></header>
+          <header><div><small>{batchProvider === "local" ? "LOCAL DIRECTOR BATCH" : "RUNNINGHUB SERIAL BATCH"}</small><h2>{batchProvider === "local" ? "本地连续片段生成" : "云端串行生成"}</h2><p>{batchProvider === "local" ? "选中的连续片段会编译进同一个本地 MV 工作流，并开启段间引导。" : "所选片段将逐个上传、生成和下载；前一段结束后才提交下一段。"}</p></div><button onClick={() => setBatchProvider(null)}>×</button></header>
           <div className="mv-batch-tools"><button onClick={() => setBatchSelection(approvedIndexes(segmentReviews))}>全选已审核</button><button onClick={() => setBatchSelection([])}>清空</button><span>已选择 {batchSelection.length}/{approvedIndexes(segmentReviews).length} 已审核段</span></div>
           <div className="mv-batch-list">{segments.map((segment, index) => { const canSelect = segmentReviews[index] === "approved"; return <label key={segment.index} className={`${batchSelection.includes(index) ? "selected" : ""}${!canSelect ? " disabled" : ""}`}><input type="checkbox" disabled={!canSelect} checked={batchSelection.includes(index)} onChange={() => { if (!canSelect) return; setBatchSelection((current) => current.includes(index) ? current.filter((item) => item !== index) : [...current, index]); }} /><b>SEG {String(segment.index).padStart(2, "0")}</b><span>{clock(segment.start)}–{clock(segment.end)}</span><i>{canSelect ? `${segment.duration.toFixed(3)} 秒` : REVIEW_STATUS_LABEL[segmentReviews[index] || "pending"]}</i></label>; })}</div>
-          <footer><div><small>执行方式</small><b>{batchProvider === "local" ? "MiniMax H3 导演台 · 4 步 · 0.6 MP" : "RunningHub · 8 步 · 0.6 MP"}</b></div><button disabled={!batchSelection.length} onClick={runBatch}>生成所选 {batchSelection.length} 段</button></footer>
+          <footer><div><small>执行方式</small><b>{batchProvider === "local" ? "本地 MiniMax H3 · 4 步 · 0.6 MP" : "RunningHub · 8 步 · 0.6 MP"}</b></div><button disabled={!batchSelection.length} onClick={runBatch}>生成所选 {batchSelection.length} 段</button></footer>
         </section>
       </div>}
       {workflowConfigOpen && <div className="mv-batch-backdrop" onPointerDown={() => setWorkflowConfigOpen(false)}>

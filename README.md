@@ -1,6 +1,10 @@
-# Director Master
+# MV Master
 
-Director Master 是面向 MiniMax H3 的 Windows 本地制作工作台，覆盖短剧导演画布、歌曲 MV、声音克隆和台词重配。它把素材引用、分段提示词、连续性校验、本地 ComfyUI 队列、RunningHub 云端任务和 CLI 放在同一个项目中。
+> 原 Director Master。仓库名与 CLI（`director-master`）保持不变。
+
+MV Master 是面向 MiniMax H3 的 Windows 本地**歌曲 MV 制作**工作台：首页 `/` 直接进入 MV 制作（上传歌曲、选模板、按句切镜、对口型生成、原曲封装、双语字幕）。短剧导演画布 / 声音克隆 / 台词重配默认隐藏，设置 `NEXT_PUBLIC_FEATURE_SHORT_DRAMA=1` 后重新出现在导航，导演画布位于 `/drama`。
+
+以下为历史说明：本项目也覆盖短剧导演画布、声音克隆和台词重配。它把素材引用、分段提示词、连续性校验、本地 ComfyUI 队列、RunningHub 云端任务和 CLI 放在同一个项目中。
 
 当前主分支是 `main`。项目仍是 Windows-first 的本地工具，Node.js 版本要求为 **22.13.0 或更高**。
 

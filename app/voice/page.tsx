@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
+import { isShortDramaEnabled, navItems } from "../../lib/features.mjs";
 
 type VoiceAsset = {
   id: string;
@@ -160,8 +161,8 @@ export default function VoiceCloneStudio() {
 
   return <main className="voice-app">
     <header className="mv-topbar">
-      <Link className="mv-brand" href="/"><span>DM</span><b>DIRECTOR MASTER</b></Link>
-      <nav><Link href="/">导演画布</Link><Link href="/mv">MV 制作</Link><Link className="active" href="/voice">声音克隆</Link></nav>
+      <Link className="mv-brand" href="/"><span>MV</span><b>MV MASTER</b></Link>
+      <nav>{navItems(isShortDramaEnabled({ NEXT_PUBLIC_FEATURE_SHORT_DRAMA: process.env.NEXT_PUBLIC_FEATURE_SHORT_DRAMA })).map((item) => <Link key={item.href} className={item.href === "/voice" ? "active" : undefined} href={item.href}>{item.label}</Link>)}</nav>
       <div className={`voice-runtime ${comfy.found ? "online" : "offline"}`}><i />{comfy.found ? `COMFY : ${comfy.port}` : "COMFY OFFLINE"}</div>
     </header>
 

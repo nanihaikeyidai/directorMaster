@@ -1,0 +1,13 @@
+import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
+import { isShortDramaEnabled, navItems, PRODUCT_NAME } from '../lib/features.mjs';
+assert.equal(PRODUCT_NAME, 'MV Master');
+assert.equal(isShortDramaEnabled({}), false);
+assert.equal(isShortDramaEnabled({ NEXT_PUBLIC_FEATURE_SHORT_DRAMA: '1' }), true);
+assert.equal(isShortDramaEnabled({ FEATURE_SHORT_DRAMA: 'true' }), true);
+assert.deepEqual(navItems(false).map(i => i.href), ['/']);
+assert.ok(navItems(true).some(i => i.href === '/drama'));
+assert.match(readFileSync('app/page.tsx', 'utf8'), /\.\/mv\/page/);
+assert.match(readFileSync('app/layout.tsx', 'utf8'), /MV Master/);
+assert.match(readFileSync('app/drama/page.tsx', 'utf8'), /location\.replace\("\/"\)/);
+console.log('mv-master features: ok');
