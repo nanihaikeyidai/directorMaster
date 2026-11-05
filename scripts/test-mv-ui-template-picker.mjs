@@ -24,7 +24,7 @@ assert.equal(normalizeMvPromptTemplateId("nope"), "band");
 const listed = listMvPromptTemplates();
 assert.ok(listed.length >= 6, `expected >=6 templates, got ${listed.length}`);
 const ids = listed.map((t) => t.id);
-for (const id of ["band", "folk-solo", "folk-duo", "piano-ballad", "rock-solo", "dance-edm"]) {
+for (const id of ["band", "folk-solo", "folk-duo", "piano-ballad", "rock-solo", "dance-edm", "rap-hiphop"]) {
   assert.ok(ids.includes(id), `registry missing ${id}`);
 }
 assert.ok(MV_PROMPT_TEMPLATES.band);
