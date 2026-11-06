@@ -4,7 +4,7 @@ import { createHash } from 'node:crypto';
 import { readFileSync, writeFileSync, readdirSync, statSync, existsSync, mkdirSync, copyFileSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { buildMvPromptForTemplate, listMvPromptTemplates, MV_PROMPT_TEMPLATES } from '../lib/mv-prompt.mjs';
+import { buildMvPromptForTemplate, listMvPromptTemplates, MV_PROMPT_TEMPLATES, recommendMvPromptTemplate } from '../lib/mv-prompt.mjs';
 import { resolveMvProject, runMvGenerate } from '../lib/mv-cloud-generate.mjs';
 import { normalizeCues, writeBilingualSubtitles } from '../lib/subtitle-cues.mjs';
 import { checkAvAlignment } from '../lib/mv-av-alignment.mjs';
@@ -637,6 +637,54 @@ function subtitleCommand() {
   };
 }
 
+
+function mvRecommend() {
+  const vocalRaw = option('vocal-density', '');
+  let vocalDensity;
+  if (vocalRaw !== '') {
+    const n = Number(vocalRaw);
+    vocalDensity = Number.isFinite(n) && String(n) === String(vocalRaw).trim() ? n : vocalRaw;
+  }
+  const instrumentsRaw = option('instruments', '');
+  const instruments = instrumentsRaw
+    ? instrumentsRaw.split(',').map((s) => s.trim()).filter(Boolean)
+    : undefined;
+  const bpmRaw = option('bpm', '');
+  const performersRaw = option('performers', '');
+  const signals = {
+    bpm: bpmRaw !== '' ? Number(bpmRaw) : undefined,
+    vocalDensity,
+    energy: option('energy', '') || undefined,
+    instruments,
+    performers: performersRaw !== '' ? Number(performersRaw) : undefined,
+    hints: option('hints', '') || undefined,
+  };
+  // Drop undefined keys for cleanliness
+  for (const k of Object.keys(signals)) {
+    if (signals[k] === undefined) delete signals[k];
+  }
+  return recommendMvPromptTemplate(signals);
+}
+
+function printMvRecommend(result) {
+  if (argv.includes('--json')) {
+    console.log(JSON.stringify(result, null, 2));
+    return;
+  }
+  const pct = Math.round(result.confidence * 100);
+  console.log('推荐模板：' + result.label + '（' + result.templateId + '）');
+  console.log('版本：' + result.version);
+  console.log('置信度：' + pct + '%（' + result.confidence + '）');
+  console.log('理由：');
+  for (const r of result.reasons) console.log('  - ' + r);
+  if (result.alternatives.length) {
+    console.log('备选：');
+    for (const a of result.alternatives) {
+      console.log('  - ' + a.label + '（' + a.templateId + '，' + Math.round(a.confidence * 100) + '%）');
+    }
+  }
+}
+
 try {
   if (command === 'discover') console.log(JSON.stringify(discover(), null, 2));
   else if (command === 'index') { const root = option('root', process.cwd()); console.log(JSON.stringify({ root, assets: walk(root) }, null, 2)); }
@@ -656,6 +704,7 @@ try {
   else if (command === 'redub') console.log(JSON.stringify(await redubCommand(), null, 2));
   else if (command === 'subtitle') console.log(JSON.stringify(subtitleCommand(), null, 2));
   else if (command === 'mv-templates') console.log(JSON.stringify(listMvPromptTemplates(), null, 2));
+  else if (command === 'mv-recommend') printMvRecommend(mvRecommend());
   else if (command === 'mv-align-check') {
     const report = mvAlignCheck();
     console.log(JSON.stringify(report, null, 2));
@@ -682,7 +731,7 @@ try {
     });
     console.log(JSON.stringify(result, null, 2));
   }
-  else console.log('MV Master CLI (director-master)\n  discover\n  index --root <dir>\n  skill-task --kind screenplay --script <file> [--brief <text>]\n  skill-task --kind shotlist --script <file> --platform "MiniMax H3" --confirmed true [--assets <dir>]\n  prepare --spec <project.json> --out <workflow.json>\n  run --spec <project.json> [--watch]\n  status --id <prompt-id>\n  mv-cut --audio <music.wav> --project <name> --cuts 8.4,21.7 --notes <segments.json> --people <dir> --scenes <dir> [--template band|folk-solo|folk-duo|piano-ballad|rock-solo|dance-edm|rap-hiphop] [--vocal-start <sec>] [--asset-meta <descriptions.json>]\n  mv-templates   # 列出可用 MV 提示词模板（id/label/version）\n  mv-generate --project <id|project.json> [--dry-run|--watch] [--workflow-id ID] [--out dir]\n  voice-generate --ref <voice.wav> --text <台词> --character <角色> --emotion <情绪描述> --consent true [--watch]\n  voice-generate --ref <voice.wav> --batch <dialogue.json> --consent true [--watch]\n  voice-status --id <job-id>\n  redub --video <file> --consent true [--name <id>] [--script <script.json>] [--skip-separate] [--stop-after extract|separate|transcribe|refs|tts]\n  redub --stage init|extract|separate|transcribe|script|refs|tts|mix --job <id> [--script <file>] [--consent true]\n  subtitle --cues <cues.json> --out <dir> [--langs zh,en] [--basename subtitles]\n  subtitle --video <file>   # V0: 无 cues 且无 RUNNINGHUB_API_KEY 时明确报错，不调用云端\n  mv-align-check --manifest <segments.json> [--tolerance 0.08] [--require-video] [--require-audio|--no-require-audio]');
+  else console.log('MV Master CLI (director-master)\n  discover\n  index --root <dir>\n  skill-task --kind screenplay --script <file> [--brief <text>]\n  skill-task --kind shotlist --script <file> --platform "MiniMax H3" --confirmed true [--assets <dir>]\n  prepare --spec <project.json> --out <workflow.json>\n  run --spec <project.json> [--watch]\n  status --id <prompt-id>\n  mv-cut --audio <music.wav> --project <name> --cuts 8.4,21.7 --notes <segments.json> --people <dir> --scenes <dir> [--template band|folk-solo|folk-duo|piano-ballad|rock-solo|dance-edm|rap-hiphop] [--vocal-start <sec>] [--asset-meta <descriptions.json>]\n  mv-templates   # 列出可用 MV 提示词模板（id/label/version）\n  mv-recommend [--bpm N] [--vocal-density sparse|medium|dense|NUMBER] [--energy low|medium|high] [--instruments csv] [--performers N] [--hints "..."] [--json]\n  mv-generate --project <id|project.json> [--dry-run|--watch] [--workflow-id ID] [--out dir]\n  voice-generate --ref <voice.wav> --text <台词> --character <角色> --emotion <情绪描述> --consent true [--watch]\n  voice-generate --ref <voice.wav> --batch <dialogue.json> --consent true [--watch]\n  voice-status --id <job-id>\n  redub --video <file> --consent true [--name <id>] [--script <script.json>] [--skip-separate] [--stop-after extract|separate|transcribe|refs|tts]\n  redub --stage init|extract|separate|transcribe|script|refs|tts|mix --job <id> [--script <file>] [--consent true]\n  subtitle --cues <cues.json> --out <dir> [--langs zh,en] [--basename subtitles]\n  subtitle --video <file>   # V0: 无 cues 且无 RUNNINGHUB_API_KEY 时明确报错，不调用云端\n  mv-align-check --manifest <segments.json> [--tolerance 0.08] [--require-video] [--require-audio|--no-require-audio]');
 } catch (error) {
   console.error('[director-master] ' + (error instanceof Error ? error.message : String(error)));
   process.exitCode = 1;
