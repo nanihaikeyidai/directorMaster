@@ -124,3 +124,32 @@ export const MV_PROMPT_TEMPLATES: Readonly<Record<MvPromptTemplateId, MvPromptTe
 export function normalizeMvPromptTemplateId(raw?: string | null): MvPromptTemplateId;
 export function listMvPromptTemplates(): Array<{ id: MvPromptTemplateId; label: string; version: string }>;
 export function buildMvPromptForTemplate(templateId: string, input: Parameters<typeof buildPianoBalladMvPrompt>[0]): string;
+
+export type MvRecommendVocalDensity = "sparse" | "medium" | "dense" | number;
+export type MvRecommendEnergy = "low" | "medium" | "high";
+
+export type MvRecommendSignals = {
+  bpm?: number;
+  vocalDensity?: MvRecommendVocalDensity;
+  energy?: MvRecommendEnergy;
+  instruments?: string[];
+  performers?: number;
+  hints?: string;
+};
+
+export type MvRecommendAlternative = {
+  templateId: MvPromptTemplateId;
+  label: string;
+  confidence: number;
+};
+
+export type MvRecommendResult = {
+  templateId: MvPromptTemplateId;
+  label: string;
+  version: string;
+  confidence: number;
+  reasons: string[];
+  alternatives: MvRecommendAlternative[];
+};
+
+export function recommendMvPromptTemplate(signals?: MvRecommendSignals): MvRecommendResult;

@@ -71,7 +71,9 @@
 - [x] rock-solo（`buildRockSoloMvPrompt` + 注册表；`feature/rock-solo-mv-template`）
 - [x] UI 模板 picker（`listMvPromptTemplates` 下拉 + `buildMvPromptForTemplate` + `promptTemplateId` 持久化；本夜 `feature/mv-ui-template-picker`）
 - [x] dance-edm（`buildDanceEdmMvPrompt` + 注册表；`feature/dance-edm-mv-template`，base UI picker）
-- [ ] 下一：说唱（rap-hiphop）或其他曲风变体 / open PR 合并卫生
+- [x] rap-hiphop（`buildRapHiphopMvPrompt` + 注册表；`feature/rap-hiphop-mv-template`，base dance-edm）
+- [x] 音乐信号 → 模板推荐（`recommendMvPromptTemplate` + CLI `mv-recommend`；本夜 `feature/mv-template-recommend`，base rap-hiphop）
+- [ ] 下一：open PR 合并卫生 / 自动抽 BPM·密度信号喂 recommend / 下一曲风变体
 
 
 ## 管理方式

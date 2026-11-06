@@ -1,5 +1,23 @@
 # Iteration Notes
 
+## 2026-11-07 00:00 Asia/Shanghai — MV 音乐信号 → 模板推荐
+
+**模块**：MV / 模板推荐。最高优先级未完成项：按昨晚计划落地「音乐 → 自动推荐模板（BPM/人声密度/乐器/hints）」；无新曲风、无 RH。
+
+**验收标准**
+- `recommendMvPromptTemplate(signals)`：空 → band 低置信；hints 说唱 → rap-hiphop；bpm130+synth+high → dance-edm；piano+sparse+bpm72 → piano-ballad；performers2+acoustic → folk-duo；dense+urban → rap-hiphop；electric-guitar+high → rock-solo；templateId 始终在 `MV_PROMPT_TEMPLATES`
+- CLI `mv-recommend` 人类可读中文 + `--json`；help 已更新
+- `npm test` 全绿（含 `test-mv-template-recommend`）
+
+**完成**
+- `lib/mv-prompt.mjs` + `.d.ts`：`recommendMvPromptTemplate`（hints 硬加分 + BPM/能量/密度/乐器/人数组合）
+- CLI `mv-recommend`；`package.json` `test` / `test:mv-template-recommend`
+- Design/plan：`docs/superpowers/{specs,plans}/2026-11-07-mv-template-recommend*.md`；`.gitignore` 忽略 `.worktrees/`
+
+**验证**：`npm test` 全绿；`node cli/director-master.mjs mv-recommend --hints 说唱 --json` → rap-hiphop。无 RH 付费。
+
+**下一晚**：open PR #4、#6–#19 合并卫生；或音乐→自动抽信号（ffprobe/BPM 估）喂 recommend；或下一曲风（jazz-solo / vocal-duo）模板。
+
 ## 2026-11-06 00:00 Asia/Shanghai — MV rap-hiphop 模板（第七类）
 
 **模块**：MV / 模板库扩展。最高优先级未完成项判断：主路径无阻塞 bug，UI picker 已读注册表，按 nightly 计划扩展下一曲风 **rap-hiphop（说唱嘻哈 · 街头/舞台独唱）**。
