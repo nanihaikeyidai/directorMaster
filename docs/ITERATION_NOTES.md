@@ -1,5 +1,24 @@
 # Iteration Notes
 
+## 2026-11-08 00:00 Asia/Shanghai — MV 口型试片门禁（人声段 + 近脸）
+
+**模块**：MV / 口型流程优化（人物近脸门禁一并落地）。按 2026-11-07 用户优先级：流程优化与对口型/人物一致性优先于新曲风。
+
+**验收标准**
+- `isVocalActiveHop` / `selectVocalSegment`：器乐主导 hops → `ok:false`；人声活跃比 ≥0.35 的窗口可选出 ≥10s（优先 15s）
+- `assessFaceCloseUpRef`：`ref-crop`/人脸框/竖幅+肤色通过；场景/远景路径拒绝
+- `buildLipsyncTrialPlan` 双门禁；CLI `mv-lipsync-prep`；`npm test` 含新用例
+- 实机：`camilla-30s.mp3` 最高人声活跃比约 0.10 → **拒绝试片**（不烧 RH 币）
+
+**完成**
+- `lib/mv-lipsync-prep.mjs` + `.d.ts`：纯函数门禁 + `probeEnergyHops`（ffmpeg）
+- CLI `mv-lipsync-prep`；`scripts/test-mv-lipsync-prep.mjs`；design/plan 文档
+- 今晚 15s 口型试片：**跳过**（音频门禁未通过；人物 `ref-crop.jpg` 近脸门禁通过）
+
+**验证**：`npm test` 全绿；CLI 对 Camilla 返回 exit 1 + 中文拒绝理由。无 RH 付费。
+
+**下一晚**：换真正有人声演唱的源曲再跑 15s 试片；或 ffprobe 信号喂 `mv-recommend`；open PR #4、#6–#20 合并卫生。
+
 ## 2026-11-07 00:00 Asia/Shanghai — MV 音乐信号 → 模板推荐
 
 **模块**：MV / 模板推荐。最高优先级未完成项：按昨晚计划落地「音乐 → 自动推荐模板（BPM/人声密度/乐器/hints）」；无新曲风、无 RH。

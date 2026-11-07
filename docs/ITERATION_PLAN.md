@@ -73,7 +73,8 @@
 - [x] dance-edm（`buildDanceEdmMvPrompt` + 注册表；`feature/dance-edm-mv-template`，base UI picker）
 - [x] rap-hiphop（`buildRapHiphopMvPrompt` + 注册表；`feature/rap-hiphop-mv-template`，base dance-edm）
 - [x] 音乐信号 → 模板推荐（`recommendMvPromptTemplate` + CLI `mv-recommend`；本夜 `feature/mv-template-recommend`，base rap-hiphop）
-- [ ] 下一：open PR 合并卫生 / 自动抽 BPM·密度信号喂 recommend / 下一曲风变体
+- [x] 口型试片门禁：人声活跃比 + 近脸参考（`lib/mv-lipsync-prep.mjs` + CLI `mv-lipsync-prep`；本夜 `feature/mv-lipsync-prep`，base template-recommend）
+- [ ] 下一：有人声源曲验证 15s 试片 / ffprobe 信号喂 recommend / open PR 合并卫生
 
 
 ## 管理方式
