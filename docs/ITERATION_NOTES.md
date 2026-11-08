@@ -1,5 +1,25 @@
 # Iteration Notes
 
+## 2026-11-09 00:00 Asia/Shanghai — 音频能量 hops → 推荐模板
+
+**模块**：MV / 流程优化。按 2026-11-07 用户优先级：流程优化与对口型/人物一致性优先于新曲风。PR #19（推荐）与 PR #20（口型试片门禁）之后，剩余缺口是 `mv-recommend` 仍需手填 BPM/能量/密度；本夜把已有 `probeEnergyHops` 信号喂进 `recommendMvPromptTemplate`。无新曲风、无 RH。
+
+**验收标准**
+- `extractMusicSignalsFromHops`：大声人声 hops → `energy=high` / `vocalDensity=dense`；安静低音器乐 → `low`/`sparse`；中段混合 → medium 映射；空 hops 不抛错，省略 energy/density/bpm，理由含「信号不足」
+- extras 覆盖提取的 energy/hints；`recommendMvPromptTemplate(extract(...).signals)` 始终返回注册表 `templateId`（low+sparse+piano 偏向 piano-ballad）
+- 规则 120 BPM 脉冲可给出 100–140 BPM（或明确省略）；噪声/平坦 hops 省略 bpm
+- CLI `mv-recommend --audio` / `--hops-json`；`--json` 为 `{ ...recommendResult, extraction }`；无音频时旧手动信号路径不变
+- `npm test` 含 `test-mv-music-signals`；无密钥 / 无大媒体
+
+**完成**
+- `lib/mv-music-signals.mjs` + `.d.ts`：纯函数提取 + 薄 IO `probeMusicSignals`
+- CLI `mv-recommend --audio/--hops-json`；人类可读输出打印推断信号；`scripts/test-mv-music-signals.mjs` 接入 `npm test`
+- Design/plan：`docs/superpowers/{specs,plans}/2026-11-09-mv-recommend-from-audio*.md`
+
+**验证**：`npm test` 全绿（含 `test-mv-music-signals`）；`node cli/director-master.mjs mv-recommend --hints 说唱 --json` → rap-hiphop（无 extraction）；临时 hops-json 大声人声序列 → `extraction.signals.energy=high` / `vocalDensity=dense`。无 RH 付费。
+
+**下一晚**：有人声源曲验证 15s 试片 / open PR 合并卫生 / character-consistency pipeline。
+
 ## 2026-11-08 00:00 Asia/Shanghai — MV 口型试片门禁（人声段 + 近脸）
 
 **模块**：MV / 口型流程优化（人物近脸门禁一并落地）。按 2026-11-07 用户优先级：流程优化与对口型/人物一致性优先于新曲风。
