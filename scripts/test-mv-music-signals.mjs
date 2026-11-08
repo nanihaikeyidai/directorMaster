@@ -147,11 +147,14 @@ function series(count, hopSec, factory) {
 }
 
 {
-  const noisy = series(40, 0.25, (i, t) => {
-    // deterministic irregular RMS, no stable period
-    const wobble = ((i * 17) % 11) - 5;
-    return hop(t, -24 + wobble, -30 + wobble, -22 + ((i * 9) % 7));
-  });
+  // Irregular predetermined RMS (no repeating modulus / period-2 saw).
+  const noisyRms = [
+    -31, -12, -27, -19, -34, -15, -29, -22, -8, -33,
+    -18, -26, -14, -30, -21, -11, -28, -35, -16, -24,
+    -9, -32, -20, -13, -29, -17, -25, -34, -10, -23,
+    -36, -19, -27, -14, -33, -21, -37, -26, -15, -30,
+  ];
+  const noisy = noisyRms.map((rmsDb, i) => hop(i * 0.25, rmsDb, rmsDb - 6, rmsDb + 4));
   const r = extractMusicSignalsFromHops(noisy);
   assert.equal(r.signals.bpm, undefined, 'noisy hops must omit bpm, got ' + r.signals.bpm);
 }
