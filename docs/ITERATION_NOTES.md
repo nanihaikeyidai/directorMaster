@@ -1,5 +1,27 @@
 # Iteration Notes
 
+## 2026-11-10 00:00 Asia/Shanghai — MV 人物一致性包（三视图/近脸锁脸）
+
+**模块**：MV / 人物一致性（流程优化）。按 2026-11-07 用户优先级：流程优化与对口型/人物一致性优先于新曲风。PR #20（口型试片门禁）与 PR #21（音频 hops → 推荐模板）之后，剩余缺口是 Ref2VA / 口型试片仍手工挑定妆与三视图，换装后容易丢脸。本夜落地纯函数人物一致性包：分类参考图、强制近脸锁脸、稳定排序并生成身份锁定提示词。无新曲风、无 RH。
+
+**验收标准**
+- `classifyCharacterRef`：still-B / ref-crop / face-front / close-up / bust / 胸像 / 近脸 → `face_closeup`；threeview-A / still-A / `*-A` / front → `threeview_front`；threeview-C / side → `threeview_side`；back / 背 → `threeview_back`；costume / outfit / 换装 / look- → `costume`；scene / 场景 / wide / `newface-beach A.jpg` → `scene`；meta.role 覆盖路径猜测
+- `buildCharacterConsistencyPack`：无近脸锁脸 → `ok:false` 与中文理由；有锁脸则 `ok`，缺三视图仅警告；`orderedRefs` 为近脸 → 三视图 → 换装 → 场景；换装排在脸后
+- `identityLockText` 含 face/identity 与中文锁脸约束，并指向 Picture N（主锁脸）
+- CLI `mv-character-pack --ref/--dir/--json`；`!ok` 时 exit 1
+- `npm test` 含 `test-mv-character-consistency`；无密钥 / 无大媒体
+
+**完成**
+- `lib/mv-character-consistency.mjs` + `.d.ts`：分类、组包、中文报告、目录扫描；复用 `assessFaceCloseUpRef`
+- CLI `mv-character-pack`；`scripts/test-mv-character-consistency.mjs` 接入 `npm test`
+- Design/plan：`docs/superpowers/{specs,plans}/2026-11-10-mv-character-consistency*.md`
+
+**验证**：`npm test` 全绿（含 `test-mv-character-consistency`）；CLI 对路径名 `--ref still-B.jpg --ref look-summer.jpg --ref scene-wide.jpg` 通过并输出身份锁定词。无 RH 付费。
+
+**15s 口型试片**：今晚**跳过**，未烧 RunningHub 币。原因：电脑 meilin 离线，无法读取本机虚拟偶像有人声源曲；箱内已探测的 Camilla 片段（sing-20-30 / seg20 / vocal-seg / audio-segs / yz-jinyu segs）人声活跃比约 0.03–0.12，远低于 `mv-lipsync-prep` 门槛 0.35；禁止用间奏/器乐或 Downloads 里的 TTS 口语评演唱口型。
+
+**下一晚**：有人声演唱源曲再跑 15s 口型试片；open PR #4、#6–#22 合并卫生；或把人物一致性包接入 `mv-cut` / 口型试片提交流程。
+
 ## 2026-11-09 00:00 Asia/Shanghai — 音频能量 hops → 推荐模板
 
 **模块**：MV / 流程优化。按 2026-11-07 用户优先级：流程优化与对口型/人物一致性优先于新曲风。PR #19（推荐）与 PR #20（口型试片门禁）之后，剩余缺口是 `mv-recommend` 仍需手填 BPM/能量/密度；本夜把已有 `probeEnergyHops` 信号喂进 `recommendMvPromptTemplate`。无新曲风、无 RH。
