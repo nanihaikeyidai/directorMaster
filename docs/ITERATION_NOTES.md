@@ -1,5 +1,30 @@
 # Iteration Notes
 
+## 2026-11-11 00:00 Asia/Shanghai — 把人物一致性包接入 mv-cut 与口型试片
+
+**模块**：MV / 人物一致性（把一致性包接入 mv-cut 与口型试片）。按 2026-11-07 用户优先级：流程优化与对口型/人物一致性优先于新曲风。PR #22 已落地分类/组包/CLI `mv-character-pack`，但 `mv-cut` 与口型试片仍按文件系统顺序取图、中途 9 张截断，且不注入 `identityLockText`。本夜加 apply 层并接到裁切与试片计划。无新曲风、无 RH。
+
+**验收标准**
+- 场景分类素材（`category: 场景`）即使文件名通用也归为 `scene`
+- 打包后顺序为近脸 → 三视图 → 换装 → 场景；换装排在脸后；满 9 张时保留锁脸、丢掉靠后的场景
+- 无近脸锁脸 → `ok: false` 与提及近脸/锁脸的中文理由；`mv-cut` 抛出该理由
+- `appendIdentityLockToPrompt` 在 `overall_soundscape:` 前插入锁定词，且幂等
+- `buildLipsyncTrialPlan({ hops, refs })` 成功时附带 pack + identity lock；无锁脸失败；旧 `{ hops, person }` 且无 `refs` 行为不变
+- CLI `mv-lipsync-prep` help 列出 `--ref` / `--dir`
+- `npm test` 含扩展的 `test-mv-character-consistency` 与 `test-mv-lipsync-prep`；无密钥 / 无大媒体 / 无 RH 调用
+
+**完成**
+- `applyCharacterPackToAssets` / `appendIdentityLockToPrompt`（`lib/mv-character-consistency.mjs` + typings）
+- `mv-cut`：先收齐人物+场景图再打包，满 9 张改为打包后截断，段提示词注入身份锁定词，manifest 写入 JSON-safe `characterPack` 快照
+- `buildLipsyncTrialPlan` 可选 `refs`；CLI `mv-lipsync-prep` 增加可重复 `--ref` 与 `--dir`
+- Design/plan：`docs/superpowers/{specs,plans}/2026-11-11-mv-character-pack-apply*.md`
+
+**验证**：`npm test` 全绿（含 `test-mv-character-consistency` 与 `test-mv-lipsync-prep`）。无 RH 付费。
+
+**15s 口型试片**：当晚试片结果由 nightly 主流程填写；本提交不含 RH 调用。
+
+**下一晚**：有人声源曲验证 15s 试片 / open PR 合并卫生。
+
 ## 2026-11-10 00:00 Asia/Shanghai — MV 人物一致性包（三视图/近脸锁脸）
 
 **模块**：MV / 人物一致性（流程优化）。按 2026-11-07 用户优先级：流程优化与对口型/人物一致性优先于新曲风。PR #20（口型试片门禁）与 PR #21（音频 hops → 推荐模板）之后，剩余缺口是 Ref2VA / 口型试片仍手工挑定妆与三视图，换装后容易丢脸。本夜落地纯函数人物一致性包：分类参考图、强制近脸锁脸、稳定排序并生成身份锁定提示词。无新曲风、无 RH。
