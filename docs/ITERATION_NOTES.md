@@ -21,7 +21,7 @@
 
 **验证**：`npm test` 全绿（含 `test-mv-character-consistency` 与 `test-mv-lipsync-prep`）。无 RH 付费。
 
-**15s 口型试片**：当晚试片结果由 nightly 主流程填写；本提交不含 RH 调用。
+**15s 口型试片**：今晚**跳过**，未烧 RunningHub 币。原因：电脑 meilin 离线，无法读取本机虚拟偶像有人声源曲；箱内已探测的 Camilla 片段（camilla-30s / yusu src·raw / vocal-seg / sing-20-30）最高人声活跃比约 0.03–0.13，远低于 `mv-lipsync-prep` 门槛 0.35；禁止用间奏/器乐或 Downloads 里的 TTS 口语评演唱口型。
 
 **下一晚**：有人声源曲验证 15s 试片 / open PR 合并卫生。
 
