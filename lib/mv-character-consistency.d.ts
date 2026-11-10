@@ -74,3 +74,34 @@ export function buildCharacterConsistencyPack(
 export function formatCharacterPackReport(result: CharacterConsistencyResult): string;
 
 export function listCharacterRefPaths(dir: string): string[];
+
+export type VisualAssetInput = {
+  path?: string;
+  category?: string;
+  role?: string;
+  width?: number;
+  height?: number;
+  faceBox?: CharacterFaceBox;
+  [key: string]: unknown;
+};
+
+export type ApplyCharacterPackOptions = {
+  maxRefs?: number;
+};
+
+export type ApplyCharacterPackResult<T = VisualAssetInput> = {
+  ok: boolean;
+  reason?: string;
+  assets: T[];
+  packResult: CharacterConsistencyResult;
+};
+
+export function applyCharacterPackToAssets<T extends VisualAssetInput>(
+  assets: T[] | null | undefined,
+  opts?: ApplyCharacterPackOptions,
+): ApplyCharacterPackResult<T>;
+
+export function appendIdentityLockToPrompt(
+  prompt: string | null | undefined,
+  identityLockText?: string | null,
+): string;
