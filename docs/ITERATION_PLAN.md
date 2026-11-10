@@ -76,6 +76,7 @@
 - [x] 口型试片门禁：人声活跃比 + 近脸参考（`lib/mv-lipsync-prep.mjs` + CLI `mv-lipsync-prep`；本夜 `feature/mv-lipsync-prep`，base template-recommend）
 - [x] 音频能量 hops → 推荐模板（`extractMusicSignalsFromHops` + CLI `mv-recommend --audio/--hops-json`；本夜 `feature/mv-recommend-from-audio`，base lipsync-prep）
 - [x] 人物一致性包（三视图/近脸锁脸 + CLI `mv-character-pack`；本夜 `feature/mv-character-consistency`，base recommend-from-audio）
+- [x] 人物一致性包接入 mv-cut / 口型试片（`applyCharacterPackToAssets` + identity lock；本夜 `feature/mv-character-pack-apply`，base character-consistency）
 - [ ] 下一：有人声源曲验证 15s 试片 / open PR 合并卫生
 
 

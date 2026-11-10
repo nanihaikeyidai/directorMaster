@@ -10,7 +10,7 @@ import { normalizeCues, writeBilingualSubtitles } from '../lib/subtitle-cues.mjs
 import { checkAvAlignment } from '../lib/mv-av-alignment.mjs';
 import { buildLipsyncTrialPlan, probeEnergyHops } from '../lib/mv-lipsync-prep.mjs';
 import { extractMusicSignalsFromHops, probeMusicSignals } from '../lib/mv-music-signals.mjs';
-import { buildCharacterConsistencyPack, formatCharacterPackReport, listCharacterRefPaths } from '../lib/mv-character-consistency.mjs';
+import { applyCharacterPackToAssets, appendIdentityLockToPrompt, buildCharacterConsistencyPack, formatCharacterPackReport, listCharacterRefPaths } from '../lib/mv-character-consistency.mjs';
 
 const argv = process.argv.slice(2);
 const command = argv.shift() || 'help';
@@ -366,7 +366,7 @@ function mvCut() {
   mkdirSync(sourceRoot,{recursive:true});mkdirSync(outputRoot,{recursive:true});
   const assetMetaPath=option('asset-meta');
   const assetMeta=assetMetaPath?JSON.parse(readFileSync(path.resolve(assetMetaPath),'utf8')):{};
-  const visualAssets=[];
+  let visualAssets=[];
   for(const [flag,category] of [['people','人物'],['scenes','场景']]) {
     const source=option(flag);
     if(!source) throw new Error(`MV 裁切需要 --${flag} <目录或图片>，人物和场景素材都不能为空`);
@@ -376,7 +376,6 @@ function mvCut() {
     if(!files.length) throw new Error(`${category}素材路径中没有支持的图片`);
     const targetRoot=path.join(assetRoot,category);mkdirSync(targetRoot,{recursive:true});
     for(const file of files) {
-      if(visualAssets.length>=9) throw new Error('MiniMax H3 视觉参考图总数不能超过 9 张');
       const target=path.join(targetRoot,path.basename(file));copyFileSync(file,target);
       const key=path.basename(file);
       const stem=path.basename(file,path.extname(file));
@@ -386,6 +385,19 @@ function mvCut() {
       visualAssets.push({id:`mv:${projectId}:${visualAssets.length+1}`,name:stem,fileName:key,path:target,mediaType:'image',category,description});
     }
   }
+  const applied=applyCharacterPackToAssets(visualAssets);
+  if(!applied.ok) throw new Error(applied.reason||'人物一致性包不可用');
+  visualAssets=applied.assets;
+  const pack=applied.packResult;
+  const characterPack={
+    ok:pack.ok,
+    reason:pack.reason,
+    summary:pack.summary,
+    warnings:pack.pack.warnings||[],
+    identityLockText:pack.pack.identityLockText||'',
+    primaryFace:pack.pack.primaryFace?{path:pack.pack.primaryFace.path,role:pack.pack.primaryFace.role}:null,
+    orderedRefs:(pack.pack.orderedRefs||[]).slice(0,visualAssets.length).map((ref)=>({path:ref.path,role:ref.role})),
+  };
   const sourcePath=path.join(sourceRoot,path.basename(input));
   if(path.resolve(input)!==path.resolve(sourcePath)) copyFileSync(input,sourcePath);
   const segments=points.slice(0,-1).map((start,index)=>{
@@ -395,9 +407,9 @@ function mvCut() {
     const segment={index:index+1,start:Number(start.toFixed(3)),end:Number(end.toFixed(3)),duration:Number(length.toFixed(3))};
     const fileName=`segment-${String(segment.index).padStart(2,'0')}_${segment.start.toFixed(3)}-${segment.end.toFixed(3)}.wav`,outputPath=path.join(outputRoot,fileName);
     execFileSync('ffmpeg',['-hide_banner','-loglevel','error','-y','-ss',String(segment.start),'-t',String(segment.duration),'-i',sourcePath,'-vn','-acodec','pcm_s16le',outputPath],{windowsHide:true});
-    return {...segment,...notes[index],fileName,path:outputPath,prompt:mvPrompt(projectName,segment,notes[index],visualAssets,template,settings)};
+    return {...segment,...notes[index],fileName,path:outputPath,prompt:appendIdentityLockToPrompt(mvPrompt(projectName,segment,notes[index],visualAssets,template,settings),pack.pack.identityLockText)};
   });
-  const manifest={version:1,projectId,projectName,template,settings,sourceName:path.basename(sourcePath),sourcePath,duration,cuts,visualAssets,segments,outputRoot,createdAt:new Date().toISOString()};
+  const manifest={version:1,projectId,projectName,template,settings,sourceName:path.basename(sourcePath),sourcePath,duration,cuts,visualAssets,characterPack,segments,outputRoot,createdAt:new Date().toISOString()};
   const projectFile=path.join(root,'project.json');
   writeFileSync(projectFile,JSON.stringify(manifest,null,2));writeFileSync(path.join(outputRoot,'segments.json'),JSON.stringify(manifest,null,2));
   return {status:'exported',projectId,projectFile,outputRoot,segments};
@@ -733,12 +745,32 @@ function mvLipsyncPrep() {
   if (skinRaw !== '') person.centerSkinFraction = Number(skinRaw);
   const faceRaw = option('face-height-ratio', '');
   if (faceRaw !== '') person.faceHeightRatio = Number(faceRaw);
-  return buildLipsyncTrialPlan({
+  const probeRefSize = (filePath) => {
+    const ref = { path: filePath };
+    const resolved = path.resolve(filePath);
+    if (existsSync(resolved)) ref.path = resolved;
+    try {
+      const out = execFileSync('ffprobe', ['-v','error','-select_streams','v:0','-show_entries','stream=width,height','-of','csv=p=0:s=x', ref.path], { encoding: 'utf8' }).trim();
+      const [w,h] = out.split('x').map(Number);
+      if (w>0 && h>0) { ref.width=w; ref.height=h; }
+    } catch {}
+    return ref;
+  };
+  const refs = optionAll('ref').map((filePath) => probeRefSize(filePath));
+  const dir = option('dir', '');
+  if (dir) {
+    for (const filePath of listCharacterRefPaths(path.resolve(dir))) refs.push(probeRefSize(filePath));
+  }
+  const planInput = {
     hops,
-    person,
     targetDurationSec: Number.isFinite(duration) ? duration : 15,
     workflowId,
-  });
+  };
+  // Keep the legacy placeholder person only when no --ref/--dir were given.
+  // A default "person.jpg" must not be prepended into the consistency pack.
+  if (personPath || !refs.length) planInput.person = person;
+  if (refs.length) planInput.refs = refs;
+  return buildLipsyncTrialPlan(planInput);
 }
 
 function printMvLipsyncPrep(plan) {
@@ -753,6 +785,12 @@ function printMvLipsyncPrep(plan) {
     if (plan.audio.ok) console.log('窗口：' + plan.audio.startSec.toFixed(2) + '–' + plan.audio.endSec.toFixed(2) + 's');
   }
   if (plan.person) console.log('人物：' + (plan.person.ok ? 'ok' : 'fail') + ' — ' + plan.person.reason);
+  if (plan.characterPack) {
+    console.log('人物一致性包：' + (plan.characterPack.ok ? '通过' : '未通过'));
+    if (plan.characterPack.reason) console.log('一致性理由：' + plan.characterPack.reason);
+    const primary = plan.characterPack.pack?.primaryFace;
+    if (primary?.path) console.log('主锁脸：' + path.basename(primary.path));
+  }
   if (plan.workflowId) console.log('工作流：' + plan.workflowId);
 }
 
@@ -863,7 +901,7 @@ try {
     });
     console.log(JSON.stringify(result, null, 2));
   }
-  else console.log('MV Master CLI (director-master)\n  discover\n  index --root <dir>\n  skill-task --kind screenplay --script <file> [--brief <text>]\n  skill-task --kind shotlist --script <file> --platform "MiniMax H3" --confirmed true [--assets <dir>]\n  prepare --spec <project.json> --out <workflow.json>\n  run --spec <project.json> [--watch]\n  status --id <prompt-id>\n  mv-cut --audio <music.wav> --project <name> --cuts 8.4,21.7 --notes <segments.json> --people <dir> --scenes <dir> [--template band|folk-solo|folk-duo|piano-ballad|rock-solo|dance-edm|rap-hiphop] [--vocal-start <sec>] [--asset-meta <descriptions.json>]\n  mv-templates   # 列出可用 MV 提示词模板（id/label/version）\n  mv-lipsync-prep (--audio <file>|--hops-json <file>) [--person <image>] [--duration 15] [--workflow-id ID] [--center-skin 0.2] [--face-height-ratio 0.4] [--json]\n  mv-recommend [--audio <file>|--hops-json <file>] [--bpm N] [--vocal-density sparse|medium|dense|NUMBER] [--energy low|medium|high] [--instruments csv] [--performers N] [--hints "..."] [--json]\n  mv-character-pack (--ref <path> [--ref <path>...] | --dir <folder>) [--json]\n  mv-generate --project <id|project.json> [--dry-run|--watch] [--workflow-id ID] [--out dir]\n  voice-generate --ref <voice.wav> --text <台词> --character <角色> --emotion <情绪描述> --consent true [--watch]\n  voice-generate --ref <voice.wav> --batch <dialogue.json> --consent true [--watch]\n  voice-status --id <job-id>\n  redub --video <file> --consent true [--name <id>] [--script <script.json>] [--skip-separate] [--stop-after extract|separate|transcribe|refs|tts]\n  redub --stage init|extract|separate|transcribe|script|refs|tts|mix --job <id> [--script <file>] [--consent true]\n  subtitle --cues <cues.json> --out <dir> [--langs zh,en] [--basename subtitles]\n  subtitle --video <file>   # V0: 无 cues 且无 RUNNINGHUB_API_KEY 时明确报错，不调用云端\n  mv-align-check --manifest <segments.json> [--tolerance 0.08] [--require-video] [--require-audio|--no-require-audio]');
+  else console.log('MV Master CLI (director-master)\n  discover\n  index --root <dir>\n  skill-task --kind screenplay --script <file> [--brief <text>]\n  skill-task --kind shotlist --script <file> --platform "MiniMax H3" --confirmed true [--assets <dir>]\n  prepare --spec <project.json> --out <workflow.json>\n  run --spec <project.json> [--watch]\n  status --id <prompt-id>\n  mv-cut --audio <music.wav> --project <name> --cuts 8.4,21.7 --notes <segments.json> --people <dir> --scenes <dir> [--template band|folk-solo|folk-duo|piano-ballad|rock-solo|dance-edm|rap-hiphop] [--vocal-start <sec>] [--asset-meta <descriptions.json>]\n  mv-templates   # 列出可用 MV 提示词模板（id/label/version）\n  mv-lipsync-prep (--audio <file>|--hops-json <file>) [--person <image>] [--ref <path> ...] [--dir <folder>] [--duration 15] [--workflow-id ID] [--center-skin 0.2] [--face-height-ratio 0.4] [--json]\n  mv-recommend [--audio <file>|--hops-json <file>] [--bpm N] [--vocal-density sparse|medium|dense|NUMBER] [--energy low|medium|high] [--instruments csv] [--performers N] [--hints "..."] [--json]\n  mv-character-pack (--ref <path> [--ref <path>...] | --dir <folder>) [--json]\n  mv-generate --project <id|project.json> [--dry-run|--watch] [--workflow-id ID] [--out dir]\n  voice-generate --ref <voice.wav> --text <台词> --character <角色> --emotion <情绪描述> --consent true [--watch]\n  voice-generate --ref <voice.wav> --batch <dialogue.json> --consent true [--watch]\n  voice-status --id <job-id>\n  redub --video <file> --consent true [--name <id>] [--script <script.json>] [--skip-separate] [--stop-after extract|separate|transcribe|refs|tts]\n  redub --stage init|extract|separate|transcribe|script|refs|tts|mix --job <id> [--script <file>] [--consent true]\n  subtitle --cues <cues.json> --out <dir> [--langs zh,en] [--basename subtitles]\n  subtitle --video <file>   # V0: 无 cues 且无 RUNNINGHUB_API_KEY 时明确报错，不调用云端\n  mv-align-check --manifest <segments.json> [--tolerance 0.08] [--require-video] [--require-audio|--no-require-audio]');
 } catch (error) {
   console.error('[director-master] ' + (error instanceof Error ? error.message : String(error)));
   process.exitCode = 1;

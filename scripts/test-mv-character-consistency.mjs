@@ -7,6 +7,8 @@ import {
   buildCharacterConsistencyPack,
   formatCharacterPackReport,
   listCharacterRefPaths,
+  applyCharacterPackToAssets,
+  appendIdentityLockToPrompt,
 } from '../lib/mv-character-consistency.mjs';
 
 // --- classifyCharacterRef: path heuristics ---
@@ -180,6 +182,90 @@ assert.equal(
   } finally {
     rmSync(dir, { recursive: true, force: true });
   }
+}
+
+
+// --- applyCharacterPackToAssets: scene category hints role ---
+{
+  const applied = applyCharacterPackToAssets([
+    { path: 'still-B.jpg', category: '人物' },
+    { path: 'bg.jpg', category: '场景' },
+  ]);
+  assert.equal(applied.ok, true);
+  const scenes = applied.packResult.pack.scenes || [];
+  assert.ok(scenes.some((ref) => String(ref.path).endsWith('bg.jpg')));
+  const bg = (applied.packResult.pack.orderedRefs || []).find((ref) => String(ref.path).endsWith('bg.jpg'));
+  assert.equal(bg?.role, 'scene');
+}
+
+// --- applyCharacterPackToAssets: reorder face → costume → scene ---
+{
+  const applied = applyCharacterPackToAssets([
+    { path: 'look-summer.jpg', category: '人物' },
+    { path: 'scene-wide.jpg', category: '场景' },
+    { path: 'still-B.jpg', category: '人物' },
+  ]);
+  assert.equal(applied.ok, true);
+  assert.deepEqual(applied.assets.map((asset) => asset.path), [
+    'still-B.jpg',
+    'look-summer.jpg',
+    'scene-wide.jpg',
+  ]);
+}
+
+// --- applyCharacterPackToAssets: no face lock keeps input order ---
+{
+  const input = [
+    { path: 'scene-wide.jpg', category: '场景' },
+    { path: 'look-summer.jpg', category: '人物' },
+  ];
+  const applied = applyCharacterPackToAssets(input);
+  assert.equal(applied.ok, false);
+  assert.match(applied.reason, /近脸|锁脸/);
+  assert.deepEqual(applied.assets.map((asset) => asset.path), [
+    'scene-wide.jpg',
+    'look-summer.jpg',
+  ]);
+}
+
+// --- applyCharacterPackToAssets: cap 9 keeps face lock, drops later scenes ---
+{
+  const input = [{ path: 'still-B.jpg', category: '人物' }];
+  for (let i = 1; i <= 9; i++) {
+    input.push({ path: `scene-0${i}.jpg`, category: '场景' });
+  }
+  const applied = applyCharacterPackToAssets(input);
+  assert.equal(applied.ok, true);
+  assert.equal(applied.assets.length, 9);
+  assert.equal(applied.assets[0].path, 'still-B.jpg');
+  assert.ok(!applied.assets.some((asset) => asset.path === 'scene-09.jpg'));
+}
+
+// --- applyCharacterPackToAssets: preserve original asset fields ---
+{
+  const applied = applyCharacterPackToAssets([
+    { path: 'still-B.jpg', category: '人物', description: 'bust', id: 'keep-me' },
+  ]);
+  assert.equal(applied.ok, true);
+  assert.equal(applied.assets[0].description, 'bust');
+  assert.equal(applied.assets[0].id, 'keep-me');
+}
+
+// --- appendIdentityLockToPrompt ---
+{
+  const prompt = 'detailed_description:\nshot here\noverall_soundscape:\n音';
+  const lock = 'Identity lock / 人物一致性：Keep the face.';
+  const once = appendIdentityLockToPrompt(prompt, lock);
+  const marker = '\noverall_soundscape:';
+  const index = once.indexOf(marker);
+  assert.ok(index > 0);
+  assert.equal(once.slice(index, index + marker.length), marker);
+  const lineBefore = once.slice(0, index).split('\n').pop();
+  assert.equal(lineBefore, lock);
+  assert.equal(appendIdentityLockToPrompt(once, lock), once);
+  assert.equal(appendIdentityLockToPrompt(prompt, ''), prompt);
+  assert.equal(appendIdentityLockToPrompt(prompt, '   '), prompt);
+  assert.equal(appendIdentityLockToPrompt('', lock), '');
 }
 
 console.log('test-mv-character-consistency: ok');
