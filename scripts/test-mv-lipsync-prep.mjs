@@ -101,4 +101,43 @@ assert.equal(isVocalActiveHop({ t: 0, rmsDb: -50, midDb: -10, bassDb: -12 }), fa
   assert.match(badPerson.reason, /近脸|特写|人脸|参考/);
 }
 
+
+// --- buildLipsyncTrialPlan: refs pack + identity lock ---
+{
+  const goodHops = hopsFrom('V'.repeat(80));
+  const packed = buildLipsyncTrialPlan({
+    hops: goodHops,
+    refs: ['still-B.jpg', 'look-summer.jpg', 'scene-wide.jpg'],
+    workflowId: '2089048490512052225',
+  });
+  assert.equal(packed.ok, true);
+  assert.equal(packed.characterPack.ok, true);
+  assert.match(packed.identityLockText, /Identity lock|人物一致性/);
+  assert.ok(String(packed.orderedRefs[0].path).endsWith('still-B.jpg'));
+}
+
+// --- buildLipsyncTrialPlan: refs without face lock fail ---
+{
+  const goodHops = hopsFrom('V'.repeat(80));
+  const noFace = buildLipsyncTrialPlan({
+    hops: goodHops,
+    refs: ['scene-wide.jpg'],
+    workflowId: '2089048490512052225',
+  });
+  assert.equal(noFace.ok, false);
+  assert.match(noFace.reason, /近脸|锁脸/);
+}
+
+// --- buildLipsyncTrialPlan: legacy person path without refs is unchanged ---
+{
+  const goodHops = hopsFrom('V'.repeat(80));
+  const legacy = buildLipsyncTrialPlan({
+    hops: goodHops,
+    person: { path: 'ref-crop.jpg', width: 768, height: 1200 },
+    workflowId: '2089048490512052225',
+  });
+  assert.equal(legacy.ok, true);
+  assert.equal(legacy.characterPack, undefined);
+}
+
 console.log('test-mv-lipsync-prep: ok');

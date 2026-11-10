@@ -1,3 +1,9 @@
+import type {
+  CharacterConsistencyResult,
+  CharacterRef,
+  CharacterRefInput,
+} from './mv-character-consistency.d.ts';
+
 export type EnergyHop = {
   t: number;
   rmsDb: number;
@@ -28,6 +34,9 @@ export type LipsyncTrialPlan = {
   person?: FaceCloseUpAssessment;
   workflowId?: string;
   reason: string;
+  characterPack?: CharacterConsistencyResult;
+  identityLockText?: string;
+  orderedRefs?: CharacterRef[];
 };
 
 export function isVocalActiveHop(
@@ -55,13 +64,15 @@ export function assessFaceCloseUpRef(input: {
 
 export function buildLipsyncTrialPlan(input: {
   hops: EnergyHop[];
-  person: {
+  person?: {
     path?: string;
-    width: number;
-    height: number;
+    width?: number;
+    height?: number;
     centerSkinFraction?: number;
     faceHeightRatio?: number;
+    faceBox?: CharacterRefInput['faceBox'];
   };
+  refs?: Array<string | CharacterRefInput>;
   targetDurationSec?: number;
   minDurationSec?: number;
   minVocalActiveRatio?: number;
