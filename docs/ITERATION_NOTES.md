@@ -1,5 +1,31 @@
 # Iteration Notes
 
+## 2026-11-12 00:00 Asia/Shanghai — 最终合成校验（P0-5）
+
+**模块**：MV / Sprint 1 遗留 P0-5（最终合成校验）。按 2026-11-07 用户优先级：流程优化与对口型/人物一致性优先于新曲风。`muxOriginalAudio` 已能拼接视频并用原曲覆盖音轨，但合成前没有可测试的报告：段顺序、缺段空洞、重复、时间轴缺口/重叠、总时长与原曲、以及误把生成音轨当母带都可能静默出片。本夜落地纯函数合成前校验，并接到 CLI 与 mux 预检。无新曲风、无 RH。
+
+**验收标准**
+- `checkMvCompose`：空/非法输入 → `NO_SEGMENTS`；重复段号 / 非连续 1..n / 输入顺序错乱 / 重复成片路径分别为 error
+- 相邻段 start/end 超出 80ms 容差报 `TIMELINE_GAP` / `TIMELINE_OVERLAP`；8.00 与 8.05 首尾相接不报缺口
+- 提供 `sourceAudioDuration` 且与期望总时长偏差 > 容差 → `TOTAL_DURATION_MISMATCH`（带 delta）
+- 默认要求原曲母带：无路径/正时长且未标记 `original` → `MISSING_SOURCE_AUDIO`；`audioSource=generated` 即使有路径也是 error；`unknown` 有证据为 warning，无证据为 error
+- 默认 `requireVideo`：既无 `videoPath` 也无正数 `videoDuration` → `MISSING_VIDEO`；关闭后不报该错
+- CLI `mv-compose-check --manifest`；stdout 为报告 JSON；`!ok` 时 exit 1
+- `muxOriginalAudio` 在 ffmpeg 前跑校验；重复路径或缺原曲在调用 ffmpeg 前被拦住
+- `npm test` 含 `test-mv-compose-validate`；无密钥 / 无大媒体 / 无 RH 调用
+
+**完成**
+- `lib/mv-compose-validate.mjs` + typings：`checkMvCompose` / `formatComposeReport`（中文 message + suggestion）
+- CLI `mv-compose-check`；夹具 `examples/mv-compose-fixture.json` / `examples/mv-compose-fixture-bad.json`
+- `muxOriginalAudio` 合成前预检；`scripts/test-mv-compose-validate.mjs` 接入 `npm test`
+- Design/plan：`docs/superpowers/{specs,plans}/2026-11-12-mv-compose-validate*.md`
+
+**验证**：`npm test` 全绿（含 `test-mv-compose-validate`）。CLI 对 ok 夹具 exit 0 / `ok:true`，对 bad 夹具 exit 1。无 RH 付费。
+
+**15s 口型试片**：本切片未跑试片，细节见当晚汇报。
+
+**下一晚**：有人声源曲验证 15s 试片 / open PR 合并卫生。
+
 ## 2026-11-11 00:00 Asia/Shanghai — 把人物一致性包接入 mv-cut 与口型试片
 
 **模块**：MV / 人物一致性（把一致性包接入 mv-cut 与口型试片）。按 2026-11-07 用户优先级：流程优化与对口型/人物一致性优先于新曲风。PR #22 已落地分类/组包/CLI `mv-character-pack`，但 `mv-cut` 与口型试片仍按文件系统顺序取图、中途 9 张截断，且不注入 `identityLockText`。本夜加 apply 层并接到裁切与试片计划。无新曲风、无 RH。
