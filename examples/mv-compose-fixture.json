@@ -1,0 +1,24 @@
+{
+  "version": 1,
+  "sourceAudioDuration": 16,
+  "sourceAudioPath": "examples/compiled/source-original.wav",
+  "audioSource": "original",
+  "segments": [
+    {
+      "index": 1,
+      "startSec": 0,
+      "endSec": 8,
+      "expectedDuration": 8,
+      "videoDuration": 8,
+      "videoPath": "examples/compiled/seg-01.mp4"
+    },
+    {
+      "index": 2,
+      "startSec": 8,
+      "endSec": 16,
+      "expectedDuration": 8,
+      "videoDuration": 8,
+      "videoPath": "examples/compiled/seg-02.mp4"
+    }
+  ]
+}
