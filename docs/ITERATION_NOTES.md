@@ -22,7 +22,7 @@
 
 **验证**：`npm test` 全绿（含 `test-mv-compose-validate`）。CLI 对 ok 夹具 exit 0 / `ok:true`，对 bad 夹具 exit 1。无 RH 付费。
 
-**15s 口型试片**：本切片未跑试片，细节见当晚汇报。
+**15s 口型试片**：今晚**跳过**，未烧 RunningHub 币。原因：电脑 meilin 离线，无法读取本机虚拟偶像有人声源曲；箱内已探测的 Camilla 片段（camilla-30s / yusu src·raw / vocal-seg / sing-20-30 / audio-segs / yz-jinyu segs）最高人声活跃比约 0.03–0.13，远低于 `mv-lipsync-prep` 门槛 0.35（最高为 yusu raw 约 0.125）；禁止用间奏/器乐或 Downloads 里的 TTS 口语、剧集对白评演唱口型。
 
 **下一晚**：有人声源曲验证 15s 试片 / open PR 合并卫生。
 
