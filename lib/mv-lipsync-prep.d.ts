@@ -3,6 +3,7 @@ import type {
   CharacterRef,
   CharacterRefInput,
 } from './mv-character-consistency.d.ts';
+import type { LipsyncWorkflowResolution } from './mv-lipsync-finalize.d.ts';
 
 export type EnergyHop = {
   t: number;
@@ -33,6 +34,7 @@ export type LipsyncTrialPlan = {
   audio?: VocalSegmentResult;
   person?: FaceCloseUpAssessment;
   workflowId?: string;
+  workflow?: LipsyncWorkflowResolution;
   reason: string;
   characterPack?: CharacterConsistencyResult;
   identityLockText?: string;

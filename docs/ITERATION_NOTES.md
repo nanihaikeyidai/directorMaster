@@ -1,5 +1,32 @@
 # Iteration Notes
 
+## 2026-11-13 00:00 Asia/Shanghai — 口型试片工作流默认 + 成片封装原曲
+
+**模块**：MV / 口型试片流程（工作流默认与参数、封装原曲）。按 2026-11-07 用户优先级：流程优化与对口型/人物一致性优先于新曲风。人声段门禁、近脸参考和人物一致性包已落地，但试片默认工作流只写在 CLI 字符串里，`buildLipsyncTrialPlan` 省略 id 时留空；试片成片也没有可测试的「封装原曲」收口，容易把生成音轨当母带发出去。本夜集中注册工作流并加上 finalize 计划。无新曲风、无 RH。
+
+**验收标准**
+- `listLipsyncWorkflows` / `resolveLipsyncWorkflow`：省略或空白 → 默认迅风幻影自动版 `2089048490512052225`；别名 `像素幻想` / `pixel-fantasy` → `2087128116820013058`；10–30 位数字视为自定义；非法 id → `ok: false` 并列出可选项
+- `buildLipsyncTrialPlan` 不传 `workflowId` 时填入上述默认，并带 `workflow.name`；非法 id 则计划失败
+- `planLipsyncFinalize`：缺视频 / 缺原曲 / `audioSource=generated` → `ok: false` 且 `mux === null`
+- 成片 + 原曲路径 → `ok: true`，`mux.audioSource === 'original'`，默认输出名以 `-original-audio.mp4` 结尾，附带 `checkMvCompose` 通过报告
+- CLI `mv-lipsync-finalize --video --audio [--dry-run] [--json]`；`!ok` 时 exit 1 且不跑 ffmpeg；help 列出该命令
+- `npm test` 含 `test-mv-lipsync-finalize`；无密钥 / 无大媒体 / 无 RH 调用
+- 不改变 `mv-generate` / UI 的像素幻想生产默认
+
+**完成**
+- `lib/mv-lipsync-finalize.mjs` + typings：工作流注册表、`resolveLipsyncWorkflow`、`planLipsyncFinalize`
+- `buildLipsyncTrialPlan` 与 CLI `mv-lipsync-prep` 共用 `DEFAULT_LIPSYNC_WORKFLOW_ID`
+- CLI `mv-lipsync-finalize`（`--dry-run` 只打印计划，正式模式调用已有 `muxOriginalAudio`）
+- 测试 `scripts/test-mv-lipsync-finalize.mjs` 接入 `npm test`
+- Design/plan：`docs/superpowers/{specs,plans}/2026-11-13-mv-lipsync-finalize*.md`
+
+**验证**：`npm test` 全绿（含 `test-mv-lipsync-finalize`）。CLI `--dry-run --json` 对成片+原曲计划 exit 0 / `ok:true`，缺音频 exit 1。无 RH 付费。
+
+**15s 口型试片**：今晚**跳过**，未烧 RunningHub 币。原因：电脑 meilin 离线，无法读取本机虚拟偶像有人声源曲；箱内已探测的 Camilla 片段（camilla-30s / yusu src·raw / vocal-seg / sing-20-30 / audio-segs / yz-jinyu segs / rh-lipsync-survey·pixel-fantasy seg20）最高人声活跃比约 0.03–0.13，远低于 `mv-lipsync-prep` 门槛 0.35（最高为 yusu raw 约 0.125）；禁止用间奏/器乐或 Downloads 里的 TTS 口语、剧集对白评演唱口型。
+
+**下一晚**：有人声源曲验证 15s 试片（prep → 默认迅风工作流提交 → finalize 封装原曲）/ open PR 合并卫生 / P0-4 与 P0-5 的 UI 硬门禁。
+
+
 ## 2026-11-12 00:00 Asia/Shanghai — 最终合成校验（P0-5）
 
 **模块**：MV / Sprint 1 遗留 P0-5（最终合成校验）。按 2026-11-07 用户优先级：流程优化与对口型/人物一致性优先于新曲风。`muxOriginalAudio` 已能拼接视频并用原曲覆盖音轨，但合成前没有可测试的报告：段顺序、缺段空洞、重复、时间轴缺口/重叠、总时长与原曲、以及误把生成音轨当母带都可能静默出片。本夜落地纯函数合成前校验，并接到 CLI 与 mux 预检。无新曲风、无 RH。
