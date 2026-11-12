@@ -79,7 +79,8 @@
 - [x] 人物一致性包（三视图/近脸锁脸 + CLI `mv-character-pack`；本夜 `feature/mv-character-consistency`，base recommend-from-audio）
 - [x] 人物一致性包接入 mv-cut / 口型试片（`applyCharacterPackToAssets` + identity lock；本夜 `feature/mv-character-pack-apply`，base character-consistency）
 - [x] 最终合成校验（P0-5：原曲唯一音轨 + 段顺序/空洞/重复/总时长；`checkMvCompose` + CLI `mv-compose-check` + mux 预检；本夜 `feature/mv-compose-validate`，base character-pack-apply）
-- [ ] 下一：有人声源曲验证 15s 试片 / open PR 合并卫生
+- [x] 口型试片工作流默认 + 成片封装原曲（`resolveLipsyncWorkflow` + `planLipsyncFinalize` + CLI `mv-lipsync-finalize`；默认迅风幻影自动版，像素幻想为备选；本夜 `feature/mv-lipsync-finalize`，base compose-validate）
+- [ ] 下一：有人声源曲验证 15s 试片（prep → 默认工作流提交 → finalize 封装原曲）/ open PR 合并卫生 / UI 合成硬门禁
 
 
 ## 管理方式
