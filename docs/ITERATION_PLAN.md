@@ -47,7 +47,8 @@
 - [x] 分段审核状态：`pending` / `approved` / `submitted` / `failed`；批量与一键云端默认只提交 `approved`
 - [x] 可恢复任务：段级 `jobId`、错误摘要、取消、失败重试、刷新后断点续跑
 - [x] 音画对齐检查：`lib/mv-av-alignment.mjs` + CLI `mv-align-check`（导出前报告；UI 硬门禁仍可选）
-- 实现计划：`docs/superpowers/plans/2026-10-25-mv-review-and-resume.md`、`docs/superpowers/plans/2026-10-26-mv-av-alignment.md`
+- [x] 最终合成校验（P0-5）：`lib/mv-compose-validate.mjs` + CLI `mv-compose-check`（合成前报告；mux 预检；UI 硬门禁仍可选）
+- 实现计划：`docs/superpowers/plans/2026-10-25-mv-review-and-resume.md`、`docs/superpowers/plans/2026-10-26-mv-av-alignment.md`、`docs/superpowers/plans/2026-11-12-mv-compose-validate.md`
 
 ### Sprint 2 — RunningHub 加固
 
@@ -77,6 +78,7 @@
 - [x] 音频能量 hops → 推荐模板（`extractMusicSignalsFromHops` + CLI `mv-recommend --audio/--hops-json`；本夜 `feature/mv-recommend-from-audio`，base lipsync-prep）
 - [x] 人物一致性包（三视图/近脸锁脸 + CLI `mv-character-pack`；本夜 `feature/mv-character-consistency`，base recommend-from-audio）
 - [x] 人物一致性包接入 mv-cut / 口型试片（`applyCharacterPackToAssets` + identity lock；本夜 `feature/mv-character-pack-apply`，base character-consistency）
+- [x] 最终合成校验（P0-5：原曲唯一音轨 + 段顺序/空洞/重复/总时长；`checkMvCompose` + CLI `mv-compose-check` + mux 预检；本夜 `feature/mv-compose-validate`，base character-pack-apply）
 - [ ] 下一：有人声源曲验证 15s 试片 / open PR 合并卫生
 
 

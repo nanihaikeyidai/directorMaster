@@ -1,0 +1,24 @@
+{
+  "version": 1,
+  "sourceAudioDuration": 24,
+  "sourceAudioPath": "examples/compiled/source-generated.wav",
+  "audioSource": "generated",
+  "segments": [
+    {
+      "index": 1,
+      "startSec": 0,
+      "endSec": 8,
+      "expectedDuration": 8,
+      "videoDuration": 8,
+      "videoPath": "examples/compiled/seg-01.mp4"
+    },
+    {
+      "index": 3,
+      "startSec": 16,
+      "endSec": 24,
+      "expectedDuration": 8,
+      "videoDuration": 8,
+      "videoPath": "examples/compiled/seg-03.mp4"
+    }
+  ]
+}
