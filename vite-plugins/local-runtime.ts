@@ -29,6 +29,7 @@ import {
   listMvPromptTemplates,
   normalizeMvPromptTemplateId,
 } from "../lib/mv-prompt.mjs";
+import { planMvComposeGate } from "../lib/mv-compose-gate.mjs";
 
 const execFileAsync = promisify(execFile);
 
@@ -526,6 +527,23 @@ async function composeMvVideos(request: any) {
     if (!video.startsWith(projectRoot + path.sep) && !video.startsWith(cloudRoot + path.sep)) throw new Error("视频片段必须位于当前 MV 项目或云端任务归档目录");
     await fs.access(video);
   }
+  const gate = planMvComposeGate({
+    videos,
+    segments: Array.isArray(request.segments) ? request.segments : project.segments,
+    cuts: Array.isArray(request.cuts) ? request.cuts : project.cuts,
+    trimStart,
+    trimEnd,
+    sourceAudioPath: sourcePath,
+    sourceAudioDuration: sourceInfo.duration,
+    audioMode: request.audioMode,
+    purpose: request.purpose,
+    audioSource: request.audioSource,
+  });
+  if (!gate.ok) {
+    const error: any = new Error(gate.reason);
+    error.composeGate = gate;
+    throw error;
+  }
   const outputDir = path.join(projectRoot, "generated", "final");
   await fs.mkdir(outputDir, { recursive: true });
   const listPath = path.join(outputDir, "concat-list.txt");
@@ -534,7 +552,7 @@ async function composeMvVideos(request: any) {
   const silentPath = path.join(outputDir, `${project.projectName || projectId}_无声拼接.mp4`);
   await execFileAsync("ffmpeg", ["-hide_banner", "-loglevel", "error", "-y", "-f", "concat", "-safe", "0", "-i", listPath, "-c", "copy", silentPath], { windowsHide: true, timeout: 600000 });
   await execFileAsync("ffmpeg", ["-hide_banner", "-loglevel", "error", "-y", "-i", silentPath, "-ss", String(trimStart), "-t", String(trimEnd - trimStart), "-i", sourcePath, "-map", "0:v:0", "-map", "1:a:0", "-c:v", "copy", "-c:a", "aac", "-shortest", outputPath], { windowsHide: true, timeout: 600000 });
-  return { outputPath, videoCount: videos.length, audioPath: sourcePath };
+  return { outputPath, videoCount: videos.length, audioPath: sourcePath, ok: true, compose: gate.compose, alignment: gate.alignment };
 }
 
 function allowedPath(value: string, allowTemplate = false) {
@@ -1909,7 +1927,19 @@ export function localRuntime(): Plugin {
             }
             if (url.pathname === "/api/local/mv/compose" && req.method === "POST") {
               const request = JSON.parse((await readBody(req)).toString("utf8"));
-              return send(res, 200, await composeMvVideos(request));
+              try {
+                return send(res, 200, await composeMvVideos(request));
+              } catch (error: any) {
+                if (error?.composeGate) {
+                  return send(res, 400, {
+                    error: error instanceof Error ? error.message : String(error),
+                    ok: false,
+                    compose: error.composeGate.compose,
+                    alignment: error.composeGate.alignment,
+                  });
+                }
+                throw error;
+              }
             }
           }
           if (url.pathname === "/api/local/comfyui/discover")
