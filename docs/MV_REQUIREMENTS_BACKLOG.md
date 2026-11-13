@@ -8,7 +8,7 @@
 2. **分段审核状态**：支持“待审核 / 已审核 / 已提交 / 生成失败”状态；批量生成默认只提交已审核段，避免误用旧稿。
 3. **生成任务可恢复**：每段保留任务 ID、开始/结束时间、重试次数和错误摘要；支持取消单段、失败重试、断点续跑。
 4. **音画对齐检查**：导出前检查每段音频时长、视频时长、首段静音和尾部截断，给出可操作的对齐建议。
-5. **最终合成校验**：使用原始音乐作为唯一音轨，检查视频段顺序、空洞、重复和总时长，生成合成前报告。lib + CLI `mv-compose-check` 已落地（`lib/mv-compose-validate.mjs`，mux 预检已接入）；UI 硬门禁仍开放。
+5. **最终合成校验**：使用原始音乐作为唯一音轨，检查视频段顺序、空洞、重复和总时长，生成合成前报告。lib + CLI `mv-compose-check` 已落地（`lib/mv-compose-validate.mjs`，mux 预检已接入）；UI/API 硬门禁已落地（`planMvComposeGate`，`/api/local/mv/compose` 失败不跑 ffmpeg）。
 
 ## P1：效率与可控性
 
@@ -35,5 +35,5 @@
 
 - P0-2 分段审核状态：**已实现**（`lib/mv-segment-review.mjs` + MV 页门禁 / 批量默认已审核 / 一键停在 pending）
 - P0-3 生成任务可恢复：**已实现**（`generationActive` + `generationQueue` 持久化、jobId 续轮询、失败「重试」）；实机 RH 续跑待本机验证
-- P0-4 音画对齐检查：**已实现**（`lib/mv-av-alignment.mjs` + CLI `mv-align-check`；容差 80ms；UI 硬门禁仍可选）
-- P0-5 最终合成校验：**lib+CLI 已落地**（`lib/mv-compose-validate.mjs` + CLI `mv-compose-check` + `muxOriginalAudio` 预检；UI 硬门禁仍开放）
+- P0-4 音画对齐检查：**已实现**（`lib/mv-av-alignment.mjs` + CLI `mv-align-check`；容差 80ms；合成门禁在调用方提供探测时长时一并硬拦）
+- P0-5 最终合成校验：**已实现**（`lib/mv-compose-validate.mjs` + CLI `mv-compose-check` + `muxOriginalAudio` 预检 + UI/API 硬门禁 `planMvComposeGate`）

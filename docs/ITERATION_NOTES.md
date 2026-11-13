@@ -1,5 +1,31 @@
 # Iteration Notes
 
+## 2026-11-14 00:00 Asia/Shanghai — UI/API 合成硬门禁（P0-4 / P0-5）
+
+**模块**：MV / Sprint 1 遗留 UI 合成硬门禁。按 2026-11-07 用户优先级：流程优化优先于新曲风。`checkMvCompose` / `checkAvAlignment` 与 mux 预检已落地，但 `/api/local/mv/compose` 与 MV 页在 ffmpeg 拼接前没有硬门禁，段顺序、空洞、重复或误把生成音轨当母带仍可能静默出片。本夜把同一套校验接到 API、页面预检和 CLI。无新曲风、无 RH。
+
+**验收标准**
+- `planMvComposeGate`：省略 audioMode/purpose → 官方导出（source）；`audioMode: both` → 预览；官方成片缺原曲证据或 `audioSource=generated` → `ok: false`
+- 导出「视频原声」视为 QC 试听：不要求原曲母带，reason 标明不是母带成片
+- trim 窗口（trimEnd − trimStart）作为母带时长期望，不因整首 90s 对 16s 成片误报总时长
+- 提供 `videoDuration` 且与段时长偏差过大时，alignment 失败并否决门禁
+- `/api/local/mv/compose` 在 ffmpeg 之前跑门禁；`!ok` 返回 400 且不拼接
+- MV 页三条合成请求（预览 / 导出 / 云端完成后成片）先跑同一函数，失败只展示 reason
+- CLI `mv-compose-gate --manifest`；`!ok` exit 1；help 列出该命令
+- `npm test` 含 `test-mv-compose-gate`；无密钥 / 无大媒体 / 无 RH 调用
+
+**完成**
+- `lib/mv-compose-gate.mjs` + typings：`normalizeComposeAudioMode` / `buildComposeSegments` / `planMvComposeGate`
+- `composeMvVideos` 硬门禁 + 400 报告；页面预检；CLI `mv-compose-gate`
+- 测试 `scripts/test-mv-compose-gate.mjs` 接入 `npm test`
+- Design/plan：`docs/superpowers/{specs,plans}/2026-11-14-mv-compose-ui-gate*.md`
+
+**验证**：`npm test` 全绿（含 `test-mv-compose-gate`）。CLI 对 ok 夹具 exit 0 / `ok:true`，对缺段夹具 exit 1。无 RH 付费。
+
+**15s 口型试片**：今晚**跳过**，未烧 RunningHub 币。原因：电脑 meilin 离线，无法读取本机虚拟偶像有人声源曲；箱内 `camilla-30s.mp3` 经 `mv-lipsync-prep` 最高人声活跃比 0.100，低于门槛 0.35。禁止用间奏/器乐或剧集对白、TTS 口语评演唱口型。
+
+**下一晚**：有人声源曲验证 15s 试片（prep → 默认迅风工作流提交 → finalize 封装原曲）/ open PR 合并卫生（#4、#6–#26 仍 open）。
+
 ## 2026-11-13 00:00 Asia/Shanghai — 口型试片工作流默认 + 成片封装原曲
 
 **模块**：MV / 口型试片流程（工作流默认与参数、封装原曲）。按 2026-11-07 用户优先级：流程优化与对口型/人物一致性优先于新曲风。人声段门禁、近脸参考和人物一致性包已落地，但试片默认工作流只写在 CLI 字符串里，`buildLipsyncTrialPlan` 省略 id 时留空；试片成片也没有可测试的「封装原曲」收口，容易把生成音轨当母带发出去。本夜集中注册工作流并加上 finalize 计划。无新曲风、无 RH。
