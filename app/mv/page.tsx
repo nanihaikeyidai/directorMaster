@@ -33,6 +33,7 @@ import {
   restoreActiveGeneration,
   serializeActiveGeneration,
 } from "../../lib/mv-generation-resume.mjs";
+import { planMvComposeGate } from "../../lib/mv-compose-gate.mjs";
 
 const REVIEW_STATUS_LABEL: Record<SegmentReviewStatus, string> = {
   pending: "待审核",
@@ -884,6 +885,8 @@ export default function MvStudio() {
         try {
           setFullPreviewStatus("全部分段已就绪，正在拼接两种音轨并预热播放器缓存…");
           const videos = segments.map((_, index) => segmentVideoFor(index)!.outputPath);
+          const gate = planMvComposeGate(buildMvComposeGateInput(videos, "both", "preview"));
+          if (!gate.ok) throw new Error(gate.reason);
           const response = await fetch("/api/local/mv/compose", {
             method: "POST",
             headers: { "content-type": "application/json" },
@@ -1497,6 +1500,8 @@ export default function MvStudio() {
       let composedVideoCount = segments.length;
       if (!composedOutputPath) {
         const videos = segments.map((_, index) => segmentVideoFor(index)!.outputPath);
+        const gate = planMvComposeGate(buildMvComposeGateInput(videos, audioMode, "export"));
+        if (!gate.ok) throw new Error(gate.reason);
         const response = await fetch("/api/local/mv/compose", {
           method: "POST",
           headers: { "content-type": "application/json" },
@@ -1708,6 +1713,27 @@ export default function MvStudio() {
     if (target < 0 || target >= current.length) return;
     [current[actionIndex], current[target]] = [current[target], current[actionIndex]];
     changeSegmentActions(index, current);
+  }
+
+
+  function buildMvComposeGateInput(videos: string[], audioMode?: string, purpose?: string) {
+    return {
+      videos,
+      segments: segments.map((segment, index) => ({
+        index: segment.index,
+        startSec: segment.start,
+        endSec: segment.end,
+        expectedDuration: segment.duration,
+        videoPath: videos[index] || segmentVideoFor(index)?.outputPath,
+      })),
+      cuts,
+      trimStart: trimRange.start,
+      trimEnd: trimRange.end || project?.duration,
+      sourceAudioPath: project?.sourcePath,
+      sourceAudioDuration: project?.duration,
+      audioMode,
+      purpose,
+    };
   }
 
   function segmentListFor(cutValues: number[]) {
@@ -1950,7 +1976,14 @@ export default function MvStudio() {
         }
       }
       if (outputs.length === inputs.length && outputs.length) {
-        const composeResponse = await fetch("/api/local/mv/compose", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ projectId: project?.projectId, videos: outputs, trimStart: trimRange.start, trimEnd: trimRange.end || project?.duration }) });
+        const selectedOrder = [...selectedIndexes].sort((a, b) => a - b);
+        const videosForAll = segments.map((_, index) => {
+          const selectedPos = selectedOrder.indexOf(index);
+          return (selectedPos >= 0 ? outputs[selectedPos] : segmentVideoFor(index)?.outputPath) || "";
+        });
+        const gate = planMvComposeGate(buildMvComposeGateInput(videosForAll, "source", "export"));
+        if (!gate.ok) throw new Error(gate.reason);
+        const composeResponse = await fetch("/api/local/mv/compose", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ projectId: project?.projectId, videos: videosForAll, trimStart: trimRange.start, trimEnd: trimRange.end || project?.duration }) });
         const composed = await composeResponse.json();
         if (!composeResponse.ok) throw new Error(composed.error || "完整 MV 合成失败");
         setResult((current: any) => ({ ...(current || {}), finalVideoPath: composed.outputPath }));

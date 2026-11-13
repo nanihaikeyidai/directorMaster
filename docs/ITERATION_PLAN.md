@@ -46,9 +46,9 @@
 
 - [x] 分段审核状态：`pending` / `approved` / `submitted` / `failed`；批量与一键云端默认只提交 `approved`
 - [x] 可恢复任务：段级 `jobId`、错误摘要、取消、失败重试、刷新后断点续跑
-- [x] 音画对齐检查：`lib/mv-av-alignment.mjs` + CLI `mv-align-check`（导出前报告；UI 硬门禁仍可选）
-- [x] 最终合成校验（P0-5）：`lib/mv-compose-validate.mjs` + CLI `mv-compose-check`（合成前报告；mux 预检；UI 硬门禁仍可选）
-- 实现计划：`docs/superpowers/plans/2026-10-25-mv-review-and-resume.md`、`docs/superpowers/plans/2026-10-26-mv-av-alignment.md`、`docs/superpowers/plans/2026-11-12-mv-compose-validate.md`
+- [x] 音画对齐检查：`lib/mv-av-alignment.mjs` + CLI `mv-align-check`（导出前报告；有 `videoDuration`/`audioDuration` 时由合成门禁一并硬拦）
+- [x] 最终合成校验（P0-5）：`lib/mv-compose-validate.mjs` + CLI `mv-compose-check`（合成前报告；mux 预检）+ UI/API 硬门禁（`planMvComposeGate`）
+- 实现计划：`docs/superpowers/plans/2026-10-25-mv-review-and-resume.md`、`docs/superpowers/plans/2026-10-26-mv-av-alignment.md`、`docs/superpowers/plans/2026-11-12-mv-compose-validate.md`、`docs/superpowers/plans/2026-11-14-mv-compose-ui-gate.md`
 
 ### Sprint 2 — RunningHub 加固
 
@@ -80,7 +80,8 @@
 - [x] 人物一致性包接入 mv-cut / 口型试片（`applyCharacterPackToAssets` + identity lock；本夜 `feature/mv-character-pack-apply`，base character-consistency）
 - [x] 最终合成校验（P0-5：原曲唯一音轨 + 段顺序/空洞/重复/总时长；`checkMvCompose` + CLI `mv-compose-check` + mux 预检；本夜 `feature/mv-compose-validate`，base character-pack-apply）
 - [x] 口型试片工作流默认 + 成片封装原曲（`resolveLipsyncWorkflow` + `planLipsyncFinalize` + CLI `mv-lipsync-finalize`；默认迅风幻影自动版，像素幻想为备选；本夜 `feature/mv-lipsync-finalize`，base compose-validate）
-- [ ] 下一：有人声源曲验证 15s 试片（prep → 默认工作流提交 → finalize 封装原曲）/ open PR 合并卫生 / UI 合成硬门禁
+- [x] UI/API 合成硬门禁（`planMvComposeGate` + `/api/local/mv/compose` 预检 + 页面预检 + CLI `mv-compose-gate`；官方成片必须原曲母带；本夜 `feature/mv-compose-ui-gate`，base lipsync-finalize）
+- [ ] 下一：有人声源曲验证 15s 试片（prep → 默认迅风提交 → finalize 封装原曲）/ open PR 合并卫生（#4、#6–#26 仍 open，栈底 #11 基于 main）
 
 
 ## 管理方式
