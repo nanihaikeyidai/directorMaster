@@ -1,0 +1,14 @@
+{
+  "audioMode": "source",
+  "purpose": "export",
+  "trimStart": 0,
+  "trimEnd": 16,
+  "sourceAudioPath": "song.wav",
+  "sourceAudioDuration": 90,
+  "cuts": [8],
+  "videos": ["seg-01.mp4", "seg-02.mp4"],
+  "segments": [
+    { "index": 1, "startSec": 0, "endSec": 8, "videoPath": "seg-01.mp4", "videoDuration": 8 },
+    { "index": 2, "startSec": 8, "endSec": 16, "videoPath": "seg-02.mp4", "videoDuration": 8 }
+  ]
+}
