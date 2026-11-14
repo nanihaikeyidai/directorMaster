@@ -1,5 +1,30 @@
 # Iteration Notes
 
+## 2026-11-15 00:00 Asia/Shanghai — 切镜句界门禁
+
+**模块**：MV / 流程优化（切镜只落在乐句/句尾、呼吸或人声空白）。按 2026-11-07 用户优先级：流程优化优先于新曲风。各模板虽已把「禁止句中切」写入提示词，但 `mv-cut --cuts` 仍接受任意秒数，没有可测试的门禁。本夜落地纯函数校验与 CLI。无新曲风、无 RH。
+
+**验收标准**
+- `checkMvCuts`：有歌词时间码时，切点落在句首/句尾容差内通过；严格落在一句内部 → `MID_LYRIC`，吸附到较近句界（距离相等时向后吸到句尾）
+- 无歌词、仅有 hops 时，复用 `isVocalActiveHop`：人声段边界、空白/间奏、曲首曲尾通过；连续人声段内部 → `MID_LYRIC`，吸附到较近能量谷（平局向后）
+- 默认容差 120 ms；hops 有效容差为 `max(toleranceSec, hopSec / 2)`
+- 空切点 / 无法解析 → `NO_CUTS`；既无歌词也无 hops → `NO_EVIDENCE`；重复切点 → `DUPLICATE_CUT`；超出时长 → `OUT_OF_RANGE`；非法数字或负值 → `INVALID_CUT`
+- 库内不跑 ffmpeg/ffprobe；本夜不默认改 `mv-cut` 行为
+- CLI `mv-cut-check --cuts`；可配 `--lyrics` / `--hops-json` / `--audio`；`!ok` exit 1；help 列出该命令
+- `npm test` 含 `test-mv-cut-gate`；无密钥 / 无大媒体 / 无 RH 调用
+
+**完成**
+- `lib/mv-cut-gate.mjs` + typings：`parseLyricCues` / `findVocalRuns` / `classifyCutPoint` / `checkMvCuts`
+- CLI `mv-cut-check`；夹具 `examples/mv-cut-hops.json` / `examples/mv-cut-lyrics.json`
+- 测试 `scripts/test-mv-cut-gate.mjs` 接入 `npm test`
+- Design/plan：`docs/superpowers/{specs,plans}/2026-11-15-mv-cut-gate*.md`
+
+**验证**：`npm test` 全绿（含 `test-mv-cut-gate`）。CLI 对句界切点 exit 0 / `ok:true`，对句中切点 exit 1 / `MID_LYRIC`。无 RH 付费。
+
+**15s 口型试片**：今晚**跳过**，未烧 RunningHub 币。原因：电脑 meilin 离线，无法读取本机虚拟偶像有人声源曲；箱内 `camilla-30s.mp3` 经 `mv-lipsync-prep` 最高人声活跃比 0.100，低于门槛 0.35。禁止用间奏/器乐或剧集对白、TTS 口语评演唱口型。
+
+**下一晚**：有人声源曲验证 15s 试片（prep → 默认迅风工作流提交 → finalize 封装原曲）/ 把 `mv-cut-check` 接到 `mv-cut` 或 UI 预检 / open PR 合并卫生（#4、#6–#27 仍 open）。
+
 ## 2026-11-14 00:00 Asia/Shanghai — UI/API 合成硬门禁（P0-4 / P0-5）
 
 **模块**：MV / Sprint 1 遗留 UI 合成硬门禁。按 2026-11-07 用户优先级：流程优化优先于新曲风。`checkMvCompose` / `checkAvAlignment` 与 mux 预检已落地，但 `/api/local/mv/compose` 与 MV 页在 ffmpeg 拼接前没有硬门禁，段顺序、空洞、重复或误把生成音轨当母带仍可能静默出片。本夜把同一套校验接到 API、页面预检和 CLI。无新曲风、无 RH。
