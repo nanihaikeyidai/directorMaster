@@ -1,0 +1,389 @@
+{
+  "hopSec": 0.25,
+  "hops": [
+    {
+      "t": 0.0,
+      "rmsDb": -50,
+      "midDb": -55,
+      "bassDb": -52
+    },
+    {
+      "t": 0.25,
+      "rmsDb": -50,
+      "midDb": -55,
+      "bassDb": -52
+    },
+    {
+      "t": 0.5,
+      "rmsDb": -50,
+      "midDb": -55,
+      "bassDb": -52
+    },
+    {
+      "t": 0.75,
+      "rmsDb": -50,
+      "midDb": -55,
+      "bassDb": -52
+    },
+    {
+      "t": 1.0,
+      "rmsDb": -50,
+      "midDb": -55,
+      "bassDb": -52
+    },
+    {
+      "t": 1.25,
+      "rmsDb": -50,
+      "midDb": -55,
+      "bassDb": -52
+    },
+    {
+      "t": 1.5,
+      "rmsDb": -50,
+      "midDb": -55,
+      "bassDb": -52
+    },
+    {
+      "t": 1.75,
+      "rmsDb": -50,
+      "midDb": -55,
+      "bassDb": -52
+    },
+    {
+      "t": 2.0,
+      "rmsDb": -20,
+      "midDb": -25,
+      "bassDb": -30
+    },
+    {
+      "t": 2.25,
+      "rmsDb": -20,
+      "midDb": -25,
+      "bassDb": -30
+    },
+    {
+      "t": 2.5,
+      "rmsDb": -20,
+      "midDb": -25,
+      "bassDb": -30
+    },
+    {
+      "t": 2.75,
+      "rmsDb": -20,
+      "midDb": -25,
+      "bassDb": -30
+    },
+    {
+      "t": 3.0,
+      "rmsDb": -20,
+      "midDb": -25,
+      "bassDb": -30
+    },
+    {
+      "t": 3.25,
+      "rmsDb": -20,
+      "midDb": -25,
+      "bassDb": -30
+    },
+    {
+      "t": 3.5,
+      "rmsDb": -20,
+      "midDb": -25,
+      "bassDb": -30
+    },
+    {
+      "t": 3.75,
+      "rmsDb": -20,
+      "midDb": -25,
+      "bassDb": -30
+    },
+    {
+      "t": 4.0,
+      "rmsDb": -20,
+      "midDb": -25,
+      "bassDb": -30
+    },
+    {
+      "t": 4.25,
+      "rmsDb": -20,
+      "midDb": -25,
+      "bassDb": -30
+    },
+    {
+      "t": 4.5,
+      "rmsDb": -20,
+      "midDb": -25,
+      "bassDb": -30
+    },
+    {
+      "t": 4.75,
+      "rmsDb": -20,
+      "midDb": -25,
+      "bassDb": -30
+    },
+    {
+      "t": 5.0,
+      "rmsDb": -20,
+      "midDb": -25,
+      "bassDb": -30
+    },
+    {
+      "t": 5.25,
+      "rmsDb": -20,
+      "midDb": -25,
+      "bassDb": -30
+    },
+    {
+      "t": 5.5,
+      "rmsDb": -20,
+      "midDb": -25,
+      "bassDb": -30
+    },
+    {
+      "t": 5.75,
+      "rmsDb": -20,
+      "midDb": -25,
+      "bassDb": -30
+    },
+    {
+      "t": 6.0,
+      "rmsDb": -50,
+      "midDb": -55,
+      "bassDb": -52
+    },
+    {
+      "t": 6.25,
+      "rmsDb": -50,
+      "midDb": -55,
+      "bassDb": -52
+    },
+    {
+      "t": 6.5,
+      "rmsDb": -50,
+      "midDb": -55,
+      "bassDb": -52
+    },
+    {
+      "t": 6.75,
+      "rmsDb": -50,
+      "midDb": -55,
+      "bassDb": -52
+    },
+    {
+      "t": 7.0,
+      "rmsDb": -50,
+      "midDb": -55,
+      "bassDb": -52
+    },
+    {
+      "t": 7.25,
+      "rmsDb": -50,
+      "midDb": -55,
+      "bassDb": -52
+    },
+    {
+      "t": 7.5,
+      "rmsDb": -50,
+      "midDb": -55,
+      "bassDb": -52
+    },
+    {
+      "t": 7.75,
+      "rmsDb": -50,
+      "midDb": -55,
+      "bassDb": -52
+    },
+    {
+      "t": 8.0,
+      "rmsDb": -50,
+      "midDb": -55,
+      "bassDb": -52
+    },
+    {
+      "t": 8.25,
+      "rmsDb": -50,
+      "midDb": -55,
+      "bassDb": -52
+    },
+    {
+      "t": 8.5,
+      "rmsDb": -50,
+      "midDb": -55,
+      "bassDb": -52
+    },
+    {
+      "t": 8.75,
+      "rmsDb": -50,
+      "midDb": -55,
+      "bassDb": -52
+    },
+    {
+      "t": 9.0,
+      "rmsDb": -50,
+      "midDb": -55,
+      "bassDb": -52
+    },
+    {
+      "t": 9.25,
+      "rmsDb": -50,
+      "midDb": -55,
+      "bassDb": -52
+    },
+    {
+      "t": 9.5,
+      "rmsDb": -50,
+      "midDb": -55,
+      "bassDb": -52
+    },
+    {
+      "t": 9.75,
+      "rmsDb": -50,
+      "midDb": -55,
+      "bassDb": -52
+    },
+    {
+      "t": 10.0,
+      "rmsDb": -20,
+      "midDb": -25,
+      "bassDb": -30
+    },
+    {
+      "t": 10.25,
+      "rmsDb": -20,
+      "midDb": -25,
+      "bassDb": -30
+    },
+    {
+      "t": 10.5,
+      "rmsDb": -20,
+      "midDb": -25,
+      "bassDb": -30
+    },
+    {
+      "t": 10.75,
+      "rmsDb": -20,
+      "midDb": -25,
+      "bassDb": -30
+    },
+    {
+      "t": 11.0,
+      "rmsDb": -20,
+      "midDb": -25,
+      "bassDb": -30
+    },
+    {
+      "t": 11.25,
+      "rmsDb": -20,
+      "midDb": -25,
+      "bassDb": -30
+    },
+    {
+      "t": 11.5,
+      "rmsDb": -20,
+      "midDb": -25,
+      "bassDb": -30
+    },
+    {
+      "t": 11.75,
+      "rmsDb": -20,
+      "midDb": -25,
+      "bassDb": -30
+    },
+    {
+      "t": 12.0,
+      "rmsDb": -20,
+      "midDb": -25,
+      "bassDb": -30
+    },
+    {
+      "t": 12.25,
+      "rmsDb": -20,
+      "midDb": -25,
+      "bassDb": -30
+    },
+    {
+      "t": 12.5,
+      "rmsDb": -20,
+      "midDb": -25,
+      "bassDb": -30
+    },
+    {
+      "t": 12.75,
+      "rmsDb": -20,
+      "midDb": -25,
+      "bassDb": -30
+    },
+    {
+      "t": 13.0,
+      "rmsDb": -20,
+      "midDb": -25,
+      "bassDb": -30
+    },
+    {
+      "t": 13.25,
+      "rmsDb": -20,
+      "midDb": -25,
+      "bassDb": -30
+    },
+    {
+      "t": 13.5,
+      "rmsDb": -20,
+      "midDb": -25,
+      "bassDb": -30
+    },
+    {
+      "t": 13.75,
+      "rmsDb": -20,
+      "midDb": -25,
+      "bassDb": -30
+    },
+    {
+      "t": 14.0,
+      "rmsDb": -50,
+      "midDb": -55,
+      "bassDb": -52
+    },
+    {
+      "t": 14.25,
+      "rmsDb": -50,
+      "midDb": -55,
+      "bassDb": -52
+    },
+    {
+      "t": 14.5,
+      "rmsDb": -50,
+      "midDb": -55,
+      "bassDb": -52
+    },
+    {
+      "t": 14.75,
+      "rmsDb": -50,
+      "midDb": -55,
+      "bassDb": -52
+    },
+    {
+      "t": 15.0,
+      "rmsDb": -50,
+      "midDb": -55,
+      "bassDb": -52
+    },
+    {
+      "t": 15.25,
+      "rmsDb": -50,
+      "midDb": -55,
+      "bassDb": -52
+    },
+    {
+      "t": 15.5,
+      "rmsDb": -50,
+      "midDb": -55,
+      "bassDb": -52
+    },
+    {
+      "t": 15.75,
+      "rmsDb": -50,
+      "midDb": -55,
+      "bassDb": -52
+    }
+  ]
+}

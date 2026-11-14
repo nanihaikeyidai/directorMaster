@@ -1,0 +1,14 @@
+{
+  "lyrics": [
+    {
+      "startSec": 2.0,
+      "endSec": 6.0,
+      "text": "first phrase"
+    },
+    {
+      "startSec": 10.0,
+      "endSec": 14.0,
+      "text": "second phrase"
+    }
+  ]
+}
