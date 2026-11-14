@@ -10,7 +10,7 @@
     "build": "vinext build",
     "start": "vinext start",
     "lint": "eslint . --ignore-pattern dist --ignore-pattern .next --ignore-pattern share-site",
-    "test": "node scripts/test-mv-master-features.mjs && node scripts/test-mv-prompt.mjs && node scripts/test-folk-mv-prompt.mjs && node scripts/test-folk-duo-mv-prompt.mjs && node scripts/test-piano-ballad-mv-prompt.mjs && node scripts/test-rock-solo-mv-prompt.mjs && node scripts/test-dance-edm-mv-prompt.mjs && node scripts/test-rap-hiphop-mv-prompt.mjs && node scripts/test-mv-template-recommend.mjs && node scripts/test-mv-ui-template-picker.mjs && node scripts/test-redub-timeline.mjs && node scripts/test-subtitle-cues.mjs && node scripts/test-mv-segment-review.mjs && node scripts/test-mv-generation-resume.mjs && node scripts/test-mv-av-alignment.mjs && node scripts/test-mv-lipsync-prep.mjs && node scripts/test-mv-music-signals.mjs && node scripts/test-mv-character-consistency.mjs && node scripts/test-mv-compose-validate.mjs && node scripts/test-mv-lipsync-finalize.mjs && node scripts/test-mv-compose-gate.mjs",
+    "test": "node scripts/test-mv-master-features.mjs && node scripts/test-mv-prompt.mjs && node scripts/test-folk-mv-prompt.mjs && node scripts/test-folk-duo-mv-prompt.mjs && node scripts/test-piano-ballad-mv-prompt.mjs && node scripts/test-rock-solo-mv-prompt.mjs && node scripts/test-dance-edm-mv-prompt.mjs && node scripts/test-rap-hiphop-mv-prompt.mjs && node scripts/test-mv-template-recommend.mjs && node scripts/test-mv-ui-template-picker.mjs && node scripts/test-redub-timeline.mjs && node scripts/test-subtitle-cues.mjs && node scripts/test-mv-segment-review.mjs && node scripts/test-mv-generation-resume.mjs && node scripts/test-mv-av-alignment.mjs && node scripts/test-mv-lipsync-prep.mjs && node scripts/test-mv-music-signals.mjs && node scripts/test-mv-character-consistency.mjs && node scripts/test-mv-compose-validate.mjs && node scripts/test-mv-lipsync-finalize.mjs && node scripts/test-mv-compose-gate.mjs && node scripts/test-mv-cut-gate.mjs",
     "test:mv-prompt": "node scripts/test-mv-prompt.mjs",
     "test:redub": "node scripts/test-redub-timeline.mjs",
     "director": "node cli/director-master.mjs",
@@ -30,7 +30,8 @@
     "test:mv-music-signals": "node scripts/test-mv-music-signals.mjs",
     "test:mv-character-consistency": "node scripts/test-mv-character-consistency.mjs",
     "test:mv-compose-validate": "node scripts/test-mv-compose-validate.mjs && node scripts/test-mv-lipsync-finalize.mjs",
-    "test:mv-compose-gate": "node scripts/test-mv-compose-gate.mjs"
+    "test:mv-compose-gate": "node scripts/test-mv-compose-gate.mjs",
+    "test:mv-cut-gate": "node scripts/test-mv-cut-gate.mjs"
   },
   "dependencies": {
     "next": "16.2.6",
