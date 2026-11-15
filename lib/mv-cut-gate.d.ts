@@ -74,3 +74,20 @@ export function findVocalRuns(
 ): VocalRun[];
 export function classifyCutPoint(t: unknown, ctx?: CutClassifyContext): CutAssessment;
 export function checkMvCuts(input?: CutCheckInput): CutCheckReport;
+
+export type CutGateMode = 'pass' | 'snap' | 'block' | 'skip';
+
+export type CutGatePlanInput = CutCheckInput & {
+  snap?: boolean;
+};
+
+export type CutGatePlan = {
+  ok: boolean;
+  mode: CutGateMode;
+  reason: string;
+  inputCuts: number[];
+  appliedCuts: number[];
+  report: CutCheckReport;
+};
+
+export function planMvCutGate(input?: CutGatePlanInput): CutGatePlan;

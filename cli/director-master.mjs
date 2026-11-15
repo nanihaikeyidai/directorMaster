@@ -10,7 +10,7 @@ import { normalizeCues, writeBilingualSubtitles } from '../lib/subtitle-cues.mjs
 import { checkAvAlignment } from '../lib/mv-av-alignment.mjs';
 import { checkMvCompose } from '../lib/mv-compose-validate.mjs';
 import { planMvComposeGate } from '../lib/mv-compose-gate.mjs';
-import { checkMvCuts } from '../lib/mv-cut-gate.mjs';
+import { checkMvCuts, planMvCutGate } from '../lib/mv-cut-gate.mjs';
 import { buildLipsyncTrialPlan, probeEnergyHops } from '../lib/mv-lipsync-prep.mjs';
 import { DEFAULT_LIPSYNC_WORKFLOW_ID, planLipsyncFinalize } from '../lib/mv-lipsync-finalize.mjs';
 import { extractMusicSignalsFromHops, probeMusicSignals } from '../lib/mv-music-signals.mjs';
@@ -360,8 +360,37 @@ function mvCut() {
   const probe=JSON.parse(execFileSync('ffprobe',['-v','error','-select_streams','a:0','-show_entries','format=duration:stream=codec_name,sample_rate,channels','-of','json',input],{encoding:'utf8',windowsHide:true}));
   const duration=Number(probe.format?.duration||0);
   if(!Number.isFinite(duration)||duration<=0) throw new Error('未检测到有效音轨');
-  const cuts=Array.from(new Set(String(option('cuts','')).split(',').filter(Boolean).map(Number).map(value=>Number(value.toFixed(3))))).filter(value=>Number.isFinite(value)&&value>.25&&value<duration-.25).sort((a,b)=>a-b);
+  let cuts=Array.from(new Set(String(option('cuts','')).split(',').filter(Boolean).map(Number).map(value=>Number(value.toFixed(3))))).filter(value=>Number.isFinite(value)&&value>.25&&value<duration-.25).sort((a,b)=>a-b);
+  const cutGateInput={cuts,durationSec:duration};
+  const lyricsPath=option('lyrics','');
+  if(lyricsPath) cutGateInput.lyrics=loadJsonFile('lyrics',lyricsPath);
+  const hopsJson=option('hops-json','');
+  if(hopsJson) cutGateInput.hops=loadCutHops(hopsJson,'mv-cut --hops-json');
+  else if(!lyricsPath){
+    let hops;
+    try {
+      hops=probeEnergyHops(input);
+    } catch (err) {
+      const message=err&&err.message?err.message:String(err);
+      throw new Error('无法探测人声能量 hops，切镜门禁缺少句界证据：'+message);
+    }
+    if(!Array.isArray(hops)||!hops.length){
+      throw new Error('未能从音频得到可用的人声能量 hops，无法校验切点是否落在句界。');
+    }
+    cutGateInput.hops=hops;
+  }
+  const cutToleranceRaw=option('tolerance','');
+  if(cutToleranceRaw!==''){
+    const toleranceSec=Number(cutToleranceRaw);
+    if(!Number.isFinite(toleranceSec)||toleranceSec<0) throw new Error('--tolerance 必须是非负数字（秒）');
+    cutGateInput.toleranceSec=toleranceSec;
+  }
+  cutGateInput.snap=argv.includes('--snap-cuts');
+  const plan=planMvCutGate(cutGateInput);
+  if(!plan.ok) throw new Error(plan.reason);
+  cuts=plan.appliedCuts.filter((value)=>Number.isFinite(value)&&value>.25&&value<duration-.25).sort((a,b)=>a-b);
   const points=[0,...cuts,duration];
+  const cutGate={ok:plan.ok,mode:plan.mode,reason:plan.reason,inputCuts:plan.inputCuts,appliedCuts:plan.appliedCuts};
   const notesPath=option('notes');
   const notes=notesPath?JSON.parse(readFileSync(path.resolve(notesPath),'utf8')):Array.from({length:points.length-1},()=>({kind:'vocal',lyrics:'',direction:''}));
   if(!Array.isArray(notes)||notes.length!==points.length-1) throw new Error(`--notes 必须是 ${points.length-1} 项的数组，并与分段顺序一致`);
@@ -413,7 +442,7 @@ function mvCut() {
     execFileSync('ffmpeg',['-hide_banner','-loglevel','error','-y','-ss',String(segment.start),'-t',String(segment.duration),'-i',sourcePath,'-vn','-acodec','pcm_s16le',outputPath],{windowsHide:true});
     return {...segment,...notes[index],fileName,path:outputPath,prompt:appendIdentityLockToPrompt(mvPrompt(projectName,segment,notes[index],visualAssets,template,settings),pack.pack.identityLockText)};
   });
-  const manifest={version:1,projectId,projectName,template,settings,sourceName:path.basename(sourcePath),sourcePath,duration,cuts,visualAssets,characterPack,segments,outputRoot,createdAt:new Date().toISOString()};
+  const manifest={version:1,projectId,projectName,template,settings,sourceName:path.basename(sourcePath),sourcePath,duration,cuts,cutGate,visualAssets,characterPack,segments,outputRoot,createdAt:new Date().toISOString()};
   const projectFile=path.join(root,'project.json');
   writeFileSync(projectFile,JSON.stringify(manifest,null,2));writeFileSync(path.join(outputRoot,'segments.json'),JSON.stringify(manifest,null,2));
   return {status:'exported',projectId,projectFile,outputRoot,segments};
@@ -701,11 +730,11 @@ function loadJsonFile(label, filePath) {
   return JSON.parse(readFileSync(resolved, 'utf8'));
 }
 
-function loadCutHops(hopsJson) {
+function loadCutHops(hopsJson, label = 'mv-cut-check --hops-json') {
   const parsed = loadJsonFile('hops-json', hopsJson);
   if (Array.isArray(parsed)) return parsed;
   if (parsed && Array.isArray(parsed.hops)) return parsed.hops;
-  throw new Error('mv-cut-check --hops-json 需要 hops 数组');
+  throw new Error(label + ' 需要 hops 数组');
 }
 
 function mvCutCheck() {
@@ -1093,7 +1122,7 @@ try {
     });
     console.log(JSON.stringify(result, null, 2));
   }
-  else console.log('MV Master CLI (director-master)\n  discover\n  index --root <dir>\n  skill-task --kind screenplay --script <file> [--brief <text>]\n  skill-task --kind shotlist --script <file> --platform "MiniMax H3" --confirmed true [--assets <dir>]\n  prepare --spec <project.json> --out <workflow.json>\n  run --spec <project.json> [--watch]\n  status --id <prompt-id>\n  mv-cut --audio <music.wav> --project <name> --cuts 8.4,21.7 --notes <segments.json> --people <dir> --scenes <dir> [--template band|folk-solo|folk-duo|piano-ballad|rock-solo|dance-edm|rap-hiphop] [--vocal-start <sec>] [--asset-meta <descriptions.json>]\n  mv-templates   # 列出可用 MV 提示词模板（id/label/version）\n  mv-lipsync-prep (--audio <file>|--hops-json <file>) [--person <image>] [--ref <path> ...] [--dir <folder>] [--duration 15] [--workflow-id ID] [--center-skin 0.2] [--face-height-ratio 0.4] [--json]\n  mv-lipsync-finalize --video <file> --audio <file> [--start <sec>] [--end <sec>] [--out <file>] [--workflow-id ID|alias] [--dry-run] [--json]\n  mv-recommend [--audio <file>|--hops-json <file>] [--bpm N] [--vocal-density sparse|medium|dense|NUMBER] [--energy low|medium|high] [--instruments csv] [--performers N] [--hints "..."] [--json]\n  mv-character-pack (--ref <path> [--ref <path>...] | --dir <folder>) [--json]\n  mv-generate --project <id|project.json> [--dry-run|--watch] [--workflow-id ID] [--out dir]\n  voice-generate --ref <voice.wav> --text <台词> --character <角色> --emotion <情绪描述> --consent true [--watch]\n  voice-generate --ref <voice.wav> --batch <dialogue.json> --consent true [--watch]\n  voice-status --id <job-id>\n  redub --video <file> --consent true [--name <id>] [--script <script.json>] [--skip-separate] [--stop-after extract|separate|transcribe|refs|tts]\n  redub --stage init|extract|separate|transcribe|script|refs|tts|mix --job <id> [--script <file>] [--consent true]\n  subtitle --cues <cues.json> --out <dir> [--langs zh,en] [--basename subtitles]\n  subtitle --video <file>   # V0: 无 cues 且无 RUNNINGHUB_API_KEY 时明确报错，不调用云端\n  mv-align-check --manifest <segments.json> [--tolerance 0.08] [--require-video] [--require-audio|--no-require-audio]\n  mv-compose-check --manifest <segments.json> [--tolerance 0.08] [--require-original-audio|--no-require-original-audio] [--require-video|--no-require-video]\n  mv-compose-gate --manifest <json> [--audio-mode source|video|both] [--purpose preview|export] [--tolerance 0.08] [--json]\n  mv-cut-check --cuts <t1,t2,...> [--lyrics cues.json] [--hops-json hops.json|--audio file] [--tolerance 0.12] [--duration SEC] [--json]');
+  else console.log('MV Master CLI (director-master)\n  discover\n  index --root <dir>\n  skill-task --kind screenplay --script <file> [--brief <text>]\n  skill-task --kind shotlist --script <file> --platform "MiniMax H3" --confirmed true [--assets <dir>]\n  prepare --spec <project.json> --out <workflow.json>\n  run --spec <project.json> [--watch]\n  status --id <prompt-id>\n  mv-cut --audio <music.wav> --project <name> --cuts 8.4,21.7 --notes <segments.json> --people <dir> --scenes <dir> [--template band|folk-solo|folk-duo|piano-ballad|rock-solo|dance-edm|rap-hiphop] [--vocal-start <sec>] [--asset-meta <descriptions.json>] [--lyrics cues.json] [--hops-json hops.json] [--snap-cuts] [--tolerance 0.12]\n  mv-templates   # 列出可用 MV 提示词模板（id/label/version）\n  mv-lipsync-prep (--audio <file>|--hops-json <file>) [--person <image>] [--ref <path> ...] [--dir <folder>] [--duration 15] [--workflow-id ID] [--center-skin 0.2] [--face-height-ratio 0.4] [--json]\n  mv-lipsync-finalize --video <file> --audio <file> [--start <sec>] [--end <sec>] [--out <file>] [--workflow-id ID|alias] [--dry-run] [--json]\n  mv-recommend [--audio <file>|--hops-json <file>] [--bpm N] [--vocal-density sparse|medium|dense|NUMBER] [--energy low|medium|high] [--instruments csv] [--performers N] [--hints "..."] [--json]\n  mv-character-pack (--ref <path> [--ref <path>...] | --dir <folder>) [--json]\n  mv-generate --project <id|project.json> [--dry-run|--watch] [--workflow-id ID] [--out dir]\n  voice-generate --ref <voice.wav> --text <台词> --character <角色> --emotion <情绪描述> --consent true [--watch]\n  voice-generate --ref <voice.wav> --batch <dialogue.json> --consent true [--watch]\n  voice-status --id <job-id>\n  redub --video <file> --consent true [--name <id>] [--script <script.json>] [--skip-separate] [--stop-after extract|separate|transcribe|refs|tts]\n  redub --stage init|extract|separate|transcribe|script|refs|tts|mix --job <id> [--script <file>] [--consent true]\n  subtitle --cues <cues.json> --out <dir> [--langs zh,en] [--basename subtitles]\n  subtitle --video <file>   # V0: 无 cues 且无 RUNNINGHUB_API_KEY 时明确报错，不调用云端\n  mv-align-check --manifest <segments.json> [--tolerance 0.08] [--require-video] [--require-audio|--no-require-audio]\n  mv-compose-check --manifest <segments.json> [--tolerance 0.08] [--require-original-audio|--no-require-original-audio] [--require-video|--no-require-video]\n  mv-compose-gate --manifest <json> [--audio-mode source|video|both] [--purpose preview|export] [--tolerance 0.08] [--json]\n  mv-cut-check --cuts <t1,t2,...> [--lyrics cues.json] [--hops-json hops.json|--audio file] [--tolerance 0.12] [--duration SEC] [--json]');
 } catch (error) {
   console.error('[director-master] ' + (error instanceof Error ? error.message : String(error)));
   process.exitCode = 1;
