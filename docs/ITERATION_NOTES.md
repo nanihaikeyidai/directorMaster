@@ -23,7 +23,7 @@
 
 **验证**：已在本工作树运行 `npm test`，全绿（含 `test-mv-cut-gate` 与 `test-mv-cut-apply`）。无 RH 付费。
 
-**15s 口型试片**：本实现未跑试片、未烧 RunningHub 币。试片由父任务处理。开工时电脑 meilin 离线，本切片只做门禁接入。
+**15s 口型试片**：今晚**跳过**，未烧 RunningHub 币。原因：电脑 meilin 离线，无法读取本机虚拟偶像有人声源曲；箱内 `camilla-30s.mp3` 经 `mv-lipsync-prep` 最高人声活跃比 0.100，低于门槛 0.35。禁止用间奏/器乐或剧集对白、TTS 口语评演唱口型。
 
 **下一晚**：有人声源曲验证 15s 试片（prep → 默认迅风工作流提交 → finalize 封装原曲）/ open PR 合并卫生（#4、#6–#27 仍 open；Cursor GitHub App 未安装，PR 可能只有 compare URL）/ UI 切点预检（`app/mv/page.tsx` 已有切点编辑：播放头裁切、智能建议切点、拖动/右键新增，本夜未接 `planMvCutGate`）。
 
