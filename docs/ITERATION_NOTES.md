@@ -1,5 +1,33 @@
 # Iteration Notes
 
+## 2026-11-16 00:00 Asia/Shanghai — 切镜门禁接入 mv-cut
+
+**模块**：MV / 流程优化（切镜只落在乐句/句尾、呼吸或人声空白）。按 2026-11-07 用户优先级：流程优化优先于新曲风。昨夜已落地 `checkMvCuts` + `mv-cut-check`，但故意不改 `mv-cut` 默认行为，句中切点仍会直接 ffmpeg 导出。本夜把硬门禁接到 `mv-cut`，并增加可选吸附。无新曲风、无 RH。
+
+**验收标准**
+- `planMvCutGate`：空切点 / 无内部切点 → `ok: true` / `mode: skip` / `appliedCuts: []`（不把 `NO_CUTS` 当阻断）；单段是否超过 15 秒仍由 `mv-cut` 既有规则拦截
+- 有切点但既无歌词也无 hops → `ok: false` / `mode: block` / `NO_EVIDENCE`
+- `checkMvCuts` 通过 → `mode: pass`，`appliedCuts` 为原始合法切点
+- 失败且未开 snap → `mode: block`；句中失败的中文 reason 需带吸附建议；`appliedCuts` 不得伪装成已接受的 snapped 列表
+- 失败且 `snap: true`：可吸附的 `MID_LYRIC` 吸附后复检通过 → `mode: snap`；吸附后重复/越界/非法 → `mode: block`
+- CLI `mv-cut` 在 ffmpeg 导出分段前调用门禁；无 `--lyrics` / `--hops-json` 时默认 `probeEnergyHops`；探测失败不得静默跳过；`!plan.ok` 抛中文错误
+- 可选 `--lyrics`、`--hops-json`、`--snap-cuts`、`--tolerance`；清单写入精简 `cutGate`；无跳过门禁开关
+- `npm test` 含 `test-mv-cut-apply`；无密钥 / 无大媒体 / 无 RH 调用
+- MV 页已有切点编辑器，本夜不发明新 UI、不接页面预检
+
+**完成**
+- `lib/mv-cut-gate.mjs` + typings：新增 `planMvCutGate`
+- CLI `mv-cut` 硬门禁 + help 列出新参数；manifest 增加 `cutGate`
+- 测试 `scripts/test-mv-cut-apply.mjs` 接入 `npm test`
+- Design/plan：`docs/superpowers/{specs,plans}/2026-11-16-mv-cut-apply*.md`
+
+**验证**：已在本工作树运行 `npm test`，全绿（含 `test-mv-cut-gate` 与 `test-mv-cut-apply`）。无 RH 付费。
+
+**15s 口型试片**：本实现未跑试片、未烧 RunningHub 币。试片由父任务处理。开工时电脑 meilin 离线，本切片只做门禁接入。
+
+**下一晚**：有人声源曲验证 15s 试片（prep → 默认迅风工作流提交 → finalize 封装原曲）/ open PR 合并卫生（#4、#6–#27 仍 open；Cursor GitHub App 未安装，PR 可能只有 compare URL）/ UI 切点预检（`app/mv/page.tsx` 已有切点编辑：播放头裁切、智能建议切点、拖动/右键新增，本夜未接 `planMvCutGate`）。
+
+
 ## 2026-11-15 00:00 Asia/Shanghai — 切镜句界门禁
 
 **模块**：MV / 流程优化（切镜只落在乐句/句尾、呼吸或人声空白）。按 2026-11-07 用户优先级：流程优化优先于新曲风。各模板虽已把「禁止句中切」写入提示词，但 `mv-cut --cuts` 仍接受任意秒数，没有可测试的门禁。本夜落地纯函数校验与 CLI。无新曲风、无 RH。

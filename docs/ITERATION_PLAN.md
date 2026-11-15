@@ -82,7 +82,8 @@
 - [x] 口型试片工作流默认 + 成片封装原曲（`resolveLipsyncWorkflow` + `planLipsyncFinalize` + CLI `mv-lipsync-finalize`；默认迅风幻影自动版，像素幻想为备选；本夜 `feature/mv-lipsync-finalize`，base compose-validate）
 - [x] UI/API 合成硬门禁（`planMvComposeGate` + `/api/local/mv/compose` 预检 + 页面预检 + CLI `mv-compose-gate`；官方成片必须原曲母带；本夜 `feature/mv-compose-ui-gate`，base lipsync-finalize）
 - [x] 切镜句界门禁（`checkMvCuts` + CLI `mv-cut-check`：歌词句界优先，否则人声能量谷；禁止句中硬切；本夜 `feature/mv-cut-gate`，base compose-ui-gate）
-- [ ] 下一：有人声源曲验证 15s 试片（prep → 默认迅风提交 → finalize 封装原曲）/ 把切镜门禁接到 `mv-cut` 或 UI 预检 / open PR 合并卫生（#4、#6–#27 仍 open，栈底 #11 基于 main）
+- [x] 切镜门禁接入 `mv-cut`（`planMvCutGate` 硬门禁 + 可选 `--snap-cuts` 吸附到句界后复检；本夜 `feature/mv-cut-apply`，base cut-gate）
+- [ ] 下一：有人声源曲验证 15s 试片（prep → 默认迅风提交 → finalize 封装原曲）/ open PR 合并卫生（#4、#6–#27 仍 open，栈底 #11 基于 main；Cursor GitHub App 未安装，PR 可能只有 compare URL）/ UI 切点预检（MV 页已有切点编辑器，本夜未接门禁）
 
 
 ## 管理方式
