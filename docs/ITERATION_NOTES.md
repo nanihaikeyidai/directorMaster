@@ -1,5 +1,31 @@
 # Iteration Notes
 
+## 2026-11-17 00:00 Asia/Shanghai — MV 页切点句界预检 + 客户端 node:path 崩溃修复
+
+**模块**：MV / 流程优化（切镜只落在句尾、换气或人声空白）。按 2026-11-07 用户优先级：流程优化优先于新曲风。昨夜 CLI `mv-cut` 已硬门禁，但页面「智能建议切点」和手动切点仍可落在句中直接生成提示词、提交云端。排查时还发现 11/14 页面接入的合成门禁间接引入 `node:path`，浏览器端会崩（主路径 bug，一并修）。无新曲风、无 RH。
+
+**验收标准**
+- `lib/mv-energy-hops.mjs` 无 `node:` 依赖；`computeEnergyHops` 对 48 kHz 输入重采样到 16 kHz，与 16 kHz 路径人声判定一致（合成信号 ≤2 hop 差异）
+- `probeEnergyHops` 重构后对 `camilla-30s.mp3` 输出与改前逐字节一致
+- `planMvCutPrecheck`：句间空白切点 → pass；句中手动切点 → block（中文 reason，不改切点）；autoSnap → snap 到句界；吸附后段长超出 [MIN, 15s] → block；无内部切点 → skip；有切点无 hops → block
+- 页面 `autoSplit` 自动吸附；`generatePrompts` 与 `generateFullMv` 生成提示词前跑同一预检，失败只提示不生成
+- 页面 lib 导入图无 `node:` 内置模块（测试递归检查）；esbuild browser 打包 `app/mv/page.tsx` 通过
+- `npm test` 含 `test-mv-cut-ui-precheck`；无密钥 / 无大媒体 / 无 RH 调用
+
+**完成**
+- `lib/mv-energy-hops.mjs`（+ d.ts）：`isVocalActiveHop` / `computeEnergyHops` / `mixToMono`；`mv-lipsync-prep` 与 `mv-cut-gate` 改用之
+- `lib/mv-cut-precheck.mjs`（+ d.ts）：`planMvCutPrecheck`
+- `app/mv/page.tsx`：`runCutPrecheck`（按 AudioBuffer 缓存 hops）接入三处
+- `lib/mv-compose-validate.mjs`：去掉 `node:path`，改用纯函数 posix normalize
+- 测试 `scripts/test-mv-cut-ui-precheck.mjs` 接入 `npm test`
+- Design/plan：`docs/superpowers/{specs,plans}/2026-11-17-mv-cut-ui-precheck*.md`
+
+**验证**：`npm test` 全绿（exit 0）。`probeEnergyHops` 回归逐字节一致。真实音频 44.1 kHz 浏览器路径 vs CLI 16 kHz：120 hops 人声判定差异 0。esbuild `--platform=browser` 打包页面成功（修复前因 `node:path` 报错）。未在真浏览器里点测（箱内无 node_modules / 本机离线）。
+
+**15s 口型试片**：今晚**跳过**，未提交、0 币。原因：RunningHub NORMAL 钱包仍为 0 币（remainCoins=0，remainMoney=-0.0130 CNY，00:0x Asia/Shanghai 实查）。可用演唱段仍是 bot 附件早期卡米拉海边吉他 MV 0–15s（人声活跃比 0.433）+ still-B 胸像参考 + 迅风幻影自动版；充值后即可按 prep → 提交 → finalize 封装原曲跑。
+
+**下一晚**：钱包有币则跑 15s 试片 / 页面切点预检在真浏览器实测（拖动到句中 → 生成提示词应被拦）/ open PR 合并卫生（#4、#6–#27 仍 open；compare 分支未开 PR）。
+
 ## 2026-11-16 00:00 Asia/Shanghai — 切镜门禁接入 mv-cut
 
 **模块**：MV / 流程优化（切镜只落在乐句/句尾、呼吸或人声空白）。按 2026-11-07 用户优先级：流程优化优先于新曲风。昨夜已落地 `checkMvCuts` + `mv-cut-check`，但故意不改 `mv-cut` 默认行为，句中切点仍会直接 ffmpeg 导出。本夜把硬门禁接到 `mv-cut`，并增加可选吸附。无新曲风、无 RH。
