@@ -34,6 +34,8 @@ import {
   serializeActiveGeneration,
 } from "../../lib/mv-generation-resume.mjs";
 import { planMvComposeGate } from "../../lib/mv-compose-gate.mjs";
+import { planMvCutPrecheck } from "../../lib/mv-cut-precheck.mjs";
+import { computeEnergyHops, mixToMono } from "../../lib/mv-energy-hops.mjs";
 
 const REVIEW_STATUS_LABEL: Record<SegmentReviewStatus, string> = {
   pending: "待审核",
@@ -366,6 +368,7 @@ export default function MvStudio() {
   const waveScrollRef = useRef<HTMLDivElement>(null);
   const waveInnerRef = useRef<HTMLDivElement>(null);
   const bufferRef = useRef<AudioBuffer | null>(null);
+  const hopsCacheRef = useRef<{ buffer: AudioBuffer | null; hops: ReturnType<typeof computeEnergyHops> }>({ buffer: null, hops: [] });
   const dragCutRef = useRef<number | null>(null);
   const trimDragRef = useRef<"start" | "end" | null>(null);
   const playheadDragRef = useRef(false);
@@ -1353,19 +1356,46 @@ export default function MvStudio() {
     }
   }
 
+  // Phrase-boundary cut gate (same rules as CLI mv-cut): never cut inside a sung line.
+  function runCutPrecheck(nextCuts: number[], autoSnap: boolean) {
+    if (!project) return { ok: true, mode: "skip" as const, reason: "", cuts: nextCuts };
+    const buffer = bufferRef.current;
+    if (!buffer) {
+      if (!nextCuts.length) return { ok: true, mode: "skip" as const, reason: "", cuts: nextCuts };
+      return { ok: false, mode: "block" as const, reason: "音乐波形尚未准备好，无法校验切点是否落在句界，请稍后再试", cuts: nextCuts };
+    }
+    if (hopsCacheRef.current.buffer !== buffer) {
+      hopsCacheRef.current = { buffer, hops: computeEnergyHops(mixToMono(buffer), { sampleRate: buffer.sampleRate }) };
+    }
+    return planMvCutPrecheck({
+      cuts: nextCuts,
+      hops: hopsCacheRef.current.hops,
+      durationSec: project.duration,
+      rangeStart: trimRange.start,
+      rangeEnd: trimRange.end || project.duration,
+      autoSnap,
+      maxSegmentSec: MAX_SEGMENT,
+      minSegmentSec: MIN_SEGMENT,
+    });
+  }
+
   function autoSplit() {
     const buffer = bufferRef.current;
     if (!buffer || !project) return;
-    const next = suggestCutsFromBuffer(buffer, project.duration, trimRange.start, trimRange.end || project.duration);
+    const suggested = uniqueCuts(suggestCutsFromBuffer(buffer, project.duration, trimRange.start, trimRange.end || project.duration), project.duration);
+    const precheck = runCutPrecheck(suggested, true);
+    const next = precheck.ok && precheck.mode === "snap" ? uniqueCuts(precheck.cuts, project.duration) : suggested;
     rememberCuts();
-    setCuts(uniqueCuts(next, project.duration));
+    setCuts(next);
     setNotes(Array.from({ length: next.length + 1 }, () => emptyNote()));
     setGeneratedPrompts([]);
     setGeneratedFrom("");
     setGeneration({});
     clearGenerationHistory();
     setResult(null);
-    setNotice("已按低能量停顿生成建议切点；请试听并确认每段不超过 15 秒，并在自然停顿处结束");
+    setNotice(precheck.ok
+      ? (precheck.mode === "snap" ? "已按低能量停顿生成建议切点，并吸附到句尾/换气/人声空白；请试听确认每段不超过 15 秒" : "已按低能量停顿生成建议切点（已通过句界预检）；请试听并确认每段不超过 15 秒")
+      : `已生成建议切点，但${precheck.reason} 请拖动切点到句尾或换气处。`);
   }
 
   function resetCuts() {
@@ -1388,6 +1418,11 @@ export default function MvStudio() {
     if (!project) return;
     if (invalidSegments.length) {
       setNotice("仍有片段超过 15 秒，请先继续切割");
+      return;
+    }
+    const cutPrecheck = runCutPrecheck(cuts, false);
+    if (!cutPrecheck.ok) {
+      setNotice(`${cutPrecheck.reason} 可点「智能建议切点」自动吸附，或拖动切点到句尾/换气处。`);
       return;
     }
     if (missingVisualKinds.length) {
@@ -2003,7 +2038,10 @@ export default function MvStudio() {
     setBusy("正在自动切段并生成提示词…");
     try {
       if (!cuts.length && !bufferRef.current) throw new Error("音乐波形尚未准备好，请稍后再试");
-      const autoCuts = cuts.length ? cuts : suggestCutsFromBuffer(bufferRef.current!, project.duration, trimRange.start, trimRange.end || project.duration);
+      const baseCuts = cuts.length ? cuts : uniqueCuts(suggestCutsFromBuffer(bufferRef.current!, project.duration, trimRange.start, trimRange.end || project.duration), project.duration);
+      const cutPrecheck = runCutPrecheck(baseCuts, !cuts.length);
+      if (!cutPrecheck.ok) throw new Error(`${cutPrecheck.reason} 可点「智能建议切点」自动吸附，或拖动切点到句尾/换气处。`);
+      const autoCuts = cutPrecheck.mode === "snap" ? uniqueCuts(cutPrecheck.cuts, project.duration) : baseCuts;
       const autoSegments = segmentListFor(autoCuts);
       if (autoSegments.some((segment) => segment.duration > MAX_SEGMENT + 0.001 || segment.duration < MIN_SEGMENT))
         throw new Error("自动切段仍有超出 15 秒的片段，请手动调整");
