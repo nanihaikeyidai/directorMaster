@@ -13,6 +13,7 @@ import { planMvComposeGate } from '../lib/mv-compose-gate.mjs';
 import { checkMvCuts, planMvCutGate } from '../lib/mv-cut-gate.mjs';
 import { buildLipsyncTrialPlan, probeEnergyHops } from '../lib/mv-lipsync-prep.mjs';
 import { DEFAULT_LIPSYNC_WORKFLOW_ID, planLipsyncFinalize } from '../lib/mv-lipsync-finalize.mjs';
+import { normalizeRhAccount, planLipsyncPreflight, recordLipsyncAttempt } from '../lib/mv-lipsync-preflight.mjs';
 import { extractMusicSignalsFromHops, probeMusicSignals } from '../lib/mv-music-signals.mjs';
 import { applyCharacterPackToAssets, appendIdentityLockToPrompt, buildCharacterConsistencyPack, formatCharacterPackReport, listCharacterRefPaths } from '../lib/mv-character-consistency.mjs';
 
@@ -914,6 +915,68 @@ function mvLipsyncPrep() {
 }
 
 
+function shanghaiToday() {
+  return new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Shanghai', year: 'numeric', month: '2-digit', day: '2-digit' }).format(new Date());
+}
+
+function readLedger(ledgerPath) {
+  if (!ledgerPath) return [];
+  const resolved = path.resolve(ledgerPath);
+  if (!existsSync(resolved)) return [];
+  const data = JSON.parse(readFileSync(resolved, 'utf8'));
+  if (!Array.isArray(data)) throw new Error(`试片台账不是数组：${resolved}`);
+  return data;
+}
+
+async function fetchRhAccountReadOnly() {
+  const key = String(process.env.RUNNINGHUB_API_KEY || '').trim();
+  if (!key) return null;
+  const base = String(process.env.RUNNINGHUB_API_BASE || 'https://www.runninghub.cn').replace(/\/$/, '');
+  try {
+    const res = await fetch(`${base}/uc/openapi/accountStatus`, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json', Authorization: `Bearer ${key}` },
+      body: JSON.stringify({ apiKey: key }),
+    });
+    return normalizeRhAccount(await res.json());
+  } catch {
+    return null;
+  }
+}
+
+async function mvLipsyncPreflight() {
+  const trialPlan = mvLipsyncPrep();
+  const accountJson = option('account-json', '');
+  const account = accountJson
+    ? normalizeRhAccount(JSON.parse(readFileSync(path.resolve(accountJson), 'utf8')))
+    : await fetchRhAccountReadOnly();
+  const minRaw = option('min-coins', '');
+  return planLipsyncPreflight({
+    trialPlan,
+    account,
+    ledger: readLedger(option('ledger', '')),
+    date: option('date', '') || shanghaiToday(),
+    minCoins: minRaw === '' ? undefined : Number(minRaw),
+  });
+}
+
+function mvLipsyncLedger() {
+  const ledgerPath = option('ledger', '');
+  if (!ledgerPath) throw new Error('mv-lipsync-ledger 需要 --ledger <json>');
+  const next = recordLipsyncAttempt(readLedger(ledgerPath), {
+    date: option('date', '') || shanghaiToday(),
+    status: option('status', ''),
+    failureKind: option('failure-kind', '') || undefined,
+    taskId: option('task-id', '') || undefined,
+    workflowId: option('workflow-id', '') || undefined,
+    coins: option('coins', '') || undefined,
+    note: option('note', '') || undefined,
+  });
+  writeFileSync(path.resolve(ledgerPath), JSON.stringify(next, null, 2) + '\n');
+  return next[next.length - 1];
+}
+
+
 function mvLipsyncFinalize() {
   const video = option('video', '');
   const audio = option('audio', '');
@@ -1056,6 +1119,13 @@ try {
     printMvLipsyncPrep(plan);
     if (!plan.ok) process.exitCode = 1;
   }
+  else if (command === 'mv-lipsync-preflight') {
+    const pre = await mvLipsyncPreflight();
+    if (argv.includes('--json')) console.log(JSON.stringify(pre, null, 2));
+    else console.log(`${pre.go ? 'GO' : 'SKIP'} ${pre.codes.join(',')}\n${pre.reason}`);
+    if (!pre.go) process.exitCode = 1;
+  }
+  else if (command === 'mv-lipsync-ledger') console.log(JSON.stringify(mvLipsyncLedger(), null, 2));
   else if (command === 'mv-lipsync-finalize') {
     const plan = mvLipsyncFinalize();
     printMvLipsyncFinalize(plan);
@@ -1122,7 +1192,7 @@ try {
     });
     console.log(JSON.stringify(result, null, 2));
   }
-  else console.log('MV Master CLI (director-master)\n  discover\n  index --root <dir>\n  skill-task --kind screenplay --script <file> [--brief <text>]\n  skill-task --kind shotlist --script <file> --platform "MiniMax H3" --confirmed true [--assets <dir>]\n  prepare --spec <project.json> --out <workflow.json>\n  run --spec <project.json> [--watch]\n  status --id <prompt-id>\n  mv-cut --audio <music.wav> --project <name> --cuts 8.4,21.7 --notes <segments.json> --people <dir> --scenes <dir> [--template band|folk-solo|folk-duo|piano-ballad|rock-solo|dance-edm|rap-hiphop] [--vocal-start <sec>] [--asset-meta <descriptions.json>] [--lyrics cues.json] [--hops-json hops.json] [--snap-cuts] [--tolerance 0.12]\n  mv-templates   # 列出可用 MV 提示词模板（id/label/version）\n  mv-lipsync-prep (--audio <file>|--hops-json <file>) [--person <image>] [--ref <path> ...] [--dir <folder>] [--duration 15] [--workflow-id ID] [--center-skin 0.2] [--face-height-ratio 0.4] [--json]\n  mv-lipsync-finalize --video <file> --audio <file> [--start <sec>] [--end <sec>] [--out <file>] [--workflow-id ID|alias] [--dry-run] [--json]\n  mv-recommend [--audio <file>|--hops-json <file>] [--bpm N] [--vocal-density sparse|medium|dense|NUMBER] [--energy low|medium|high] [--instruments csv] [--performers N] [--hints "..."] [--json]\n  mv-character-pack (--ref <path> [--ref <path>...] | --dir <folder>) [--json]\n  mv-generate --project <id|project.json> [--dry-run|--watch] [--workflow-id ID] [--out dir]\n  voice-generate --ref <voice.wav> --text <台词> --character <角色> --emotion <情绪描述> --consent true [--watch]\n  voice-generate --ref <voice.wav> --batch <dialogue.json> --consent true [--watch]\n  voice-status --id <job-id>\n  redub --video <file> --consent true [--name <id>] [--script <script.json>] [--skip-separate] [--stop-after extract|separate|transcribe|refs|tts]\n  redub --stage init|extract|separate|transcribe|script|refs|tts|mix --job <id> [--script <file>] [--consent true]\n  subtitle --cues <cues.json> --out <dir> [--langs zh,en] [--basename subtitles]\n  subtitle --video <file>   # V0: 无 cues 且无 RUNNINGHUB_API_KEY 时明确报错，不调用云端\n  mv-align-check --manifest <segments.json> [--tolerance 0.08] [--require-video] [--require-audio|--no-require-audio]\n  mv-compose-check --manifest <segments.json> [--tolerance 0.08] [--require-original-audio|--no-require-original-audio] [--require-video|--no-require-video]\n  mv-compose-gate --manifest <json> [--audio-mode source|video|both] [--purpose preview|export] [--tolerance 0.08] [--json]\n  mv-cut-check --cuts <t1,t2,...> [--lyrics cues.json] [--hops-json hops.json|--audio file] [--tolerance 0.12] [--duration SEC] [--json]');
+  else console.log('MV Master CLI (director-master)\n  discover\n  index --root <dir>\n  skill-task --kind screenplay --script <file> [--brief <text>]\n  skill-task --kind shotlist --script <file> --platform "MiniMax H3" --confirmed true [--assets <dir>]\n  prepare --spec <project.json> --out <workflow.json>\n  run --spec <project.json> [--watch]\n  status --id <prompt-id>\n  mv-cut --audio <music.wav> --project <name> --cuts 8.4,21.7 --notes <segments.json> --people <dir> --scenes <dir> [--template band|folk-solo|folk-duo|piano-ballad|rock-solo|dance-edm|rap-hiphop] [--vocal-start <sec>] [--asset-meta <descriptions.json>] [--lyrics cues.json] [--hops-json hops.json] [--snap-cuts] [--tolerance 0.12]\n  mv-templates   # 列出可用 MV 提示词模板（id/label/version）\n  mv-lipsync-prep (--audio <file>|--hops-json <file>) [--person <image>] [--ref <path> ...] [--dir <folder>] [--duration 15] [--workflow-id ID] [--center-skin 0.2] [--face-height-ratio 0.4] [--json]\n  mv-lipsync-preflight <同 mv-lipsync-prep 参数> [--account-json file] [--ledger ledger.json] [--date YYYY-MM-DD] [--min-coins 400] [--json]   # 提交前预检：人声/近脸 + 钱包 + 每日 1 成功/1 技术重试\n  mv-lipsync-ledger --ledger ledger.json --status success|failed [--failure-kind technical|selection|reference] [--task-id ID] [--coins N] [--date YYYY-MM-DD]\n  mv-lipsync-finalize --video <file> --audio <file> [--start <sec>] [--end <sec>] [--out <file>] [--workflow-id ID|alias] [--dry-run] [--json]\n  mv-recommend [--audio <file>|--hops-json <file>] [--bpm N] [--vocal-density sparse|medium|dense|NUMBER] [--energy low|medium|high] [--instruments csv] [--performers N] [--hints "..."] [--json]\n  mv-character-pack (--ref <path> [--ref <path>...] | --dir <folder>) [--json]\n  mv-generate --project <id|project.json> [--dry-run|--watch] [--workflow-id ID] [--out dir]\n  voice-generate --ref <voice.wav> --text <台词> --character <角色> --emotion <情绪描述> --consent true [--watch]\n  voice-generate --ref <voice.wav> --batch <dialogue.json> --consent true [--watch]\n  voice-status --id <job-id>\n  redub --video <file> --consent true [--name <id>] [--script <script.json>] [--skip-separate] [--stop-after extract|separate|transcribe|refs|tts]\n  redub --stage init|extract|separate|transcribe|script|refs|tts|mix --job <id> [--script <file>] [--consent true]\n  subtitle --cues <cues.json> --out <dir> [--langs zh,en] [--basename subtitles]\n  subtitle --video <file>   # V0: 无 cues 且无 RUNNINGHUB_API_KEY 时明确报错，不调用云端\n  mv-align-check --manifest <segments.json> [--tolerance 0.08] [--require-video] [--require-audio|--no-require-audio]\n  mv-compose-check --manifest <segments.json> [--tolerance 0.08] [--require-original-audio|--no-require-original-audio] [--require-video|--no-require-video]\n  mv-compose-gate --manifest <json> [--audio-mode source|video|both] [--purpose preview|export] [--tolerance 0.08] [--json]\n  mv-cut-check --cuts <t1,t2,...> [--lyrics cues.json] [--hops-json hops.json|--audio file] [--tolerance 0.12] [--duration SEC] [--json]');
 } catch (error) {
   console.error('[director-master] ' + (error instanceof Error ? error.message : String(error)));
   process.exitCode = 1;

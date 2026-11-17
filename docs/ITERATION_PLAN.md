@@ -89,3 +89,5 @@
 ## 管理方式
 
 - Superpowers 驱动迭代；见 docs/PROJECT_MANAGEMENT.md
+- [x] 2026-11-18 口型试片提交前预检 `mv-lipsync-preflight` + 试片台账 `mv-lipsync-ledger`（钱包门槛 / 每日 1 成功 + 1 技术重试 / 非技术失败当晚不重跑）
+- [ ] 下一：preflight 接入 `mv-cloud-generate` 提交入口硬门禁；钱包有币跑 15s 试片

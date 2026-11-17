@@ -1,5 +1,23 @@
 # Iteration Notes
 
+## 2026-11-18 00:00 Asia/Shanghai — 口型试片提交前预检（钱包 + 每日配额 + 不连环烧币）
+
+**模块**：MV / 口型试片流程（用户 2026-11-07 优先级：流程优化 + 对口型）。现状：`mv-lipsync-prep` 管人声段与近脸参考，`mv-lipsync-finalize` 管封装原曲，但「提交 RunningHub」前没有可测试的预检：11/14 起连续多晚钱包 0 币全靠人工查；「每晚最多 1 次成功 + 至多 1 次技术重试；选段/参考图错误当晚不再重跑」只写在 routine 文字里。本夜把这些规则落成代码。无新曲风、无 RH 付费。
+
+**验收标准**：见 `docs/superpowers/specs/2026-11-18-mv-lipsync-preflight-design.md`（余额字符串解析；0 币 → `INSUFFICIENT_COINS`；配额 first/retry/`RETRY_EXHAUSTED`/`DAILY_SUCCESS_REACHED`/`NON_TECH_FAILURE`；台账不可变追加与校验；合并 skip reason；CLI exit code；库无 `node:` 依赖）。
+
+**完成**
+- `lib/mv-lipsync-preflight.mjs`（+ d.ts）：`normalizeRhAccount` / `checkLipsyncBudget`（默认门槛 400 币，实测 15s 试片 312/356 币）/ `checkLipsyncDailyQuota` / `recordLipsyncAttempt` / `planLipsyncPreflight`
+- CLI `mv-lipsync-preflight`（参数同 prep + `--account-json` 或 `RUNNINGHUB_API_KEY` 只读查 accountStatus、`--ledger`、`--date` 默认 Asia/Shanghai、`--min-coins`）与 `mv-lipsync-ledger`
+- 测试 `scripts/test-mv-lipsync-preflight.mjs` 接入 `npm test`
+- 试片流程更新为：prep → **preflight** → 提交 → **ledger** → finalize 封装原曲
+
+**验证**：`npm test` 全绿（exit 0）。真实数据：卡米拉海边吉他 MV 音轨 + still-B 胸像，preflight 输出 trial 通过（0–10s 活跃比 0.600、近脸参考接受），budget `INSUFFICIENT_COINS`（实时只读查询 0 币，remainMoney=-0.013）→ SKIP，exit 1，未提交。
+
+**15s 口型试片**：今晚**跳过**，0 币消耗；原因由新 preflight 自动给出：RunningHub 钱包 0 币 < 400 门槛。充值后直接 `mv-lipsync-preflight` 得 GO 即可提交。
+
+**下一晚**：钱包有币则跑试片并用 ledger 记账 / 把 preflight 接到 `lib/mv-cloud-generate.mjs` 提交入口（硬门禁）/ 页面切点预检真浏览器实测 / PR 合并卫生。
+
 ## 2026-11-17 00:00 Asia/Shanghai — MV 页切点句界预检 + 客户端 node:path 崩溃修复
 
 **模块**：MV / 流程优化（切镜只落在句尾、换气或人声空白）。按 2026-11-07 用户优先级：流程优化优先于新曲风。昨夜 CLI `mv-cut` 已硬门禁，但页面「智能建议切点」和手动切点仍可落在句中直接生成提示词、提交云端。排查时还发现 11/14 页面接入的合成门禁间接引入 `node:path`，浏览器端会崩（主路径 bug，一并修）。无新曲风、无 RH。
