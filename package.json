@@ -33,7 +33,8 @@
     "test:mv-compose-gate": "node scripts/test-mv-compose-gate.mjs",
     "test:mv-cut-gate": "node scripts/test-mv-cut-gate.mjs",
     "test:mv-cut-apply": "node scripts/test-mv-cut-apply.mjs",
-    "test:mv-cut-ui-precheck": "node scripts/test-mv-cut-ui-precheck.mjs && node scripts/test-mv-lipsync-preflight.mjs && node scripts/test-mv-generate-preflight.mjs"
+    "test:mv-cut-ui-precheck": "node scripts/test-mv-cut-ui-precheck.mjs && node scripts/test-mv-lipsync-preflight.mjs",
+    "test:mv-generate-preflight": "node scripts/test-mv-generate-preflight.mjs"
   },
   "dependencies": {
     "next": "16.2.6",

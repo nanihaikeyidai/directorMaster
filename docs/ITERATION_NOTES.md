@@ -1,5 +1,23 @@
 # Iteration Notes
 
+## 2026-11-19 00:00 Asia/Shanghai — mv-generate 云端整片提交前硬门禁（输入完整性 + 钱包预估）
+
+**模块**：MV / 流程优化 + RH 加固（与口型试片同一提交通道）。昨夜 `mv-lipsync-preflight` 只管 15s 试片；整片入口 `runMvGenerate --watch` 查了余额却不用，钱包不足要等第 1 段 create 回 605 才知道；每段 prompt 缺失只在循环里检查，第 3 段缺 prompt 时前两段已扣币（连环烧币）。本夜把门禁前移到任何上传之前。无新曲风、无 RH 付费。
+
+**验收标准**：见 `docs/superpowers/specs/2026-11-19-mv-generate-preflight-design.md`（估算 24 币/秒、缺时长按 15s；`MISSING_PROMPT`/`MISSING_AUDIO`/`MISSING_PICTURE`/`SEGMENT_TOO_LONG`/`NO_SEGMENTS`/`NO_PICTURES`；`INSUFFICIENT_COINS`/`NO_ACCOUNT`；`--watch` 失败时上传/创建零调用；dry-run 写 `generate-preflight.json`；库无 `node:` 依赖）。
+
+**完成**
+- `lib/mv-generate-preflight.mjs`（+ d.ts）：`estimateMvGenerateCoins` / `validateMvGenerateInputs` / `planMvGeneratePreflight`（复用 `normalizeRhAccount`）
+- `lib/mv-cloud-generate.mjs`：`runMvGenerate` 上传前两道硬门禁（输入完整性 → 实时只读余额 ≥ 预估 + 预留）；RH 调用可注入（测试桩）；`waitRh` 不再依赖模块级 callRh
+- CLI `mv-generate`：`--coins-per-sec`、`--reserve-coins`、`--account-json`（仅 dry-run；`--watch` 一律实时查询，不能用离线 JSON 绕过）；预检不通过 exit 1
+- 测试 `scripts/test-mv-generate-preflight.mjs` 接入 `npm test`
+
+**验证**：`npm test` 全绿（exit 0）。真实工程 `CamillaBeachFolkSolo`（3 段）dry-run：输入齐全，预估 721 币，实时余额 0 → `INSUFFICIENT_COINS` exit 1；`--watch` 实跑同样在上传前拦截，输出目录只有 plan/preflight 两个 JSON，零上传、零 create。
+
+**15s 口型试片**：今晚**跳过**，0 币。00:0x Asia/Shanghai 只读查询 RunningHub NORMAL 钱包 remainCoins=0、remainMoney=-0.0130，低于 400 币门槛。可用素材不变（卡米拉海边吉他 MV 0–15s 人声段 + still-B 胸像 + 迅风幻影自动版）。
+
+**下一晚**：钱包有币则 preflight → 试片 → ledger → finalize / MV 页「一键云端出完整 MV」接同一预算预估（页面显示预估币数）/ open PR 合并卫生（11/15 起分支只有 compare 链接）。
+
 ## 2026-11-18 00:00 Asia/Shanghai — 口型试片提交前预检（钱包 + 每日配额 + 不连环烧币）
 
 **模块**：MV / 口型试片流程（用户 2026-11-07 优先级：流程优化 + 对口型）。现状：`mv-lipsync-prep` 管人声段与近脸参考，`mv-lipsync-finalize` 管封装原曲，但「提交 RunningHub」前没有可测试的预检：11/14 起连续多晚钱包 0 币全靠人工查；「每晚最多 1 次成功 + 至多 1 次技术重试；选段/参考图错误当晚不再重跑」只写在 routine 文字里。本夜把这些规则落成代码。无新曲风、无 RH 付费。
