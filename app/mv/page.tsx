@@ -36,6 +36,10 @@ import {
 import { planMvComposeGate } from "../../lib/mv-compose-gate.mjs";
 import { planMvCutPrecheck } from "../../lib/mv-cut-precheck.mjs";
 import { computeEnergyHops, mixToMono } from "../../lib/mv-energy-hops.mjs";
+import {
+  planMvGenerateUiPreflight,
+  formatMvGenerateEstimateLabel,
+} from "../../lib/mv-generate-ui-preflight.mjs";
 
 const REVIEW_STATUS_LABEL: Record<SegmentReviewStatus, string> = {
   pending: "待审核",
@@ -417,6 +421,19 @@ export default function MvStudio() {
   const promptsReady =
     generatedPrompts.length === segments.length && generatedFrom === promptInputSignature;
   const generationBusy = generationQueue.some((item) => ["queued", "running"].includes(item.status));
+  const fullGeneratePlan = useMemo(
+    () => (segments.length
+      ? planMvGenerateUiPreflight({ segments, prompts: generatedPrompts, visualAssets, account: rhAccount })
+      : null),
+    [segments, generatedPrompts, visualAssets, rhAccount],
+  );
+  const fullGenerateEstimateLabel = formatMvGenerateEstimateLabel(fullGeneratePlan, { loading: rhAccountLoading });
+  const batchGeneratePlan = useMemo(
+    () => (batchProvider === "runninghub"
+      ? planMvGenerateUiPreflight({ segments, prompts: generatedPrompts, visualAssets, account: rhAccount, indexes: batchSelection })
+      : null),
+    [batchProvider, segments, generatedPrompts, visualAssets, rhAccount, batchSelection],
+  );
   const segmentVideoFor = (index: number): SegmentGeneration | SegmentFallbackVideo | undefined => {
     const item = generation[index];
     return item?.status === "done" && item.outputPath ? item : fallbackVideos[index];
@@ -444,8 +461,10 @@ export default function MvStudio() {
       if (!response.ok) throw new Error(data.error || "RunningHub 余额读取失败");
       setRhAccount(data as RunningHubAccount);
       setRhAccountError("");
+      return data as RunningHubAccount;
     } catch (error) {
       setRhAccountError(error instanceof Error ? error.message : String(error));
+      return null;
     } finally {
       setRhAccountLoading(false);
     }
@@ -1973,6 +1992,15 @@ export default function MvStudio() {
   ) {
     if (!cloudWorkflowId.trim()) { setNotice("请先在“工作流配置”中填写 RunningHub 工作流 ID"); setWorkflowConfigOpen(true); setWorkflowTab("cloud"); throw new Error("请先配置 RunningHub 工作流 ID"); }
     try {
+      const account = await refreshRhAccount();
+      const plan = planMvGenerateUiPreflight({
+        segments,
+        prompts: prepared?.prompts ?? generatedPrompts,
+        visualAssets,
+        account,
+        indexes: selectedIndexes,
+      });
+      if (!plan.go) throw new Error(plan.reason);
       const inputs = await prepareGeneration(
         selectedIndexes,
         prepared?.cuts,
@@ -2051,7 +2079,8 @@ export default function MvStudio() {
       setCuts(autoCuts); setNotes(autoNotes); setGeneratedPrompts(autoPrompts); setGeneratedFrom(signature);
       setSegmentReviews(resetReviewsForPromptChange([], autoSegments.length));
       setBusy("");
-      setNotice(`已自动切成 ${autoSegments.length} 段并生成提示词；请逐段「通过审核」后再点云端批量生成`);
+      const estimatePlan = planMvGenerateUiPreflight({ segments: autoSegments, prompts: autoPrompts, visualAssets, account: rhAccount });
+      setNotice(`已自动切成 ${autoSegments.length} 段并生成提示词；预估 ${estimatePlan.estimate.total} 币（${autoSegments.length} 段）；请逐段「通过审核」后再点云端批量生成`);
     } catch (error) {
       setBusy("");
       setNotice(error instanceof Error ? error.message : String(error));
@@ -2081,7 +2110,7 @@ export default function MvStudio() {
     });
     // enqueue after state flush via microtask with bypass so we don't race
     queueMicrotask(() => {
-      enqueueGeneration(provider, [index], undefined, { bypassReview: true });
+      void enqueueGeneration(provider, [index], undefined, { bypassReview: true });
     });
   }
 
@@ -2090,7 +2119,7 @@ export default function MvStudio() {
     setGenerationQueue(next);
   }
 
-  function enqueueGeneration(
+  async function enqueueGeneration(
     provider: GenerationProvider,
     indexes: number[],
     prepared = { cuts: [...cuts], notes: notes.map((note) => ({ ...note })), prompts: [...generatedPrompts] },
@@ -2111,6 +2140,20 @@ export default function MvStudio() {
       setWorkflowConfigOpen(true);
       setWorkflowTab("cloud");
       return;
+    }
+    if (provider === "runninghub") {
+      const account = await refreshRhAccount();
+      const plan = planMvGenerateUiPreflight({
+        segments,
+        prompts: prepared.prompts,
+        visualAssets,
+        account,
+        indexes: allowed,
+      });
+      if (!plan.go) {
+        setNotice(plan.reason);
+        return;
+      }
     }
     const item: GenerationQueueItem = {
       id: crypto.randomUUID(),
@@ -2222,7 +2265,7 @@ export default function MvStudio() {
     const provider = batchProvider;
     const selected = [...batchSelection].sort((a, b) => a - b);
     setBatchProvider(null);
-    if (provider) enqueueGeneration(provider, selected);
+    if (provider) void enqueueGeneration(provider, selected);
   }
 
   function timeAtWaveX(clientX: number) {
@@ -2416,6 +2459,7 @@ export default function MvStudio() {
                   {" · "}{MV_PROMPT_TEMPLATES[promptTemplateId]?.version || promptTemplateId}
                   {" · 每段可组合多个镜头动作并分别设定时长，系统按人物素材角色自动绑定 Picture / Subject 编号。检查动作顺序、角色和总时长。"}
                 </p><div><button className="segment-fold-all" aria-pressed={allSegmentsCollapsed} onClick={() => setCollapsedSegments(allSegmentsCollapsed ? {} : Object.fromEntries(segments.map((_, index) => [index, true])))}>{allSegmentsCollapsed ? "全部展开" : "全部折叠"}</button><button className="local" disabled={!promptsReady} onClick={() => openBatch("local")}>本地批量生成</button><button className="cloud" disabled={!promptsReady} onClick={() => openBatch("runninghub")}>云端批量生成</button><button className="cloud" disabled={Boolean(busy) || Boolean(missingVisualKinds.length)} onClick={() => void generateFullMv()}>一键云端出完整 MV</button><button className="merge" disabled={Boolean(busy) || generationBusy || !mergeVideosReady} title={mergeVideosReady ? "按 SEG 顺序合并全部成片并恢复原始音轨" : "请先生成全部 SEG 视频"} onClick={() => void mergeGeneratedVideos()}>合并视频</button><button disabled={Boolean(invalidSegments.length) || Boolean(missingVisualKinds.length)} onClick={generatePrompts}>{promptsReady ? "按标准模板重新生成" : "生成标准提示词"}</button></div></div>
+                {segments.length > 0 && <p className="mv-generate-estimate" title={!fullGeneratePlan?.go && !rhAccountLoading ? fullGeneratePlan?.reason : undefined}>{fullGenerateEstimateLabel}</p>}
                 <div className="mv-prompt-list">{segments.map((segment, index) => { const isCollapsed = Boolean(collapsedSegments[index]); const currentVideo = generation[index]?.status === "done" && generation[index]?.outputPath ? generation[index] : undefined; const previewVideo = currentVideo || fallbackVideos[index]; const outputPath = previewVideo?.outputPath; const isFallbackVideo = !currentVideo && Boolean(fallbackVideos[index]); const previewUrl = outputPath ? videoPreviewUrl(outputPath, previewVideo?.completedAt || 0) : ""; return <article key={`${segment.start}-${segment.end}`} ref={(element) => { segmentCardRefs.current[index] = element; }} className={`${segment.duration > MAX_SEGMENT || segment.duration < MIN_SEGMENT ? "invalid" : ""}${highlightedSegmentIndex === index ? " generation-highlight" : ""}${isCollapsed ? " segment-collapsed" : ""}`} onDoubleClick={(event) => { if ((event.target as HTMLElement).closest("button,input,textarea,select,a,video,label")) return; setCollapsedSegments((current) => ({ ...current, [index]: false })); }}>
                   <header><div><span>SEG {String(segment.index).padStart(2, "0")}</span><b>{clock(segment.start)} → {clock(segment.end)}</b><i>{segment.duration.toFixed(3)} 秒</i></div><div><button onClick={() => { if (!audioRef.current) return; audioRef.current.currentTime = segment.start; void audioRef.current.play(); window.setTimeout(() => audioRef.current?.pause(), segment.duration * 1000); }}>试听本段</button>{outputPath && <button onClick={() => window.open(previewUrl, "_blank", "noopener,noreferrer")}>预览视频</button>}{!isCollapsed && <button disabled={!generatedPrompts[index]} onClick={() => void navigator.clipboard.writeText(generatedPrompts[index] || "")}>复制提示词</button>}<button className="segment-fold-toggle" aria-expanded={!isCollapsed} onClick={() => setCollapsedSegments((current) => ({ ...current, [index]: !current[index] }))}>{isCollapsed ? "展开编辑" : "折叠"}</button></div></header>
                   <div className="mv-prompt-refbar"><span>{visualAssets.filter((asset) => asset.category === "人物").length} 人物</span><span>{visualAssets.filter((asset) => asset.category === "场景").length} 场景</span><span>&lt;Audio 1&gt;</span><strong className={`mv-review-status ${segmentReviews[index] || "pending"}`}>{generatedPrompts[index] ? promptsReady ? REVIEW_STATUS_LABEL[segmentReviews[index] || "pending"] : "素材或切点已变化 · 需重新生成" : "等待生成"}</strong></div>
@@ -2459,7 +2503,7 @@ export default function MvStudio() {
                   {generatedPrompts[index] ? <textarea aria-label={`SEG ${segment.index} 最终提示词`} value={generatedPrompts[index]} onChange={(event) => { const value = event.target.value; setGeneratedPrompts((old) => old.map((prompt, promptIndex) => promptIndex === index ? value : prompt)); setSegmentReviews((current) => { const next = current.length === segments.length ? [...current] : createInitialReviews(segments.length); if (next[index] === "approved" || next[index] === "submitted") next[index] = "pending"; return next; }); }} /> : <div className="mv-prompt-empty"><b>尚未生成提示词</b><span>完成切点并上传人物、场景素材后，点击上方“生成提示词”。</span></div>}
                   {outputPath && <><div className="mv-video-generated-at"><b>SEG {String(segment.index).padStart(2, "0")}</b><span>{isFallbackVideo ? "旧视频回退预览" : "本段最近生成"}</span><time>{generationDate(previewVideo?.completedAt)}</time></div><video className="mv-segment-video" controls preload="none" src={previewUrl} /></>}
                   </>}
-                  <footer className="mv-segment-generate"><div>{generation[index] ? <><b className={generation[index].status}>{generation[index].message}</b>{outputPath && <a href={videoPreviewUrl(outputPath, previewVideo?.completedAt || 0)} target="_blank">打开成片</a>}{isFallbackVideo && <small>正在使用旧视频；新片段生成完成后会自动替换</small>}</> : fallbackVideos[index] ? <><b className="done">旧视频回退 · 最近一次成片</b><a href={videoPreviewUrl(outputPath || "", previewVideo?.completedAt || 0)} target="_blank">打开成片</a><small>新片段生成完成后会自动替换</small></> : <span>提示词确认并通过审核后，可单独生成本段视频</span>}</div><div><button disabled={!promptsReady || !generatedPrompts[index] || segmentReviews[index] === "approved" || segmentReviews[index] === "submitted"} onClick={() => approveSegmentAt(index)}>通过审核</button>{segmentReviews[index] === "failed" && <button className="cloud" onClick={() => retryFailedSegment(index, generation[index]?.provider || "runninghub")}>重试</button>}<button disabled={!promptsReady || segmentReviews[index] !== "approved"} onClick={() => enqueueGeneration("local", [index])}>本地生成</button><button className="cloud" disabled={!promptsReady || segmentReviews[index] !== "approved"} onClick={() => enqueueGeneration("runninghub", [index])}>云端生成</button></div></footer>
+                  <footer className="mv-segment-generate"><div>{generation[index] ? <><b className={generation[index].status}>{generation[index].message}</b>{outputPath && <a href={videoPreviewUrl(outputPath, previewVideo?.completedAt || 0)} target="_blank">打开成片</a>}{isFallbackVideo && <small>正在使用旧视频；新片段生成完成后会自动替换</small>}</> : fallbackVideos[index] ? <><b className="done">旧视频回退 · 最近一次成片</b><a href={videoPreviewUrl(outputPath || "", previewVideo?.completedAt || 0)} target="_blank">打开成片</a><small>新片段生成完成后会自动替换</small></> : <span>提示词确认并通过审核后，可单独生成本段视频</span>}</div><div><button disabled={!promptsReady || !generatedPrompts[index] || segmentReviews[index] === "approved" || segmentReviews[index] === "submitted"} onClick={() => approveSegmentAt(index)}>通过审核</button>{segmentReviews[index] === "failed" && <button className="cloud" onClick={() => retryFailedSegment(index, generation[index]?.provider || "runninghub")}>重试</button>}<button disabled={!promptsReady || segmentReviews[index] !== "approved"} onClick={() => void enqueueGeneration("local", [index])}>本地生成</button><button className="cloud" disabled={!promptsReady || segmentReviews[index] !== "approved"} onClick={() => void enqueueGeneration("runninghub", [index])}>云端生成</button></div></footer>
                 </article>})}</div>
               </section>
 
@@ -2496,7 +2540,7 @@ export default function MvStudio() {
                 <div className={`mv-queue-message ${item.status}`}>{item.message}</div>
                 <time>{new Date(item.createdAt).toLocaleTimeString("zh-CN", { hour: "2-digit", minute: "2-digit", second: "2-digit" })}</time>
                 {(item.status === "queued" || item.status === "running") && <button className="mv-queue-cancel" onClick={() => void cancelGenerationQueueItem(item)}>取消</button>}
-                {item.status === "error" && <button className="mv-queue-retry" onClick={() => enqueueGeneration(item.provider, item.indexes, item.prepared)}>重试</button>}
+                {item.status === "error" && <button className="mv-queue-retry" onClick={() => void enqueueGeneration(item.provider, item.indexes, item.prepared)}>重试</button>}
               </article>)}</div> : <div className="mv-queue-empty">生成任务会按提交顺序排队运行；可在这里查看状态或取消等待中的任务。</div>}
             </section>
 
@@ -2512,7 +2556,7 @@ export default function MvStudio() {
           <header><div><small>{batchProvider === "local" ? "LOCAL DIRECTOR BATCH" : "RUNNINGHUB SERIAL BATCH"}</small><h2>{batchProvider === "local" ? "本地连续片段生成" : "云端串行生成"}</h2><p>{batchProvider === "local" ? "选中的连续片段会编译进同一个本地 MV 工作流，并开启段间引导。" : "所选片段将逐个上传、生成和下载；前一段结束后才提交下一段。"}</p></div><button onClick={() => setBatchProvider(null)}>×</button></header>
           <div className="mv-batch-tools"><button onClick={() => setBatchSelection(approvedIndexes(segmentReviews))}>全选已审核</button><button onClick={() => setBatchSelection([])}>清空</button><span>已选择 {batchSelection.length}/{approvedIndexes(segmentReviews).length} 已审核段</span></div>
           <div className="mv-batch-list">{segments.map((segment, index) => { const canSelect = segmentReviews[index] === "approved"; return <label key={segment.index} className={`${batchSelection.includes(index) ? "selected" : ""}${!canSelect ? " disabled" : ""}`}><input type="checkbox" disabled={!canSelect} checked={batchSelection.includes(index)} onChange={() => { if (!canSelect) return; setBatchSelection((current) => current.includes(index) ? current.filter((item) => item !== index) : [...current, index]); }} /><b>SEG {String(segment.index).padStart(2, "0")}</b><span>{clock(segment.start)}–{clock(segment.end)}</span><i>{canSelect ? `${segment.duration.toFixed(3)} 秒` : REVIEW_STATUS_LABEL[segmentReviews[index] || "pending"]}</i></label>; })}</div>
-          <footer><div><small>执行方式</small><b>{batchProvider === "local" ? "本地 MiniMax H3 · 4 步 · 0.6 MP" : "RunningHub · 8 步 · 0.6 MP"}</b></div><button disabled={!batchSelection.length} onClick={runBatch}>生成所选 {batchSelection.length} 段</button></footer>
+          <footer><div><small>执行方式</small><b>{batchProvider === "local" ? "本地 MiniMax H3 · 4 步 · 0.6 MP" : "RunningHub · 8 步 · 0.6 MP"}</b>{batchProvider === "runninghub" && <span className="mv-generate-estimate">{formatMvGenerateEstimateLabel(batchGeneratePlan, { loading: rhAccountLoading })}</span>}</div><button disabled={!batchSelection.length || (batchProvider === "runninghub" && Boolean(batchGeneratePlan && !batchGeneratePlan.go))} title={batchProvider === "runninghub" && batchGeneratePlan && !batchGeneratePlan.go ? batchGeneratePlan.reason : undefined} onClick={runBatch}>生成所选 {batchSelection.length} 段</button></footer>
         </section>
       </div>}
       {workflowConfigOpen && <div className="mv-batch-backdrop" onPointerDown={() => setWorkflowConfigOpen(false)}>

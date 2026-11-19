@@ -1,5 +1,23 @@
 # Iteration Notes
 
+## 2026-11-20 00:00 Asia/Shanghai — MV 页云端生成预算预估与硬门禁
+
+**模块**：MV / 流程优化（与昨夜 `mv-generate` 同一预算公式）。昨夜 `planMvGeneratePreflight` 已拦住 CLI `mv-generate --watch` 的上传/create，但 MV 页「一键云端出完整 MV」只切段+生成提示词且 notice 不带预估币数；真正付费路径 `enqueueGeneration` → `generateCloud` → POST `/api/local/runninghub/jobs` 仍可在钱包不足或输入不全时入队并提交。本夜把同一预检接到页面展示与两道硬门禁。无新曲风、无 RH 付费。
+
+**验收标准**：见 `docs/superpowers/specs/2026-11-20-mv-generate-ui-preflight-design.md`（2 段 15s+7.5s 默认 24 币/秒 → 540；缺 prompt / 无图 / 段>15s 对应 code；`{ coins: 0 }` → `INSUFFICIENT_COINS`；余额=预估且输入齐全 → `go:true`；account 缺省 → `NO_ACCOUNT`；indexes 子集只计那些段；`mapUiAccount({ coins: 0, walletBalance: "-0.013" })` 可 normalize 为 remainCoins=0；UI 库无 `node:`；页面确实 import）。
+
+**完成**
+- `lib/mv-generate-ui-preflight.mjs`（+ d.ts）：`mapUiAccount` / `buildMvGenerateUiManifest`（段音频占位 `ui://segment-audio`，避免内存 buffer 被判 `MISSING_AUDIO`）/ `planMvGenerateUiPreflight`（委托已有预检，不重写公式）/ `formatMvGenerateEstimateLabel`
+- `app/mv/page.tsx`：工具栏与云端批量 footer 显示预估；`generateFullMv` 成功 notice 附带全部段预估币数；`refreshRhAccount` 返回账户；`enqueueGeneration` 入队前刷新余额并硬拦；`generateCloud` 第一次 jobs POST 前同样预检（重试也拦）。本地批量不显示币门禁。
+- 测试 `scripts/test-mv-generate-ui-preflight.mjs` 接入 `npm test`
+
+**验证**：`npm test` 全绿（exit 0），含新测试 `test-mv-generate-ui-preflight ok`。
+
+**15s 口型试片**：本夜由父代理查钱包与试片，见汇报。
+
+**下一晚**：钱包有币则 15s 试片（prep → 默认迅风提交 → finalize 封装原曲）/ open PR 合并卫生（11/15 起分支只有 compare 链接）。
+
+
 ## 2026-11-19 00:00 Asia/Shanghai — mv-generate 云端整片提交前硬门禁（输入完整性 + 钱包预估）
 
 **模块**：MV / 流程优化 + RH 加固（与口型试片同一提交通道）。昨夜 `mv-lipsync-preflight` 只管 15s 试片；整片入口 `runMvGenerate --watch` 查了余额却不用，钱包不足要等第 1 段 create 回 605 才知道；每段 prompt 缺失只在循环里检查，第 3 段缺 prompt 时前两段已扣币（连环烧币）。本夜把门禁前移到任何上传之前。无新曲风、无 RH 付费。

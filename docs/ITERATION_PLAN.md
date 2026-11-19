@@ -83,11 +83,17 @@
 - [x] UI/API 合成硬门禁（`planMvComposeGate` + `/api/local/mv/compose` 预检 + 页面预检 + CLI `mv-compose-gate`；官方成片必须原曲母带；本夜 `feature/mv-compose-ui-gate`，base lipsync-finalize）
 - [x] 切镜句界门禁（`checkMvCuts` + CLI `mv-cut-check`：歌词句界优先，否则人声能量谷；禁止句中硬切；本夜 `feature/mv-cut-gate`，base compose-ui-gate）
 - [x] 切镜门禁接入 `mv-cut`（`planMvCutGate` 硬门禁 + 可选 `--snap-cuts` 吸附到句界后复检；本夜 `feature/mv-cut-apply`，base cut-gate）
-- [ ] 下一：有人声源曲验证 15s 试片（prep → 默认迅风提交 → finalize 封装原曲）/ open PR 合并卫生（#4、#6–#27 仍 open，栈底 #11 基于 main；Cursor GitHub App 未安装，PR 可能只有 compare URL）/ UI 切点预检（MV 页已有切点编辑器，本夜未接门禁）
+- [x] MV 页切点句界预检（`planMvCutPrecheck` + 页面 autoSplit/generatePrompts/generateFullMv；本夜 `feature/mv-cut-ui-precheck`，base cut-apply）
+- [x] 口型试片提交前预检（`mv-lipsync-preflight` + ledger；本夜 `feature/mv-lipsync-preflight`，base cut-ui-precheck）
+- [x] mv-generate 云端整片提交前硬门禁（`planMvGeneratePreflight` + `runMvGenerate --watch`；本夜 `feature/mv-generate-budget-gate`，base lipsync-preflight）
+- [x] MV 页「一键云端出完整 MV」/「云端批量生成」接入同一预算预估与硬门禁（本夜 `feature/mv-generate-ui-preflight`，base mv-generate-budget-gate）
+- [ ] 下一晚：钱包有币则 15s 试片（prep → 默认迅风提交 → finalize 封装原曲）/ open PR 合并卫生
 
 
 ## 管理方式
 
 - Superpowers 驱动迭代；见 docs/PROJECT_MANAGEMENT.md
 - [x] 2026-11-18 口型试片提交前预检 `mv-lipsync-preflight` + 试片台账 `mv-lipsync-ledger`（钱包门槛 / 每日 1 成功 + 1 技术重试 / 非技术失败当晚不重跑）
-- [ ] 下一：preflight 接入 `mv-cloud-generate` 提交入口硬门禁；钱包有币跑 15s 试片
+- [x] 2026-11-19 mv-generate 提交前硬门禁 `planMvGeneratePreflight` + `runMvGenerate --watch`
+- [x] 2026-11-20 MV 页生成预算预估与硬门禁 `planMvGenerateUiPreflight`（展示预估；入队与 jobs POST 前硬拦；本地批量不走币门禁）
+- [ ] 下一晚：钱包有币则 15s 试片 / open PR 合并卫生

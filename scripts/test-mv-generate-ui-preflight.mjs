@@ -154,9 +154,7 @@ const uiInput = (over = {}) => ({
   const fullBody = page.slice(fullStart, page.indexOf('function openBatch(', fullStart));
   assert.match(fullBody, /预估/, 'generateFullMv success notice must include coin estimate');
 
-  const enqueueStart = page.indexOf('function enqueueGeneration(') >= 0
-    ? page.indexOf('function enqueueGeneration(')
-    : page.indexOf('async function enqueueGeneration(');
+  const enqueueStart = page.search(/async function enqueueGeneration\(/);
   assert.ok(enqueueStart >= 0, 'missing enqueueGeneration');
   const enqueueBody = page.slice(enqueueStart, page.indexOf('async function drainGenerationQueue(', enqueueStart));
   assert.match(enqueueBody, /async function enqueueGeneration\(/, 'enqueueGeneration must be awaitable to refresh the wallet');
