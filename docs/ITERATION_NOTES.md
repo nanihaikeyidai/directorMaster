@@ -13,7 +13,7 @@
 
 **验证**：`npm test` 全绿（exit 0），含新测试 `test-mv-generate-ui-preflight ok`。
 
-**15s 口型试片**：本夜由父代理查钱包与试片，见汇报。
+**15s 口型试片**：今晚**跳过**，0 币。00:0x Asia/Shanghai 只读查询 RunningHub NORMAL 钱包 remainCoins=0、remainMoney=-0.0130，低于 400 币门槛。可用素材不变（卡米拉海边吉他 MV 0–15s 人声段 + still-B 胸像 + 迅风幻影自动版）。
 
 **下一晚**：钱包有币则 15s 试片（prep → 默认迅风提交 → finalize 封装原曲）/ open PR 合并卫生（11/15 起分支只有 compare 链接）。
 
