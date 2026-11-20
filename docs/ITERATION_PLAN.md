@@ -87,7 +87,8 @@
 - [x] 口型试片提交前预检（`mv-lipsync-preflight` + ledger；本夜 `feature/mv-lipsync-preflight`，base cut-ui-precheck）
 - [x] mv-generate 云端整片提交前硬门禁（`planMvGeneratePreflight` + `runMvGenerate --watch`；本夜 `feature/mv-generate-budget-gate`，base lipsync-preflight）
 - [x] MV 页「一键云端出完整 MV」/「云端批量生成」接入同一预算预估与硬门禁（本夜 `feature/mv-generate-ui-preflight`，base mv-generate-budget-gate）
-- [ ] 下一晚：钱包有币则 15s 试片（prep → 默认迅风提交 → finalize 封装原曲）/ open PR 合并卫生
+- [x] MV 页人物一致性包预检与应用（`planMvCharacterPackUi` + 角色下拉 / 整理顺序 / 提示词注入 identity lock + 生成与云端硬门禁；本夜 `feature/mv-character-pack-ui`，base mv-generate-ui-preflight）
+- [ ] 下一晚：钱包有币则 15s 试片（prep → preflight → 默认迅风提交 → finalize 封装原曲）/ open PR 合并卫生
 
 
 ## 管理方式
@@ -96,4 +97,6 @@
 - [x] 2026-11-18 口型试片提交前预检 `mv-lipsync-preflight` + 试片台账 `mv-lipsync-ledger`（钱包门槛 / 每日 1 成功 + 1 技术重试 / 非技术失败当晚不重跑）
 - [x] 2026-11-19 mv-generate 提交前硬门禁 `planMvGeneratePreflight` + `runMvGenerate --watch`
 - [x] 2026-11-20 MV 页生成预算预估与硬门禁 `planMvGenerateUiPreflight`（展示预估；入队与 jobs POST 前硬拦；本地批量不走币门禁）
+- [x] 2026-11-21 MV 页人物一致性包预检与应用 `planMvCharacterPackUi`
+- [x] 2026-11-21 MV 页人物一致性包预检与应用 `planMvCharacterPackUi`
 - [ ] 下一晚：钱包有币则 15s 试片 / open PR 合并卫生

@@ -1,5 +1,24 @@
 # Iteration Notes
 
+## 2026-11-21 00:00 Asia/Shanghai — MV 页人物一致性包预检与应用
+
+**模块**：MV / 人物一致性（流程优化）。按 2026-11-07 用户优先级：流程优化与对口型/人物一致性优先于新曲风。CLI `mv-character-pack` / `mv-cut` 已强制近脸锁脸并注入 identity lock，但 MV 页主路径仍按上传顺序取图、不写锁脸词；一致性核心库还带 `node:`，不能直接进页面。本夜把组包接到参考图栏与提示词/云端提交，并把核心库改成浏览器可导入。无新曲风、无 RH 付费。
+
+**验收标准**：见 `docs/superpowers/specs/2026-11-21-mv-character-pack-ui-design.md`（NO_ASSETS / MISSING_FACE_LOCK / still-B 通过且近脸在前并写入锁脸词 / `role` 可覆盖普通文件名 / label 文案 / 核心库与 UI 库无 `node:` 且不导入 `mv-lipsync-prep.mjs` / 页面 import 与四道硬门禁 / `normalizeRefPath` 收拢 `..`）。
+
+**完成**
+- `lib/mv-face-closeup.mjs`：抽出 `assessFaceCloseUpRef`；`mv-lipsync-prep.mjs` 再导出，既有测试不改调用点
+- `lib/mv-character-consistency.mjs` 去掉 `node:` 与对 `mv-lipsync-prep` 的导入；`listCharacterRefPaths` 迁到 `lib/mv-character-consistency-fs.mjs`（仅 CLI/测试使用）
+- `lib/mv-character-pack-ui.mjs`（+ d.ts）：`planMvCharacterPackUi` / `formatMvCharacterPackLabel` / `CHARACTER_REF_ROLE_LABELS`，委托已有 `applyCharacterPackToAssets`
+- `app/mv/page.tsx`：参考图栏显示一致性标签、角色下拉、「按一致性包整理顺序」；生成提示词用排序后素材并 `appendIdentityLockToPrompt`；`generatePrompts` / `generateFullMv` / `enqueueGeneration` / `generateCloud` 硬门禁；导出与云端 pictures 同步用打包后顺序，避免 Picture N 对不上锁脸词
+- 测试 `scripts/test-mv-character-pack-ui.mjs` 接入 `npm test`
+
+**验证**：`npm test` 全绿（exit 0），含新测试 `test-mv-character-pack-ui ok`，以及 `test-mv-character-consistency` / `test-mv-lipsync-prep` / `test-mv-cut-ui-precheck`。
+
+**15s 口型试片**：今晚**跳过**，0 币消耗。00:1x Asia/Shanghai 只读查询 RunningHub NORMAL 钱包 remainCoins=0、remainMoney=-0.013，低于 400 币门槛。人声门禁可用：bot 附件卡米拉源曲 176–186s（活跃比 0.425）+ still-B 胸像通过近脸门禁 + 默认迅风幻影自动版；因钱包不足未提交。
+
+**下一晚**：钱包有币则 15s 试片（prep → preflight → 默认迅风提交 → finalize 封装原曲）/ open PR 合并卫生（11/15 起分支只有 compare 链接）。
+
 ## 2026-11-20 00:00 Asia/Shanghai — MV 页云端生成预算预估与硬门禁
 
 **模块**：MV / 流程优化（与昨夜 `mv-generate` 同一预算公式）。昨夜 `planMvGeneratePreflight` 已拦住 CLI `mv-generate --watch` 的上传/create，但 MV 页「一键云端出完整 MV」只切段+生成提示词且 notice 不带预估币数；真正付费路径 `enqueueGeneration` → `generateCloud` → POST `/api/local/runninghub/jobs` 仍可在钱包不足或输入不全时入队并提交。本夜把同一预检接到页面展示与两道硬门禁。无新曲风、无 RH 付费。
