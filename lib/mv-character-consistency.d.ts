@@ -73,8 +73,6 @@ export function buildCharacterConsistencyPack(
 
 export function formatCharacterPackReport(result: CharacterConsistencyResult): string;
 
-export function listCharacterRefPaths(dir: string): string[];
-
 export type VisualAssetInput = {
   path?: string;
   category?: string;

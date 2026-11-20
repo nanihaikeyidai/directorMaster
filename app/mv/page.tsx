@@ -40,6 +40,12 @@ import {
   planMvGenerateUiPreflight,
   formatMvGenerateEstimateLabel,
 } from "../../lib/mv-generate-ui-preflight.mjs";
+import {
+  CHARACTER_REF_ROLE_LABELS,
+  formatMvCharacterPackLabel,
+  planMvCharacterPackUi,
+} from "../../lib/mv-character-pack-ui.mjs";
+import { appendIdentityLockToPrompt } from "../../lib/mv-character-consistency.mjs";
 
 const REVIEW_STATUS_LABEL: Record<SegmentReviewStatus, string> = {
   pending: "待审核",
@@ -54,6 +60,7 @@ type Asset = {
   path: string;
   mediaType: "image" | "audio" | "video";
   category?: "人物" | "场景";
+  role?: "face_closeup" | "threeview_front" | "threeview_side" | "threeview_back" | "costume" | "scene" | "unknown";
   fileName?: string;
   description?: string;
 };
@@ -411,7 +418,7 @@ export default function MvStudio() {
       duration: project?.duration || 0,
       // 歌词、分镜导演词和镜头类型都会影响最终提示词。
       notes: currentNotes,
-      visualAssets: visualAssets.map(({ id, category, description }) => ({ id, category, description })),
+      visualAssets: visualAssets.map(({ id, category, description, role }) => ({ id, category, description, role })),
       settings,
       leadSilenceSec,
       trimRange,
@@ -420,6 +427,25 @@ export default function MvStudio() {
   const promptInputSignature = signatureFor(notes);
   const promptsReady =
     generatedPrompts.length === segments.length && generatedFrom === promptInputSignature;
+  const characterPackPlan = useMemo(() => planMvCharacterPackUi({ visualAssets }), [visualAssets]);
+  const characterPackLabel = formatMvCharacterPackLabel(characterPackPlan);
+  function packedPromptAssets() {
+    return (characterPackPlan.go ? characterPackPlan.orderedAssets : visualAssets) as Asset[];
+  }
+  function buildPackedPrompt(segment: { index: number; start: number; end: number; duration: number }, note: SegmentNote, assets = packedPromptAssets()) {
+    if (!project) return "";
+    return appendIdentityLockToPrompt(
+      buildMvPromptForTemplate(promptTemplateId, {
+        projectName: project.projectName,
+        segment,
+        note,
+        assets,
+        settings,
+        leadSilenceSec: Number(project.leadSilenceSec || 0),
+      }),
+      characterPackPlan.identityLockText,
+    );
+  }
   const generationBusy = generationQueue.some((item) => ["queued", "running"].includes(item.status));
   const fullGeneratePlan = useMemo(
     () => (segments.length
@@ -1448,20 +1474,15 @@ export default function MvStudio() {
       setNotice(`请先上传${missingVisualKinds.join("和")}素材`);
       return;
     }
+    if (!characterPackPlan.go) {
+      setNotice(characterPackPlan.reason);
+      return;
+    }
     const nextNotes = segments.map((segment, index) => ({
       ...(notes[index] || emptyNote()),
       shotActions: actionsForSegment(notes[index] || emptyNote(), segment.duration),
     }));
-    const prompts = segments.map((segment, index) =>
-      buildMvPromptForTemplate(promptTemplateId, {
-        projectName: project.projectName,
-        segment,
-        note: nextNotes[index],
-        assets: visualAssets,
-        settings,
-        leadSilenceSec: Number(project.leadSilenceSec || 0),
-      }),
-    );
+    const prompts = segments.map((segment, index) => buildPackedPrompt(segment, nextNotes[index]));
     setNotes(nextNotes);
     setGeneratedPrompts(prompts);
     setGeneratedFrom(signatureFor(nextNotes));
@@ -1497,7 +1518,7 @@ export default function MvStudio() {
       const response = await fetch("/api/local/mv/export", {
         method: "POST",
         headers: { "content-type": "application/json" },
-        body: JSON.stringify({ projectId: project.projectId, sourcePath: project.sourcePath, cuts, trimStart: trimRange.start, trimEnd: trimRange.end || project.duration, segments: authored, settings: { ...settings, visualAssets } }),
+        body: JSON.stringify({ projectId: project.projectId, sourcePath: project.sourcePath, cuts, trimStart: trimRange.start, trimEnd: trimRange.end || project.duration, segments: authored, settings: { ...settings, visualAssets: packedPromptAssets() } }),
       });
       const data = await response.json();
       if (!response.ok) throw new Error(data.error || "导出失败");
@@ -1675,7 +1696,8 @@ export default function MvStudio() {
     setNotes(nextNotes);
     if (generatedPrompts[index]) {
       try {
-        const nextPrompt = buildMvPromptForTemplate(promptTemplateId, { projectName: project.projectName, segment: segments[index], note: nextNotes[index], assets: visualAssets, settings, leadSilenceSec: Number(project.leadSilenceSec || 0) });
+        if (!characterPackPlan.go) { setNotice(characterPackPlan.reason); return; }
+        const nextPrompt = buildPackedPrompt(segments[index], nextNotes[index]);
         setGeneratedPrompts((current) => current.map((prompt, promptIndex) => promptIndex === index ? nextPrompt : prompt));
         setGeneratedFrom(signatureFor(nextNotes));
         setSegmentReviews((current) => {
@@ -1704,7 +1726,8 @@ export default function MvStudio() {
     setNotes(nextNotes);
     if (generatedPrompts[index]) {
       try {
-        const nextPrompt = buildMvPromptForTemplate(promptTemplateId, { projectName: project.projectName, segment, note: nextNotes[index], assets: visualAssets, settings, leadSilenceSec: Number(project.leadSilenceSec || 0) });
+        if (!characterPackPlan.go) { setNotice(characterPackPlan.reason); return; }
+        const nextPrompt = buildPackedPrompt(segment, nextNotes[index]);
         setGeneratedPrompts((current) => current.map((prompt, promptIndex) => promptIndex === index ? nextPrompt : prompt));
         setGeneratedFrom(signatureFor(nextNotes));
         setSegmentReviews((current) => {
@@ -1823,7 +1846,7 @@ export default function MvStudio() {
         trimStart: trimRange.start,
         trimEnd: trimRange.end || project.duration,
         segments: authored,
-        settings: { ...settings, visualAssets },
+        settings: { ...settings, visualAssets: packedPromptAssets() },
       }),
     });
     const exported = await response.json();
@@ -1843,7 +1866,7 @@ export default function MvStudio() {
         negativePrompt:
           "identity drift, face change, costume change, duplicated subject, malformed hands, teleportation, subtitles, captions, watermark, logo, replacement music",
         definitions: "",
-        pictures: visualAssets.map((asset) => ({
+        pictures: packedPromptAssets().map((asset) => ({
           ...asset,
           fileName: asset.fileName || asset.path.split(/[\\/]/).pop() || `${asset.id}.png`,
           category: asset.category || "人物",
@@ -1992,6 +2015,7 @@ export default function MvStudio() {
   ) {
     if (!cloudWorkflowId.trim()) { setNotice("请先在“工作流配置”中填写 RunningHub 工作流 ID"); setWorkflowConfigOpen(true); setWorkflowTab("cloud"); throw new Error("请先配置 RunningHub 工作流 ID"); }
     try {
+      if (!characterPackPlan.go) throw new Error(characterPackPlan.reason);
       const account = await refreshRhAccount();
       const plan = planMvGenerateUiPreflight({
         segments,
@@ -2063,6 +2087,7 @@ export default function MvStudio() {
     if (!project) { setNotice("请先上传音乐"); return; }
     if (busy) return;
     if (missingVisualKinds.length) { setNotice(`请先上传${missingVisualKinds.join("和")}素材`); return; }
+    if (!characterPackPlan.go) { setNotice(characterPackPlan.reason); return; }
     setBusy("正在自动切段并生成提示词…");
     try {
       if (!cuts.length && !bufferRef.current) throw new Error("音乐波形尚未准备好，请稍后再试");
@@ -2074,8 +2099,8 @@ export default function MvStudio() {
       if (autoSegments.some((segment) => segment.duration > MAX_SEGMENT + 0.001 || segment.duration < MIN_SEGMENT))
         throw new Error("自动切段仍有超出 15 秒的片段，请手动调整");
       const autoNotes = autoSegments.map((segment, index) => ({ ...(notes[index] || emptyNote()), shotActions: actionsForSegment(notes[index] || emptyNote(), segment.duration) }));
-      const autoPrompts = autoSegments.map((segment, index) => buildMvPromptForTemplate(promptTemplateId, { projectName: project.projectName, segment, note: autoNotes[index], assets: visualAssets, settings, leadSilenceSec: Number(project.leadSilenceSec || 0) }));
-      const signature = JSON.stringify({ templateId: promptTemplateId, templateVersion: MV_PROMPT_TEMPLATES[promptTemplateId]?.version || promptTemplateId, cuts: autoCuts, duration: project.duration, notes: autoNotes, visualAssets: visualAssets.map(({ id, category, description }) => ({ id, category, description })), settings, leadSilenceSec, trimRange });
+      const autoPrompts = autoSegments.map((segment, index) => buildPackedPrompt(segment, autoNotes[index]));
+      const signature = JSON.stringify({ templateId: promptTemplateId, templateVersion: MV_PROMPT_TEMPLATES[promptTemplateId]?.version || promptTemplateId, cuts: autoCuts, duration: project.duration, notes: autoNotes, visualAssets: visualAssets.map(({ id, category, description, role }) => ({ id, category, description, role })), settings, leadSilenceSec, trimRange });
       setCuts(autoCuts); setNotes(autoNotes); setGeneratedPrompts(autoPrompts); setGeneratedFrom(signature);
       setSegmentReviews(resetReviewsForPromptChange([], autoSegments.length));
       setBusy("");
@@ -2139,6 +2164,10 @@ export default function MvStudio() {
       setNotice("请先在“工作流配置”中填写 RunningHub 工作流 ID");
       setWorkflowConfigOpen(true);
       setWorkflowTab("cloud");
+      return;
+    }
+    if (!characterPackPlan.go) {
+      setNotice(characterPackPlan.reason);
       return;
     }
     if (provider === "runninghub") {
@@ -2458,7 +2487,7 @@ export default function MvStudio() {
                   </select>
                   {" · "}{MV_PROMPT_TEMPLATES[promptTemplateId]?.version || promptTemplateId}
                   {" · 每段可组合多个镜头动作并分别设定时长，系统按人物素材角色自动绑定 Picture / Subject 编号。检查动作顺序、角色和总时长。"}
-                </p><div><button className="segment-fold-all" aria-pressed={allSegmentsCollapsed} onClick={() => setCollapsedSegments(allSegmentsCollapsed ? {} : Object.fromEntries(segments.map((_, index) => [index, true])))}>{allSegmentsCollapsed ? "全部展开" : "全部折叠"}</button><button className="local" disabled={!promptsReady} onClick={() => openBatch("local")}>本地批量生成</button><button className="cloud" disabled={!promptsReady} onClick={() => openBatch("runninghub")}>云端批量生成</button><button className="cloud" disabled={Boolean(busy) || Boolean(missingVisualKinds.length)} onClick={() => void generateFullMv()}>一键云端出完整 MV</button><button className="merge" disabled={Boolean(busy) || generationBusy || !mergeVideosReady} title={mergeVideosReady ? "按 SEG 顺序合并全部成片并恢复原始音轨" : "请先生成全部 SEG 视频"} onClick={() => void mergeGeneratedVideos()}>合并视频</button><button disabled={Boolean(invalidSegments.length) || Boolean(missingVisualKinds.length)} onClick={generatePrompts}>{promptsReady ? "按标准模板重新生成" : "生成标准提示词"}</button></div></div>
+                </p><div><button className="segment-fold-all" aria-pressed={allSegmentsCollapsed} onClick={() => setCollapsedSegments(allSegmentsCollapsed ? {} : Object.fromEntries(segments.map((_, index) => [index, true])))}>{allSegmentsCollapsed ? "全部展开" : "全部折叠"}</button><button className="local" disabled={!promptsReady} onClick={() => openBatch("local")}>本地批量生成</button><button className="cloud" disabled={!promptsReady} onClick={() => openBatch("runninghub")}>云端批量生成</button><button className="cloud" disabled={Boolean(busy) || Boolean(missingVisualKinds.length) || !characterPackPlan.go} onClick={() => void generateFullMv()}>一键云端出完整 MV</button><button className="merge" disabled={Boolean(busy) || generationBusy || !mergeVideosReady} title={mergeVideosReady ? "按 SEG 顺序合并全部成片并恢复原始音轨" : "请先生成全部 SEG 视频"} onClick={() => void mergeGeneratedVideos()}>合并视频</button><button disabled={Boolean(invalidSegments.length) || Boolean(missingVisualKinds.length) || !characterPackPlan.go} onClick={generatePrompts}>{promptsReady ? "按标准模板重新生成" : "生成标准提示词"}</button></div></div>
                 {segments.length > 0 && <p className="mv-generate-estimate" title={!fullGeneratePlan?.go && !rhAccountLoading ? fullGeneratePlan?.reason : undefined}>{fullGenerateEstimateLabel}</p>}
                 <div className="mv-prompt-list">{segments.map((segment, index) => { const isCollapsed = Boolean(collapsedSegments[index]); const currentVideo = generation[index]?.status === "done" && generation[index]?.outputPath ? generation[index] : undefined; const previewVideo = currentVideo || fallbackVideos[index]; const outputPath = previewVideo?.outputPath; const isFallbackVideo = !currentVideo && Boolean(fallbackVideos[index]); const previewUrl = outputPath ? videoPreviewUrl(outputPath, previewVideo?.completedAt || 0) : ""; return <article key={`${segment.start}-${segment.end}`} ref={(element) => { segmentCardRefs.current[index] = element; }} className={`${segment.duration > MAX_SEGMENT || segment.duration < MIN_SEGMENT ? "invalid" : ""}${highlightedSegmentIndex === index ? " generation-highlight" : ""}${isCollapsed ? " segment-collapsed" : ""}`} onDoubleClick={(event) => { if ((event.target as HTMLElement).closest("button,input,textarea,select,a,video,label")) return; setCollapsedSegments((current) => ({ ...current, [index]: false })); }}>
                   <header><div><span>SEG {String(segment.index).padStart(2, "0")}</span><b>{clock(segment.start)} → {clock(segment.end)}</b><i>{segment.duration.toFixed(3)} 秒</i></div><div><button onClick={() => { if (!audioRef.current) return; audioRef.current.currentTime = segment.start; void audioRef.current.play(); window.setTimeout(() => audioRef.current?.pause(), segment.duration * 1000); }}>试听本段</button>{outputPath && <button onClick={() => window.open(previewUrl, "_blank", "noopener,noreferrer")}>预览视频</button>}{!isCollapsed && <button disabled={!generatedPrompts[index]} onClick={() => void navigator.clipboard.writeText(generatedPrompts[index] || "")}>复制提示词</button>}<button className="segment-fold-toggle" aria-expanded={!isCollapsed} onClick={() => setCollapsedSegments((current) => ({ ...current, [index]: !current[index] }))}>{isCollapsed ? "展开编辑" : "折叠"}</button></div></header>
@@ -2510,7 +2539,9 @@ export default function MvStudio() {
               <aside className="mv-sidebar">
                 <section className="mv-panel mv-reference-panel">
                   <div className="mv-panel-title"><div><small>VISUAL REFERENCES</small><h2>人物与场景素材</h2></div><b>{visualAssets.length}/9</b></div>
-                  <p className="mv-help">上传后自动加入引用序列。每张图片严格对应同编号的 &lt;Picture N&gt; 与 &lt;Subject N&gt;；素材描述会直接写入标准提示词，请明确人物身份、乐器、服装、站位，或场景布局与灯光。</p>
+                  <p className="mv-character-pack" title={!characterPackPlan.go ? characterPackPlan.reason : (characterPackPlan.warnings || []).join(" ")}>{characterPackLabel}</p>
+                  <p className="mv-help">上传后自动加入引用序列。每张图片严格对应同编号的 &lt;Picture N&gt; 与 &lt;Subject N&gt;；素材描述会直接写入标准提示词，请明确人物身份、乐器、服装、站位，或场景布局与灯光。生成提示词前须指定一张近脸锁脸参考。</p>
+                  <div><button type="button" disabled={!characterPackPlan.go} onClick={() => { setVisualAssets(characterPackPlan.orderedAssets as Asset[]); setNotice("已按近脸 → 三视图 → 换装 → 场景整理参考图顺序"); }}>按一致性包整理顺序</button></div>
                   <div className="mv-visual-uploads">
                     <button className="mv-mini-drop person" onClick={() => personInputRef.current?.click()} onDragOver={(event) => event.preventDefault()} onDrop={(event) => { event.preventDefault(); void uploadVisualAssets(event.dataTransfer.files, "人物"); }}><b>＋ 人物素材</b><span>人设图、服装图、多视图</span></button>
                     <button className="mv-mini-drop scene" onClick={() => sceneInputRef.current?.click()} onDragOver={(event) => event.preventDefault()} onDrop={(event) => { event.preventDefault(); void uploadVisualAssets(event.dataTransfer.files, "场景"); }}><b>＋ 场景素材</b><span>舞台、外景、灯光参考</span></button>
@@ -2519,7 +2550,7 @@ export default function MvStudio() {
                   </div>
                   <div className="mv-reference-list">{visualAssets.map((asset, index) => <article key={asset.id}>
                     <div className="mv-reference-image"><img src={`/api/local/file?path=${encodeURIComponent(asset.path)}`} alt={asset.name} /><b>P{index + 1}</b><span>{asset.category}</span></div>
-                    <div className="mv-reference-info"><strong>{asset.name}</strong><textarea maxLength={240} aria-label={`${asset.name} 素材描述`} placeholder={asset.category === "人物" ? "两句内描述人物外貌、发型、服装和身份特征" : "两句内描述场景布局、灯光、色调和空间锚点"} value={asset.description || ""} onChange={(event) => setVisualAssets((old) => old.map((item) => item.id === asset.id ? { ...item, description: event.target.value } : item))} /><div><button disabled={index === 0} onClick={() => moveVisualAsset(index, -1)}>上移</button><button disabled={index === visualAssets.length - 1} onClick={() => moveVisualAsset(index, 1)}>下移</button><button className="danger" onClick={() => void removeVisualAsset(asset)}>删除</button></div></div>
+                    <div className="mv-reference-info"><strong>{asset.name}</strong><label className="mv-ref-role">角色<select aria-label={`${asset.name} 参考角色`} value={asset.role || ""} onChange={(event) => { const value = event.target.value; setVisualAssets((old) => old.map((item) => item.id === asset.id ? { ...item, role: (value || undefined) as Asset["role"] } : item)); }}><option value="">自动识别</option>{(Object.keys(CHARACTER_REF_ROLE_LABELS) as Array<keyof typeof CHARACTER_REF_ROLE_LABELS>).filter((key) => key !== "unknown").map((key) => <option key={key} value={key}>{CHARACTER_REF_ROLE_LABELS[key]}</option>)}</select></label><textarea maxLength={240} aria-label={`${asset.name} 素材描述`} placeholder={asset.category === "人物" ? "两句内描述人物外貌、发型、服装和身份特征" : "两句内描述场景布局、灯光、色调和空间锚点"} value={asset.description || ""} onChange={(event) => setVisualAssets((old) => old.map((item) => item.id === asset.id ? { ...item, description: event.target.value } : item))} /><div><button disabled={index === 0} onClick={() => moveVisualAsset(index, -1)}>上移</button><button disabled={index === visualAssets.length - 1} onClick={() => moveVisualAsset(index, 1)}>下移</button><button className="danger" onClick={() => void removeVisualAsset(asset)}>删除</button></div></div>
                   </article>)}</div>
                   {!visualAssets.length && <p className="mv-empty">先上传人物和场景参考图；音乐切段仍可独立进行。</p>}
                 </section>

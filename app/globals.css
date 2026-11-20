@@ -175,6 +175,9 @@
 .mv-prompt-toolbar > div { display: flex; flex: 0 0 auto; flex-wrap: wrap; justify-content: flex-end; gap: 7px; }.mv-prompt-toolbar button.local { border: 1px solid #367b91; background: #102d3a; color: #aeeeff; }.mv-prompt-toolbar button.cloud { border: 1px solid #6651b8; background: #211b48; color: #d1c8ff; }.mv-prompt-toolbar button.merge { border: 1px solid #317c63; background: #102c25; color: #a9f1cf; }
 .mv-prompt-toolbar button.segment-fold-all { border: 1px solid #45617b; background: #121e2b; color: #b9d4e9; }
 .mv-generate-estimate { margin: 8px 0 0; padding: 0 12px; color: #8d9bad; font: 10px var(--font-geist-mono); line-height: 1.5; }
+.mv-character-pack { margin: 0 0 8px; color: #8d9bad; font: 10px var(--font-geist-mono); line-height: 1.5; }
+.mv-ref-role { display: flex; align-items: center; gap: 6px; margin: 0 0 6px; color: #93a2b5; font-size: 9px; }
+.mv-ref-role select { flex: 1; min-width: 0; padding: 4px 6px; border: 1px solid #29384a; background: #101925; color: #dbe5f2; font-size: 9px; }
 .mv-batch-modal footer .mv-generate-estimate { margin: 0; padding: 0; color: #9eb0c2; }
 .mv-prompt-list { display: flex; flex-direction: column; gap: 12px; max-height: 760px; margin-top: 12px; overflow: auto; }
 .mv-prompt-list article { border: 1px solid #32637a; background: #090f17; box-shadow: inset 0 0 0 1px #142a38; }

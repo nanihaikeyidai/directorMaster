@@ -15,7 +15,8 @@ import { buildLipsyncTrialPlan, probeEnergyHops } from '../lib/mv-lipsync-prep.m
 import { DEFAULT_LIPSYNC_WORKFLOW_ID, planLipsyncFinalize } from '../lib/mv-lipsync-finalize.mjs';
 import { normalizeRhAccount, planLipsyncPreflight, recordLipsyncAttempt } from '../lib/mv-lipsync-preflight.mjs';
 import { extractMusicSignalsFromHops, probeMusicSignals } from '../lib/mv-music-signals.mjs';
-import { applyCharacterPackToAssets, appendIdentityLockToPrompt, buildCharacterConsistencyPack, formatCharacterPackReport, listCharacterRefPaths } from '../lib/mv-character-consistency.mjs';
+import { applyCharacterPackToAssets, appendIdentityLockToPrompt, buildCharacterConsistencyPack, formatCharacterPackReport } from '../lib/mv-character-consistency.mjs';
+import { listCharacterRefPaths } from '../lib/mv-character-consistency-fs.mjs';
 
 const argv = process.argv.slice(2);
 const command = argv.shift() || 'help';

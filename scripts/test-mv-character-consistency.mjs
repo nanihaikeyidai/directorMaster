@@ -6,10 +6,10 @@ import {
   classifyCharacterRef,
   buildCharacterConsistencyPack,
   formatCharacterPackReport,
-  listCharacterRefPaths,
   applyCharacterPackToAssets,
   appendIdentityLockToPrompt,
 } from '../lib/mv-character-consistency.mjs';
+import { listCharacterRefPaths } from '../lib/mv-character-consistency-fs.mjs';
 
 // --- classifyCharacterRef: path heuristics ---
 assert.equal(classifyCharacterRef('still-B.jpg'), 'face_closeup');
