@@ -144,7 +144,7 @@ type RecentProject = {
 };
 type WorkflowCatalogItem = { path: string; fileName: string; nodeCount: number; classes: string[]; invalid?: boolean };
 type WorkflowCatalog = { local: WorkflowCatalogItem[]; cloud: WorkflowCatalogItem[] };
-type RunningHubAccount = { coins: number; walletBalance?: string; currency: string; runningTasks: number; checkedAt: string };
+type RunningHubAccount = { coins: number; points?: number; walletBalance?: string; currency: string; runningTasks: number; checkedAt: string };
 
 const MAX_SEGMENT = 15;
 const MIN_SEGMENT = 0.25;
@@ -498,6 +498,12 @@ export default function MvStudio() {
 
   function formatRhCoins(value: number) {
     return new Intl.NumberFormat("zh-CN", { maximumFractionDigits: 2 }).format(value);
+  }
+  function rhUsesPoints(account: RunningHubAccount | null | undefined) {
+    return account != null && account.points != null;
+  }
+  function rhBalanceUnit(account: RunningHubAccount | null | undefined) {
+    return rhUsesPoints(account) ? "积分" : "RH 币";
   }
 
   function rememberWorkflowPath(value: string) {
@@ -2416,9 +2422,9 @@ export default function MvStudio() {
         <button className="mv-history-trigger" onClick={() => { void refreshRecentProjects(); setHistoryOpen(true); }}>历史项目 <b>{recentProjects.length}</b></button>
         <button className="mv-workflow-trigger" onClick={() => { setWorkflowConfigOpen(true); setWorkflowMessage(""); }}>工作流配置</button>
         <div className="mv-state"><i className={project ? "online" : ""} />{busy || notice}</div>
-        <div className={`mv-rh-balance${rhAccountError ? " error" : ""}`} title={rhAccountError || (rhAccount?.walletBalance ? `账户余额 ¥${rhAccount.walletBalance} · 每分钟自动刷新` : "每分钟自动刷新 RunningHub 币余额")}>
-          <span>RH 币</span><b>{rhAccount ? formatRhCoins(rhAccount.coins) : rhAccountLoading ? "读取中" : "—"}</b>
-          <button aria-label="刷新 RunningHub 币余额" disabled={rhAccountLoading} onClick={() => void refreshRhAccount()}>{rhAccountLoading ? "…" : "↻"}</button>
+        <div className={`mv-rh-balance${rhAccountError ? " error" : ""}`} title={rhAccountError || (rhAccount?.walletBalance ? `账户余额 ¥${rhAccount.walletBalance} · 每分钟自动刷新` : `每分钟自动刷新 RunningHub ${rhUsesPoints(rhAccount) ? "积分" : "币"}余额`)}>
+          <span>{rhBalanceUnit(rhAccount)}</span><b>{rhAccount ? formatRhCoins(rhUsesPoints(rhAccount) ? rhAccount.points! : rhAccount.coins) : rhAccountLoading ? "读取中" : "—"}</b>
+          <button aria-label={`刷新 RunningHub ${rhBalanceUnit(rhAccount)}余额`} disabled={rhAccountLoading} onClick={() => void refreshRhAccount()}>{rhAccountLoading ? "…" : "↻"}</button>
         </div>
       </header>
 
@@ -2560,7 +2566,7 @@ export default function MvStudio() {
 
             <section className="mv-panel mv-generation-history">
               <div className="mv-panel-title"><div><small>COMPLETED SEGMENTS · CLICK TO LOCATE</small><h2>生成历史</h2></div><b>{generationHistory.length} 条</b></div>
-              {generationHistory.length ? <div className="mv-generation-history-list">{[...generationHistory].reverse().map((entry) => <button key={entry.id} className="mv-generation-history-item" onClick={() => jumpToGeneration(entry)} title="滚动定位到对应片段"><span className="mv-history-seg">SEG {String(entry.index).padStart(2, "0")}</span><span className="mv-history-version">{entry.attempt > 1 ? `重新生成 · 第 ${entry.attempt} 次` : "首次生成"}</span><span className="mv-history-provider">{entry.provider === "local" ? "本地 ComfyUI" : "RunningHub 云端"}</span><span className={`mv-history-cost ${entry.provider}`}>{entry.provider === "local" ? "不计费" : entry.costCoins == null ? "费用待同步" : `消耗 ${formatRhCoins(entry.costCoins)} RH 币`}</span><time>{generationDate(entry.completedAt)}</time><i>定位 ↗</i></button>)}</div> : <div className="mv-queue-empty">完成的分段视频会记录在这里；点击记录可直接定位到对应 SEG。</div>}
+              {generationHistory.length ? <div className="mv-generation-history-list">{[...generationHistory].reverse().map((entry) => <button key={entry.id} className="mv-generation-history-item" onClick={() => jumpToGeneration(entry)} title="滚动定位到对应片段"><span className="mv-history-seg">SEG {String(entry.index).padStart(2, "0")}</span><span className="mv-history-version">{entry.attempt > 1 ? `重新生成 · 第 ${entry.attempt} 次` : "首次生成"}</span><span className="mv-history-provider">{entry.provider === "local" ? "本地 ComfyUI" : "RunningHub 云端"}</span><span className={`mv-history-cost ${entry.provider}`}>{entry.provider === "local" ? "不计费" : entry.costCoins == null ? "费用待同步" : `消耗 ${formatRhCoins(entry.costCoins)} ${rhBalanceUnit(rhAccount)}`}</span><time>{generationDate(entry.completedAt)}</time><i>定位 ↗</i></button>)}</div> : <div className="mv-queue-empty">完成的分段视频会记录在这里；点击记录可直接定位到对应 SEG。</div>}
             </section>
 
             <section className="mv-panel mv-generation-queue">

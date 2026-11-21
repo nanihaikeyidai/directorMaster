@@ -1,6 +1,6 @@
 import type { MvGeneratePreflight } from './mv-generate-preflight.d.ts';
 
-export function mapUiAccount(account?: { coins?: number; walletBalance?: string } | null): { remainCoins: unknown; remainMoney: unknown } | null;
+export function mapUiAccount(account?: { coins?: number; points?: number; walletBalance?: string } | null): { remainCoins: unknown; remainMoney: unknown; remainPoint?: unknown } | null;
 
 export function buildMvGenerateUiManifest(opts?: {
   segments?: Array<{ index?: number; duration?: number } | null | undefined>;
@@ -16,7 +16,7 @@ export function planMvGenerateUiPreflight(opts?: {
   segments?: unknown[];
   prompts?: string[];
   visualAssets?: unknown[];
-  account?: { coins?: number; walletBalance?: string } | null;
+  account?: { coins?: number; points?: number; walletBalance?: string } | null;
   indexes?: number[];
   coinsPerSec?: number;
   reserveCoins?: number;

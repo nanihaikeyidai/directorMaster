@@ -10,7 +10,7 @@ export interface MvGeneratePreflight {
   codes: string[];
   inputs: { ok: boolean; issues: MvGenerateIssue[] };
   estimate: MvCoinEstimate;
-  budget: null | { ok: boolean; code: string | null; need: number; reason: string; account?: { remainCoins: number | null; remainMoney: number | null; apiType: string | null } };
+  budget: null | { ok: boolean; code: string | null; need: number; reason: string; account?: { remainCoins: number | null; remainMoney: number | null; apiType: string | null; remainPoint?: number } };
   reason: string;
 }
 export function planMvGeneratePreflight(opts?: {

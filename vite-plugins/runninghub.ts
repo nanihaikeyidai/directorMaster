@@ -5,6 +5,7 @@ import { execFile } from 'node:child_process';
 import { promisify } from 'node:util';
 import { randomUUID } from 'node:crypto';
 import { adaptRunningHubWorkflow } from './runninghub-workflow-adapters';
+import { pickRhJobCost } from '../lib/mv-lipsync-preflight.mjs';
 
 const root = path.resolve('D:/HermesWorkspace/directorMaster');
 const jobs = path.join(root, 'workspace/runninghub');
@@ -47,6 +48,7 @@ export async function runningHubAccountStatus() {
   const data = result.data || {};
   return {
     coins: Number(data.remainCoins) || 0,
+    ...(data.remainPoint != null && data.remainPoint !== '' && Number.isFinite(Number(data.remainPoint)) ? { points: Number(data.remainPoint) } : {}),
     walletBalance: data.remainMoney == null ? undefined : String(data.remainMoney),
     currency: String(data.currency || 'CNY'),
     runningTasks: Number(data.currentTaskCounts) || 0,
@@ -196,7 +198,7 @@ export async function cloudStatus(id: string) {
           await fs.writeFile(target,Buffer.from(await response.arrayBuffer()));
           job.outputs.push({path:target,fileName,nodeId:String(video.nodeId||''),role:job.workflowKind==='feihou-remix'?(String(video.nodeId)==='350'?'face-refined-final':String(video.nodeId)==='351'?'second-sampling':'first-sampling'):'output',size:(await fs.stat(target)).size,createdAt:new Date().toISOString()});
         }
-        job.percent=100;job.stage='生成完成';job.costCoins=output.data[0]?.consumeCoins;
+        job.percent=100;job.stage='生成完成';job.costCoins=pickRhJobCost(output).costCoins;
       }
     }
     await save(job);return job;
