@@ -10,6 +10,7 @@ import {
   checkLipsyncDailyQuota,
   normalizeRhAccount,
   planLipsyncPreflight,
+  pickRhJobCost,
   recordLipsyncAttempt,
 } from '../lib/mv-lipsync-preflight.mjs';
 import { buildLipsyncTrialPlan } from '../lib/mv-lipsync-prep.mjs';
@@ -117,5 +118,48 @@ const D = '2026-11-18';
 {
   const src = readFileSync(libPath, 'utf8');
   assert.doesNotMatch(src, /from ['"]node:/);
+}
+// 8. remainPoint / 积分 spendable balance + cost recording
+{
+  const official = { code: 0, data: { remainCoins: '0', remainMoney: '-0.0130', remainPoint: 1939.39, apiType: 'NORMAL' } };
+  const acc = normalizeRhAccount(official);
+  assert.equal(acc.remainCoins, 0);
+  assert.equal(acc.remainMoney, -0.013);
+  assert.equal(acc.remainPoint, 1939.39);
+  assert.equal(acc.apiType, 'NORMAL');
+  const stringPoints = normalizeRhAccount({ remainCoins: 0, remainPoint: '1939.39' });
+  assert.equal(stringPoints.remainPoint, 1939.39);
+  const legacy = normalizeRhAccount({ code: 0, data: { remainCoins: '0', remainMoney: '-0.0130', apiType: 'NORMAL' } });
+  assert.equal(Object.prototype.hasOwnProperty.call(legacy, 'remainPoint'), false);
+
+  const funded = checkLipsyncBudget({ account: official });
+  assert.equal(funded.ok, true);
+  assert.equal(funded.code, null);
+  assert.match(funded.reason, /积分/);
+  assert.match(funded.reason, /1939/);
+
+  const emptyPoints = checkLipsyncBudget({ account: { remainCoins: 0, remainMoney: -0.013, remainPoint: 0 } });
+  assert.equal(emptyPoints.ok, false);
+  assert.equal(emptyPoints.code, 'INSUFFICIENT_COINS');
+  assert.match(emptyPoints.reason, /0/);
+  assert.match(emptyPoints.reason, /400/);
+  assert.match(emptyPoints.reason, /积分/);
+
+  const leftoverCoins = checkLipsyncBudget({ account: { remainCoins: 99999, remainPoint: 0 } });
+  assert.equal(leftoverCoins.ok, false);
+  assert.equal(leftoverCoins.code, 'INSUFFICIENT_COINS');
+
+  const goodTrial = buildLipsyncTrialPlan({ hops: vocalHops(), person: goodPerson });
+  const go = planLipsyncPreflight({ trialPlan: goodTrial, account: official, ledger: [], date: D });
+  assert.equal(go.go, true);
+  assert.equal(go.mode, 'go');
+  assert.match(go.reason, /积分/);
+
+  const billed = pickRhJobCost({ chargedPoint: 312, consumeCoins: 356, settleMode: 'POINT' });
+  assert.equal(billed.costCoins, 312);
+  assert.equal(billed.source, 'chargedPoint');
+  const wrapped = pickRhJobCost({ data: [{ consumeCoins: '356' }] });
+  assert.equal(wrapped.costCoins, 356);
+  assert.equal(wrapped.source, 'consumeCoins');
 }
 console.log('mv-lipsync-preflight ok');

@@ -148,4 +148,20 @@ const stub = (account) => {
   assert.ok(!/from ['"]node:/.test(src));
 }
 
+// 7. remainPoint spendable; leftover coins must not bypass
+{
+  const pointsExact = { code: 0, data: { remainCoins: '0', remainMoney: '-0.0130', remainPoint: 540, apiType: 'NORMAL' } };
+  const go = planMvGeneratePreflight({ manifest: manifest(), account: pointsExact, exists: allExist });
+  assert.equal(go.go, true);
+  assert.equal(go.estimate.total, 540);
+  assert.match(go.reason, /积分/);
+
+  const pointsShort = { code: 0, data: { remainCoins: '99999', remainMoney: '5', remainPoint: 539, apiType: 'NORMAL' } };
+  const no = planMvGeneratePreflight({ manifest: manifest(), account: pointsShort, exists: allExist });
+  assert.equal(no.go, false);
+  assert.ok(no.codes.includes('INSUFFICIENT_COINS'));
+  assert.match(no.reason, /539/);
+  assert.match(no.reason, /积分/);
+}
+
 console.log('test-mv-generate-preflight ok');

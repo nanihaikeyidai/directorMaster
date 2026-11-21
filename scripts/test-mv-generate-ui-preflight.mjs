@@ -136,6 +136,32 @@ const uiInput = (over = {}) => ({
   assert.match(goLabel, /钱包 540 币/);
 }
 
+// --- points billing: mapUiAccount, spendable balance, 积分 labels ---
+{
+  const mapped = mapUiAccount({ coins: 0, points: 1939.39, walletBalance: '-0.013' });
+  assert.equal(mapped.remainCoins, 0);
+  assert.equal(mapped.remainPoint, 1939.39);
+  const acc = normalizeRhAccount(mapped);
+  assert.equal(acc.remainPoint, 1939.39);
+  assert.equal(acc.remainCoins, 0);
+  assert.equal(acc.remainMoney, -0.013);
+
+  const go = planMvGenerateUiPreflight(uiInput({ account: { coins: 0, points: 540, walletBalance: '-0.013' } }));
+  assert.equal(go.go, true);
+  assert.equal(go.estimate.total, 540);
+  const goLabel = formatMvGenerateEstimateLabel(go);
+  assert.match(goLabel, /预估 540 积分（2 段）/);
+  assert.match(goLabel, /钱包 540 积分/);
+
+  const short = planMvGenerateUiPreflight(uiInput({ account: { coins: 99999, points: 539 } }));
+  assert.equal(short.go, false);
+  assert.ok(short.codes.includes('INSUFFICIENT_COINS'));
+  const shortLabel = formatMvGenerateEstimateLabel(short);
+  assert.match(shortLabel, /积分/);
+  assert.match(shortLabel, /539/);
+  assert.match(shortLabel, /余额不足/);
+}
+
 // --- UI lib has no node: imports ---
 {
   const src = readFileSync(path.join(repoRoot, 'lib/mv-generate-ui-preflight.mjs'), 'utf8');
@@ -191,6 +217,20 @@ const uiInput = (over = {}) => ({
   assert.match(footer, /formatMvGenerateEstimateLabel|batchGenerate|planMvGenerateUiPreflight/);
   assert.match(footer, /disabled=\{[^}]*batchSelection/);
   assert.match(footer, /title=/);
+
+  assert.match(page, /points\?: number/);
+  assert.match(page, /rhAccount\?\.points|rhAccount\.points/);
+  assert.match(page, /消耗 \$\{formatRhCoins\(entry\.costCoins\)\} \$\{/);
+}
+
+// --- plugin passes points through and prefers chargedPoint ---
+{
+  const plugin = readFileSync(path.join(repoRoot, 'vite-plugins/runninghub.ts'), 'utf8');
+  assert.match(plugin, /points:\s*Number\(\s*data\.remainPoint\s*\)/);
+  assert.match(plugin, /pickRhJobCost|chargedPoint/);
+  const cloud = readFileSync(path.join(repoRoot, 'lib/mv-cloud-generate.mjs'), 'utf8');
+  assert.match(cloud, /pickRhJobCost|chargedPoint/);
+  assert.match(cloud, /remainPoint/);
 }
 
 // --- client bundle safety for the new lib ---
