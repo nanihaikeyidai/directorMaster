@@ -21,6 +21,10 @@ export function planMvGenerateUiPreflight(opts?: {
   coinsPerSec?: number;
   reserveCoins?: number;
   maxSegmentSec?: number;
+  workflowId?: string;
+  observations?: unknown[];
+  useSeed?: boolean;
+  costMargin?: number;
 }): MvGeneratePreflight;
 
 export function formatMvGenerateEstimateLabel(plan?: MvGeneratePreflight | null, opts?: { loading?: boolean }): string;

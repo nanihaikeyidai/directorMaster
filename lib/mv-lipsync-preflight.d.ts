@@ -9,7 +9,7 @@ export interface PreflightCheck { ok: boolean; code: string | null; reason: stri
 export function normalizeRhAccount(raw: unknown): RhAccount | null;
 export function rhSpendable(account?: unknown): RhSpendable | null;
 export function pickRhJobCost(source?: unknown): RhJobCost;
-export function checkLipsyncBudget(input?: { account?: unknown; minCoins?: number }): PreflightCheck & { minCoins: number; account?: RhAccount };
+export function checkLipsyncBudget(input?: { account?: unknown; minCoins?: number; workflowId?: string; observations?: unknown[]; useSeed?: boolean; costMargin?: number; durationSec?: number }): PreflightCheck & { minCoins: number; account?: RhAccount };
 export function checkLipsyncDailyQuota(input?: { ledger?: LipsyncLedgerEntry[]; date?: string; maxSuccess?: number; maxTechRetries?: number }): PreflightCheck & { attemptKind?: 'first' | 'retry' };
 export function recordLipsyncAttempt(ledger: LipsyncLedgerEntry[] | undefined, entry: LipsyncLedgerEntry): LipsyncLedgerEntry[];
-export function planLipsyncPreflight(input?: { trialPlan?: { ok: boolean; reason?: string; workflowId?: string }; account?: unknown; ledger?: LipsyncLedgerEntry[]; date?: string; minCoins?: number; maxSuccess?: number; maxTechRetries?: number }): { go: boolean; mode: 'go' | 'skip'; codes: string[]; workflowId?: string; checks: { trial: PreflightCheck; budget: PreflightCheck; quota: PreflightCheck }; reason: string };
+export function planLipsyncPreflight(input?: { trialPlan?: { ok: boolean; reason?: string; workflowId?: string }; account?: unknown; ledger?: LipsyncLedgerEntry[]; date?: string; minCoins?: number; maxSuccess?: number; maxTechRetries?: number; workflowId?: string; observations?: unknown[]; useSeed?: boolean; costMargin?: number; durationSec?: number }): { go: boolean; mode: 'go' | 'skip'; codes: string[]; workflowId?: string; checks: { trial: PreflightCheck; budget: PreflightCheck; quota: PreflightCheck }; reason: string };

@@ -1,7 +1,7 @@
 export const DEFAULT_MV_COINS_PER_SEC: number;
 export const MV_MAX_SEGMENT_SEC: number;
 export interface MvSegmentCost { id: string; duration: number; assumed: boolean; coins: number }
-export interface MvCoinEstimate { coinsPerSec: number; perSegment: MvSegmentCost[]; total: number }
+export interface MvCoinEstimate { coinsPerSec: number; perSegment: MvSegmentCost[]; total: number; source?: 'calibrated' | 'default'; observationCount?: number; maxObservedPerSec?: number | null; margin?: number; unit?: string; workflowId?: string }
 export interface MvGenerateIssue { code: string; segment?: string; reason: string }
 export function estimateMvGenerateCoins(segments: unknown[], opts?: { coinsPerSec?: number; maxSegmentSec?: number }): MvCoinEstimate;
 export function validateMvGenerateInputs(manifest: unknown, opts?: { exists?: (p: string) => boolean; maxSegmentSec?: number }): { ok: boolean; issues: MvGenerateIssue[] };
@@ -16,4 +16,5 @@ export interface MvGeneratePreflight {
 export function planMvGeneratePreflight(opts?: {
   manifest?: unknown; account?: unknown; exists?: (p: string) => boolean; coinsPerSec?: number;
   reserveCoins?: number; requireAccount?: boolean; maxSegmentSec?: number;
+  workflowId?: string; observations?: unknown[]; useSeed?: boolean; costMargin?: number;
 }): MvGeneratePreflight;

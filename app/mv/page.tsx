@@ -449,16 +449,16 @@ export default function MvStudio() {
   const generationBusy = generationQueue.some((item) => ["queued", "running"].includes(item.status));
   const fullGeneratePlan = useMemo(
     () => (segments.length
-      ? planMvGenerateUiPreflight({ segments, prompts: generatedPrompts, visualAssets, account: rhAccount })
+      ? planMvGenerateUiPreflight({ segments, prompts: generatedPrompts, visualAssets, account: rhAccount, workflowId: cloudWorkflowId })
       : null),
-    [segments, generatedPrompts, visualAssets, rhAccount],
+    [segments, generatedPrompts, visualAssets, rhAccount, cloudWorkflowId],
   );
   const fullGenerateEstimateLabel = formatMvGenerateEstimateLabel(fullGeneratePlan, { loading: rhAccountLoading });
   const batchGeneratePlan = useMemo(
     () => (batchProvider === "runninghub"
-      ? planMvGenerateUiPreflight({ segments, prompts: generatedPrompts, visualAssets, account: rhAccount, indexes: batchSelection })
+      ? planMvGenerateUiPreflight({ segments, prompts: generatedPrompts, visualAssets, account: rhAccount, indexes: batchSelection, workflowId: cloudWorkflowId })
       : null),
-    [batchProvider, segments, generatedPrompts, visualAssets, rhAccount, batchSelection],
+    [batchProvider, segments, generatedPrompts, visualAssets, rhAccount, batchSelection, cloudWorkflowId],
   );
   const segmentVideoFor = (index: number): SegmentGeneration | SegmentFallbackVideo | undefined => {
     const item = generation[index];
@@ -2029,6 +2029,7 @@ export default function MvStudio() {
         visualAssets,
         account,
         indexes: selectedIndexes,
+        workflowId: cloudWorkflowId,
       });
       if (!plan.go) throw new Error(plan.reason);
       const inputs = await prepareGeneration(
@@ -2110,7 +2111,7 @@ export default function MvStudio() {
       setCuts(autoCuts); setNotes(autoNotes); setGeneratedPrompts(autoPrompts); setGeneratedFrom(signature);
       setSegmentReviews(resetReviewsForPromptChange([], autoSegments.length));
       setBusy("");
-      const estimatePlan = planMvGenerateUiPreflight({ segments: autoSegments, prompts: autoPrompts, visualAssets, account: rhAccount });
+      const estimatePlan = planMvGenerateUiPreflight({ segments: autoSegments, prompts: autoPrompts, visualAssets, account: rhAccount, workflowId: cloudWorkflowId });
       setNotice(`已自动切成 ${autoSegments.length} 段并生成提示词；预估 ${estimatePlan.estimate.total} 币（${autoSegments.length} 段）；请逐段「通过审核」后再点云端批量生成`);
     } catch (error) {
       setBusy("");
@@ -2184,6 +2185,7 @@ export default function MvStudio() {
         visualAssets,
         account,
         indexes: allowed,
+        workflowId: cloudWorkflowId,
       });
       if (!plan.go) {
         setNotice(plan.reason);
