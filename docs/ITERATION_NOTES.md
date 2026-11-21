@@ -1,5 +1,24 @@
 # Iteration Notes
 
+## 2026-11-22 00:18 Asia/Shanghai — RunningHub 积分预估按实扣 chargedPoint 校准
+
+**模块**：MV / 流程优化（计费预估）。昨夜门禁已改认 `remainPoint` / `chargedPoint`，但 24 分/秒估算仍沿用币时代 15s 试片（312/356 币 ≈ 23.7/秒）。同日一笔像素幻想 MiniMaxH3ReferenceToVideo（`2087128116820013058`，task `2124001118332866561`，15s）实扣 `chargedPoint` 116.28，钱包差额一致，约 7.752 积分/秒。本夜按观测费率加 1.25 安全边际校准 POINT 预估；无匹配观测时仍回退 24/秒与口型 400。不发明币↔积分汇率，不改 24/400 常量值。无新曲风、无 RH 付费。
+
+**验收标准**：见 `docs/superpowers/specs/2026-11-22-mv-rh-cost-calibrate-design.md`（seed 116.28/15=7.752，×1.25→9.69，15s 门槛 146，15s+7.5s 合计 219；无 workflowId 或迅风无观测仍 24/400/540；像素幻想+积分 219 放行 / 218 拦截，口型 146 放行 / 145 拦截；显式 `coinsPerSec` / `minCoins` 覆盖校准；纯币账户+像素幻想仍 24；同一 taskId 去重；`observationFromSettledJob` 优先 chargedPoint；校准库无 `node:`；既有 24/540/400 断言不改且保持绿色；CLI 与 MV 页透传当前 workflowId）。
+
+**完成**
+- `lib/mv-rh-cost-calibrate.mjs`（+ d.ts）：seed 一条 2026-11-21 像素幻想观测（两输出只记一次）；`appendCostObservation` / `observationFromSettledJob` / `resolveMvCostPerSec` / `resolveLipsyncMinCost`；费率取 `max(cost/durationSec) * 1.25`，不平均
+- 生成预检在未传 `coinsPerSec` 且有 `workflowId` 时按账户可消费单位校准，并在 `estimate` 上挂 `source` / `observationCount` / `maxObservedPerSec`；UI 标签仅在 `source === 'calibrated'` 时写「按实扣校准」
+- 口型预检在未传 `minCoins` 且有 `workflowId`（可取自 `trialPlan.workflowId`）时校准门槛；校准 reason 含门槛与「按实扣校准」。迅风默认无 seed，仍 400
+- `lib/mv-cloud-generate.mjs` 把实际/默认 `workflowId` 传入预检；`app/mv/page.tsx` 把 `cloudWorkflowId` 透传到现有 UI 预检调用，无页面重设计
+- 测试 `scripts/test-mv-rh-cost-calibrate.mjs` 接入 `npm test`
+
+**验证**：`npm test` 全绿（exit 0），含新的 `test-mv-rh-cost-calibrate` 以及未改断言的 `test-mv-lipsync-preflight` / `test-mv-generate-preflight` / `test-mv-generate-ui-preflight`。
+
+**15s 口型试片**：本夜试片另跑，结果待结束后再记；此处不编造费用、钱包数字或成片结论。预检侧：默认迅风仍按 400 积分门槛；若改跑像素幻想且走积分，15s 校准门槛为 146。
+
+**下一晚**：记入另跑的 15s 试片结果；若有迅风 `chargedPoint` 再为其补 seed。open PR 合并卫生（11/15 起分支只有 compare 链接）。
+
 ## 2026-11-21 10:22 Asia/Shanghai — RunningHub 积分余额接入钱包解析、门禁与费用记录
 
 **模块**：MV / 流程优化（计费单位）。官方账户查询接口未换，但已单独返回 `remainPoint`（积分）与任务 `chargedPoint`；仓库仍只读 `remainCoins` / `consumeCoins`，积分账户在币为 0 时会被门禁误拦。本夜把门禁和页面改成认积分，费用优先记实扣积分。无新曲风、无 RH 付费。
