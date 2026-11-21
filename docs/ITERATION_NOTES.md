@@ -1,5 +1,23 @@
 # Iteration Notes
 
+## 2026-11-21 10:22 Asia/Shanghai — RunningHub 积分余额接入钱包解析、门禁与费用记录
+
+**模块**：MV / 流程优化（计费单位）。官方账户查询接口未换，但已单独返回 `remainPoint`（积分）与任务 `chargedPoint`；仓库仍只读 `remainCoins` / `consumeCoins`，积分账户在币为 0 时会被门禁误拦。本夜把门禁和页面改成认积分，费用优先记实扣积分。无新曲风、无 RH 付费。
+
+**验收标准**：见 `docs/superpowers/specs/2026-11-21-mv-rh-points-billing-design.md`（官方形账户解析 remainPoint；coins=0 且 points=1939.39 口型预检放行；points=0 拦截且文案含 0/400/积分；2 段 15s+7.5s @ 24/秒 = 540，points=540/coins=0 放行，points=539/coins=99999 仍拦；`mapUiAccount` 透传 points；`pickRhJobCost` 优先 chargedPoint；错误码仍用 `INSUFFICIENT_COINS`；UI 库无 `node:`）。
+
+**完成**
+- `normalizeRhAccount` / `rhSpendable`：解析可选 `remainPoint`（缺失不加 0）；可消费余额在积分在场（含 0）时只用积分，否则回退币；禁止相加
+- 口型与生成/UI 预检共用该规则；走积分时用户可见 reason / 预估标签写「积分」；24 币/秒估算公式不变
+- `vite-plugins/runninghub.ts` 透传 `points`；`app/mv/page.tsx` 页头与历史在积分是当前余额时显示「积分」；`mapUiAccount` 把 points 映到 remainPoint
+- `pickRhJobCost`：优先 `chargedPoint`，否则 `consumeCoins`，仍写入已有 `costCoins` / `consumeCoins` 字段；云端摘要带 remainPoint
+
+**验证**：`npm test` 全绿（exit 0），含扩展后的 `test-mv-lipsync-preflight` / `test-mv-generate-preflight` / `test-mv-generate-ui-preflight`。
+
+**15s 口型试片**：今晚**跳过**，0 积分 / 0 币消耗。本夜按任务要求不提交任何付费任务。门禁现已认积分：若钱包 `remainPoint` ≥ 400（即便 remainCoins=0），预检可放行。24/秒预估与积分是否 1:1 尚未用实跑 `chargedPoint` 核对。
+
+**下一晚**：用积分跑 15s 试片（prep → preflight → 默认迅风或已批准的像素幻想 → finalize 封装原曲），并对照 `chargedPoint` 校准估算 / open PR 合并卫生（11/15 起分支只有 compare 链接）。
+
 ## 2026-11-21 00:00 Asia/Shanghai — MV 页人物一致性包预检与应用
 
 **模块**：MV / 人物一致性（流程优化）。按 2026-11-07 用户优先级：流程优化与对口型/人物一致性优先于新曲风。CLI `mv-character-pack` / `mv-cut` 已强制近脸锁脸并注入 identity lock，但 MV 页主路径仍按上传顺序取图、不写锁脸词；一致性核心库还带 `node:`，不能直接进页面。本夜把组包接到参考图栏与提示词/云端提交，并把核心库改成浏览器可导入。无新曲风、无 RH 付费。
