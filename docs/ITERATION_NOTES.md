@@ -9,15 +9,15 @@
 **完成**
 - `lib/mv-rh-cost-calibrate.mjs`（+ d.ts）：seed 一条 2026-11-21 像素幻想观测（两输出只记一次）；`appendCostObservation` / `observationFromSettledJob` / `resolveMvCostPerSec` / `resolveLipsyncMinCost`；费率取 `max(cost/durationSec) * 1.25`，不平均
 - 生成预检在未传 `coinsPerSec` 且有 `workflowId` 时按账户可消费单位校准，并在 `estimate` 上挂 `source` / `observationCount` / `maxObservedPerSec`；UI 标签仅在 `source === 'calibrated'` 时写「按实扣校准」
-- 口型预检在未传 `minCoins` 且有 `workflowId`（可取自 `trialPlan.workflowId`）时校准门槛；校准 reason 含门槛与「按实扣校准」。迅风默认无 seed，仍 400
+- 口型预检在未传 minCoins 且有 workflowId（可取自 trialPlan.workflowId）时校准门槛；校准 reason 含门槛与「按实扣校准」。同夜试片后补上迅风 seed（10s / 77.05），15s 门槛改为 145；未知工作流仍回退 400
 - `lib/mv-cloud-generate.mjs` 把实际/默认 `workflowId` 传入预检；`app/mv/page.tsx` 把 `cloudWorkflowId` 透传到现有 UI 预检调用，无页面重设计
 - 测试 `scripts/test-mv-rh-cost-calibrate.mjs` 接入 `npm test`
 
 **验证**：`npm test` 全绿（exit 0），含新的 `test-mv-rh-cost-calibrate` 以及未改断言的 `test-mv-lipsync-preflight` / `test-mv-generate-preflight` / `test-mv-generate-ui-preflight`。
 
-**15s 口型试片**：本夜试片另跑，结果待结束后再记；此处不编造费用、钱包数字或成片结论。预检侧：默认迅风仍按 400 积分门槛；若改跑像素幻想且走积分，15s 校准门槛为 146。
+**15s 口型试片**：已跑 **1 次成功**（无技术重试）。选段为人声门禁通过的卡米拉源曲 176–186s（目标约 15s，可靠窗口 10s，活跃比 0.425；未向两侧扩以免混入间奏）。人物参考 still-B 胸像近脸通过，场景参考 still-A。工作流：迅风幻影自动版 2089048490512052225，taskId 2124176812794929154。钱包 1158.16→1081.11 积分，实扣 chargedPoint 77.05（settleMode=POINT，约 7.705 积分/秒，与像素幻想 7.752 接近）。成片已封装原曲：/workspace/camilla-beach-mv/nightly-lipsync/2026-11-22/Camilla-nightly-2026-11-22-xunfeng-176-186-origmux.mp4（1056×608，10.00s）。抽帧：银发白衫海边舞台中景演唱，6 帧里 5 帧开口、1 帧（约 8s）低头闭口，人脸与造型稳定；成片是中景而非嘴唇特写。视频模型 QC 因 resource_exhausted 未跑成，口型是否逐字对齐请看成片。同夜已把该迅风观测写入 seed：15s 校准门槛 145，15s+7.5s 预估 218。
 
-**下一晚**：记入另跑的 15s 试片结果；若有迅风 `chargedPoint` 再为其补 seed。open PR 合并卫生（11/15 起分支只有 compare 链接）。
+**下一晚**：看用户对今晚迅风成片口型/中景构图的反馈；generateFullMv 成功 notice 仍有一处写「币」（共享预估标签已写「积分」）。open PR 合并卫生（11/15 起分支只有 compare 链接）。
 
 ## 2026-11-21 10:22 Asia/Shanghai — RunningHub 积分余额接入钱包解析、门禁与费用记录
 
