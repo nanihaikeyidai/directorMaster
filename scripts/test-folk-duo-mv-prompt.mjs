@@ -161,4 +161,13 @@ const dualStillsOk = buildFolkDuoMvPrompt({
 });
 assert.match(dualStillsOk, /subject_definitions:/);
 
+
+assert.match(vocal, /completely locked-off static|no pan, tilt, zoom, push-in|no camera movement/i);
+assert.match(vocal, /【动作类型：主唱面部特写】/);
+assert.match(vocal, /【动作类型：主唱半身特写】/);
+assert.doesNotMatch(vocal, /【动作类型：场地远景】/);
+assert.ok((vocal.match(/【动作类型：主唱面部特写】/g) || []).length >= 2, 'vocal-active folk-duo should use more than one singer face close-up');
+assert.match(instrumental, /【动作类型：场地远景】/);
+assert.doesNotMatch(instrumental, /【动作类型：主唱面部特写】/);
+
 console.log('folk-duo mv prompt tests passed');

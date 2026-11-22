@@ -16,6 +16,8 @@ export type BandMvNote = {
   lyrics?: string;
   direction?: string;
   shotType?: "auto" | "lead" | "guitar" | "drums" | "bass" | "audience" | "wide";
+  coverage?: "singing-closeup" | "instrumental-wide";
+  phraseEndsSec?: number[];
   shotActions?: { type: string; duration: number; memberId?: string; moveType?: string; moveDuration?: number }[];
 };
 

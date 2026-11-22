@@ -175,6 +175,10 @@ function extractFunction(src, name) {
     probePos > lyricsPos && probePos > hopsJsonPos,
     'default path should probe hops only after checking --lyrics / --hops-json',
   );
+  assert.match(mvCutSrc, /planLyricPhraseSegments/);
+  assert.match(mvCutSrc, /notesFromLyricSegments/);
+  const planPos = mvCutSrc.indexOf('planLyricPhraseSegments');
+  assert.ok(planPos > lyricsPos && planPos < gatePos, 'auto lyric segmentation must run after --lyrics and before planMvCutGate');
 }
 
 console.log('test-mv-cut-apply: ok');

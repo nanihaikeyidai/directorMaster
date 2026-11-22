@@ -119,4 +119,22 @@ assert.throws(
   /场景/,
 );
 
+
+assert.match(vocal, /completely locked-off static|no pan, tilt, zoom, push-in|no camera movement/i);
+assert.match(vocal, /【动作类型：歌手面部特写】/);
+assert.match(vocal, /【动作类型：半身弹唱特写】/);
+assert.doesNotMatch(vocal, /【动作类型：场地远景】/);
+assert.ok((vocal.match(/【动作类型：歌手面部特写】/g) || []).length >= 2, 'vocal-active folk-solo should use more than one face close-up');
+assert.match(instrumental, /【动作类型：场地远景】/);
+assert.doesNotMatch(instrumental, /【动作类型：歌手面部特写】/);
+
+const phraseCut = buildFolkSoloMvPrompt({
+  projectName: 'Folk Solo Test',
+  segment: { index: 3, start: 20, end: 32, duration: 12 },
+  note: { kind: 'vocal', lyrics: '海风轻轻吹\n潮水轻轻来', phraseEndsSec: [4, 8] },
+  assets,
+});
+assert.match(phraseCut, /00:04\.000/);
+assert.match(phraseCut, /00:08\.000/);
+
 console.log('folk-solo mv prompt tests passed');
