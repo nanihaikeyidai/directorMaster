@@ -35,6 +35,7 @@ import {
 } from "../../lib/mv-generation-resume.mjs";
 import { planMvComposeGate } from "../../lib/mv-compose-gate.mjs";
 import { planMvCutPrecheck } from "../../lib/mv-cut-precheck.mjs";
+import { parseLyricImportText, planMvLyricImportUi } from "../../lib/mv-lyric-import-ui.mjs";
 import { computeEnergyHops, mixToMono } from "../../lib/mv-energy-hops.mjs";
 import {
   planMvGenerateUiPreflight,
@@ -70,6 +71,8 @@ type SegmentNote = {
   direction: string;
   shotType: "auto" | "lead" | "guitar" | "drums" | "bass" | "audience" | "wide";
   shotActions?: { type: string; duration: number; memberId?: string; moveType?: string; moveDuration?: number }[];
+  coverage?: "singing-closeup" | "instrumental-wide";
+  phraseEndsSec?: number[];
 };
 type MvProject = {
   projectId: string;
@@ -374,6 +377,7 @@ export default function MvStudio() {
   const cloudWorkflowInputRef = useRef<HTMLInputElement>(null);
   const personInputRef = useRef<HTMLInputElement>(null);
   const sceneInputRef = useRef<HTMLInputElement>(null);
+  const lyricsInputRef = useRef<HTMLInputElement>(null);
   const audioRef = useRef<HTMLAudioElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const waveScrollRef = useRef<HTMLDivElement>(null);
@@ -622,6 +626,8 @@ export default function MvStudio() {
       lyrics: String(item.lyrics || ""),
       direction: String(item.direction || ""),
       shotType: ["auto", "lead", "guitar", "drums", "bass", "audience", "wide"].includes(item.shotType) ? item.shotType : "auto",
+      coverage: item.coverage === "singing-closeup" || item.coverage === "instrumental-wide" ? item.coverage : undefined,
+      phraseEndsSec: Array.isArray(item.phraseEndsSec) ? item.phraseEndsSec.map((value: unknown) => Number(value)).filter((value: number) => Number.isFinite(value)) : undefined,
       shotActions: Array.isArray(item.shotActions) ? item.shotActions.filter((action: any) => SHOT_ACTION_OPTIONS.some(([type]) => type === action?.type)).map((action: any) => ({ type: action.type, duration: Math.max(0.5, Number(action.duration) || 0.5), ...(action.memberId ? { memberId: String(action.memberId) } : {}), moveType: CAMERA_MOVE_OPTIONS.some(([type]) => type === action.moveType) ? action.moveType : "locked", moveDuration: Math.max(0, Number(action.moveDuration) || 0) })) : undefined,
     })) : []);
     setGeneratedPrompts(Array.isArray(data.promptBundle?.prompts) ? data.promptBundle.prompts : []);
@@ -1447,6 +1453,54 @@ export default function MvStudio() {
     setNotice(precheck.ok
       ? (precheck.mode === "snap" ? "已按低能量停顿生成建议切点，并吸附到句尾/换气/人声空白；请试听确认每段不超过 15 秒" : "已按低能量停顿生成建议切点（已通过句界预检）；请试听并确认每段不超过 15 秒")
       : `已生成建议切点，但${precheck.reason} 请拖动切点到句尾或换气处。`);
+  }
+
+  function noteFromLyricImport(note: { kind?: string; lyrics?: string; direction?: string; shotType?: string; coverage?: string; phraseEndsSec?: number[] }): SegmentNote {
+    return {
+      kind: note.kind === "instrumental" ? "instrumental" : "vocal",
+      lyrics: String(note.lyrics || ""),
+      direction: String(note.direction || ""),
+      shotType: note.shotType === "wide" || note.shotType === "lead" ? note.shotType : "auto",
+      coverage: note.coverage === "singing-closeup" || note.coverage === "instrumental-wide" ? note.coverage : undefined,
+      phraseEndsSec: Array.isArray(note.phraseEndsSec) ? note.phraseEndsSec.map(Number).filter((value) => Number.isFinite(value)) : undefined,
+    };
+  }
+
+  function applyLyricImportPlan(lyrics: unknown) {
+    if (!project) {
+      setNotice("请先导入音乐，再按歌词语句分段");
+      return;
+    }
+    const plan = planMvLyricImportUi({
+      lyrics,
+      durationSec: project.duration,
+      rangeStart: trimRange.start,
+      rangeEnd: trimRange.end || project.duration,
+    });
+    if (!plan.ok) {
+      setNotice(plan.reason);
+      return;
+    }
+    const nextCuts = uniqueCuts(plan.cuts, project.duration);
+    rememberCuts();
+    setCuts(nextCuts);
+    setNotes(plan.notes.map(noteFromLyricImport));
+    setGeneratedPrompts([]);
+    setGeneratedFrom("");
+    setGeneration({});
+    clearGenerationHistory();
+    setSelectedCut(null);
+    setResult(null);
+    setNotice(`${plan.reason}。唱词段已选近景，无人声段已选远景；请试听确认后再生成提示词。`);
+  }
+
+  async function importLyricsAndSplit(file: File) {
+    const parsed = parseLyricImportText(await file.text());
+    if (!parsed.ok) {
+      setNotice(parsed.reason);
+      return;
+    }
+    applyLyricImportPlan(parsed.lyrics);
   }
 
   function resetCuts() {
@@ -2453,7 +2507,7 @@ export default function MvStudio() {
         ) : (
           <>
             <section className="mv-track-panel" onDragEnter={(event) => { event.preventDefault(); event.stopPropagation(); }} onDragOver={(event) => { event.preventDefault(); event.stopPropagation(); event.dataTransfer.dropEffect = "copy"; }} onDrop={(event) => { event.preventDefault(); event.stopPropagation(); const file = event.dataTransfer.files[0]; if (file) void replaceWithDroppedFile(file); }}>
-              <div className="mv-track-head"><div><small>SOURCE TRACK</small><b>{project.sourceName}</b></div><div><strong className="mv-live-time">{clock(currentTime)}<i>/ {clock(project.duration)}</i></strong><button onClick={() => { const audio = audioRef.current; if (!audio) return; if (audio.paused) { if (audio.currentTime < trimRange.start || audio.currentTime >= (trimRange.end || project.duration)) audio.currentTime = trimRange.start; void audio.play(); } else audio.pause(); }}>{playing ? "暂停" : "播放"}</button><button onClick={() => addCut(audioRef.current?.currentTime || 0)}>在播放头裁切</button><button onClick={autoSplit}>智能建议切点</button><button className="warning" onClick={resetCuts}>重新切割</button><button className="ghost" onClick={() => void startReplaceMusic()}>替换音乐</button><button className="ghost" onClick={() => void startNewProject()}>新建项目</button></div></div>
+              <div className="mv-track-head"><div><small>SOURCE TRACK</small><b>{project.sourceName}</b></div><div><strong className="mv-live-time">{clock(currentTime)}<i>/ {clock(project.duration)}</i></strong><button onClick={() => { const audio = audioRef.current; if (!audio) return; if (audio.paused) { if (audio.currentTime < trimRange.start || audio.currentTime >= (trimRange.end || project.duration)) audio.currentTime = trimRange.start; void audio.play(); } else audio.pause(); }}>{playing ? "暂停" : "播放"}</button><button onClick={() => addCut(audioRef.current?.currentTime || 0)}>在播放头裁切</button><button onClick={autoSplit}>智能建议切点</button><button onClick={() => lyricsInputRef.current?.click()}>导入歌词并按语句分段</button><input ref={lyricsInputRef} type="file" accept=".json,application/json" hidden onChange={(event) => { const file = event.target.files?.[0]; event.target.value = ""; if (file) void importLyricsAndSplit(file); }} /><button className="warning" onClick={resetCuts}>重新切割</button><button className="ghost" onClick={() => void startReplaceMusic()}>替换音乐</button><button className="ghost" onClick={() => void startNewProject()}>新建项目</button></div></div>
               <audio ref={audioRef} src={`/api/local/file?path=${encodeURIComponent(project.sourcePath)}`} onPlay={() => setPlaying(true)} onPause={() => setPlaying(false)} onTimeUpdate={(event) => setCurrentTime(event.currentTarget.currentTime)} onEnded={() => { setPlaying(false); setCurrentTime(project.duration); }} />
               <div className="mv-audio-pad-control"><label>在开头新增<input type="number" min="0.1" max="120" step="0.1" value={prependSilenceSec} onChange={(event) => setPrependSilenceSec(Math.max(0.1, Math.min(120, Number(event.target.value) || 0.1)))} /><span>秒空白</span></label><button disabled={Boolean(busy) || prependSilenceSec <= 0} onClick={() => void applyLeadSilence()}>增加空白并延长音频</button><small>当前前置空白 {Number(project.leadSilenceSec || 0).toFixed(1)} 秒 · 总长度 {clock(project.duration)}。新增后原音乐和全部切点整体后移。也可以直接把新音乐拖到这条音轨上替换。</small></div>
               <div className="mv-track-tools" role="toolbar" aria-label="音轨编辑工具"><button className={trackTool === "seek" ? "active seek" : ""} aria-pressed={trackTool === "seek"} onClick={() => setTrackTool("seek")}><kbd>V</kbd><b>播放定位</b><span>白线 · 点击或拖动</span></button><button className={trackTool === "cut" ? "active cut" : ""} aria-pressed={trackTool === "cut"} onClick={() => setTrackTool("cut")}><kbd>C</kbd><b>编辑切点</b><span>橙线 · 自由拖动</span></button><button className={trackTool === "trim" ? "active trim" : ""} aria-pressed={trackTool === "trim"} onClick={() => setTrackTool("trim")}><kbd>T</kbd><b>音频边界</b><span>青线 · 调整 IN / OUT</span></button><p>{trackTool === "seek" ? "当前位置只操作播放头，不会误拖切点。" : trackTool === "cut" ? "切点可在有效音频范围内自由移动；超过 15 秒只标红提醒，不阻止编辑。" : "只操作音频入点和出点，切点与播放头暂时锁定。"}</p></div>
