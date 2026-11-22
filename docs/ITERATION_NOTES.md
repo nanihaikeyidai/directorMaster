@@ -1,3 +1,21 @@
+## 2026-11-23 00:00 Asia/Shanghai — MV 页导入歌词并按语句分段
+
+**模块**：MV / 切镜流程（口型与覆盖流程优化）。11/22 已把 folk-solo/duo 升到 v2，并让 CLI `mv-cut --lyrics` 按语句自动分段；页面仍只有「智能建议切点」，不能导入歌词，也不会写入近景/远景笔记和 `phraseEndsSec`。本夜把同一 planner 接到 MV 页。无新曲风。
+
+**验收标准**：见 `docs/superpowers/specs/2026-11-23-mv-lyric-import-ui-design.md`（空时长/非法 JSON/无时间轴失败；2–6s 与 10–14s 两句在 16s 曲上切点 `[2,6,10,14]` 且唱词 lead、空档 wide；trim 30–46 切点平移为绝对时间；单句超过 15s 失败且 cuts 为空；UI 库无 `node:`；页面按钮、JSON 文件选择、`SegmentNote` 与项目恢复保留 `phraseEndsSec` / `coverage`）。
+
+**完成**
+- `lib/mv-lyric-import-ui.mjs`（+ d.ts）：`parseLyricImportText`、`planMvLyricImportUi`；有 trim 时先平移歌词再调用已有 `planLyricPhraseSegments`，返回绝对时间切点
+- `app/mv/page.tsx`：波形栏「导入歌词并按语句分段」；失败只提示不改切点；成功写入切点与近景/远景笔记并进入撤销栈；`SegmentNote` 增加可选 `coverage` / `phraseEndsSec`，生成提示词时可供 folk v2 按句界切镜
+- 测试 `scripts/test-mv-lyric-import-ui.mjs` 接入 `npm test`
+
+**验证**：`npm test` 全绿（exit 0），含新的 `test-mv-lyric-import-ui` 以及既有 `test-mv-lyric-segments` / `test-mv-cut-ui-precheck` / `test-folk-mv-prompt`。
+
+**15s 口型试片**：见本夜汇报。人物主参考不能直接用用户提供的全身泳装吉他图（近脸门禁不通过），改为从同一张图裁出近脸 `ref-crop`，全图作场景；音频沿用已验证的卡米拉源曲 176–186s 人声窗（活跃比 0.425）。工作流优先迅风幻影自动版。完整原曲文件本机已不在，试片音轨用该 10s 人声摘录封装。
+
+**下一晚**：按今晚泳装近脸试片反馈收紧构图或锁机位；可选把「导入歌词一键分段」的结果预览到分段列表；`generateFullMv` 成功 notice 仍有一处写「币」；open PR 合并卫生（11/15 起分支只有 compare 链接）。
+
+
 # Iteration Notes
 
 ## 2026-11-22 11:00 Asia/Shanghai — 民谣唱词锁机位 + 按歌词语句分段选模板
