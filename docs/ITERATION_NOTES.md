@@ -1,5 +1,20 @@
 # Iteration Notes
 
+## 2026-11-22 11:00 Asia/Shanghai — 民谣唱词锁机位 + 按歌词语句分段选模板
+
+**模块**：MV / 民谣提示词模板与切段。用户确认 11/22 迅风试片口型能对上，但要求唱歌时镜头固定、多加人脸近景、没歌词可用远景，并按语句合理选模板。
+
+**完成**
+- 民谣独唱/双人模板升级到 `folk-solo-ref2va-v2` / `folk-duo-ref2va-v2`：唱词段完全锁死机位，面部近景与半身弹唱合理搭配，唱词中不再排场地远景；无人声仍只走远景或琴弦
+- 新增 `lib/mv-lyric-segments.mjs`：按歌词时间轴自动分段、打包不超过 15 秒且不在句中切开，≥2 秒空档作为远景段，并回填 `kind` / `shotType` / `coverage` / `phraseEndsSec`
+- `mv-cut` 省略 `--cuts` 且提供 `--lyrics` 时走自动分段；仅有切点和歌词时也可回填笔记
+- 修改文档：`docs/2026-11-22-folk-lyric-segments-and-locked-coverage.md`
+
+**验证**：`npm test`（含 `test-folk-mv-prompt`、`test-folk-duo-mv-prompt`、`test-mv-lyric-segments`、`test-mv-cut-apply`）。
+
+**下一晚**：用用户提供的海边泳装吉他参考图，按歌词段落生成民谣独唱；MV 页的「导入歌词一键分段」尚未做。
+
+
 ## 2026-11-22 00:18 Asia/Shanghai — RunningHub 积分预估按实扣 chargedPoint 校准
 
 **模块**：MV / 流程优化（计费预估）。昨夜门禁已改认 `remainPoint` / `chargedPoint`，但 24 分/秒估算仍沿用币时代 15s 试片（312/356 币 ≈ 23.7/秒）。同日一笔像素幻想 MiniMaxH3ReferenceToVideo（`2087128116820013058`，task `2124001118332866561`，15s）实扣 `chargedPoint` 116.28，钱包差额一致，约 7.752 积分/秒。本夜按观测费率加 1.25 安全边际校准 POINT 预估；无匹配观测时仍回退 24/秒与口型 400。不发明币↔积分汇率，不改 24/400 常量值。无新曲风、无 RH 付费。
