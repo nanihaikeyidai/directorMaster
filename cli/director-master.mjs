@@ -439,6 +439,7 @@ function mvCut() {
     summary:pack.summary,
     warnings:pack.pack.warnings||[],
     identityLockText:pack.pack.identityLockText||'',
+    sceneLockText:pack.pack.sceneLockText||'',
     primaryFace:pack.pack.primaryFace?{path:pack.pack.primaryFace.path,role:pack.pack.primaryFace.role}:null,
     orderedRefs:(pack.pack.orderedRefs||[]).slice(0,visualAssets.length).map((ref)=>({path:ref.path,role:ref.role})),
   };
@@ -451,7 +452,7 @@ function mvCut() {
     const segment={index:index+1,start:Number(start.toFixed(3)),end:Number(end.toFixed(3)),duration:Number(length.toFixed(3))};
     const fileName=`segment-${String(segment.index).padStart(2,'0')}_${segment.start.toFixed(3)}-${segment.end.toFixed(3)}.wav`,outputPath=path.join(outputRoot,fileName);
     execFileSync('ffmpeg',['-hide_banner','-loglevel','error','-y','-ss',String(segment.start),'-t',String(segment.duration),'-i',sourcePath,'-vn','-acodec','pcm_s16le',outputPath],{windowsHide:true});
-    return {...segment,...notes[index],fileName,path:outputPath,prompt:appendIdentityLockToPrompt(mvPrompt(projectName,segment,notes[index],visualAssets,template,settings),pack.pack.identityLockText)};
+    return {...segment,...notes[index],fileName,path:outputPath,prompt:appendIdentityLockToPrompt(mvPrompt(projectName,segment,notes[index],visualAssets,template,settings),pack.pack.identityLockText,pack.pack.sceneLockText)};
   });
   const manifest={version:1,projectId,projectName,template,settings,sourceName:path.basename(sourcePath),sourcePath,duration,cuts,cutGate,visualAssets,characterPack,segments,outputRoot,createdAt:new Date().toISOString()};
   const projectFile=path.join(root,'project.json');

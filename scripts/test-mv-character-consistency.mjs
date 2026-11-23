@@ -268,4 +268,70 @@ assert.equal(
   assert.equal(appendIdentityLockToPrompt('', lock), '');
 }
 
+
+// --- beach filename without letter A is scene; beach B stays face ---
+assert.equal(classifyCharacterRef('camilla-beach-swimsuit-guitar-2026-11-22.png'), 'scene');
+assert.equal(classifyCharacterRef('海边舞台.jpg'), 'scene');
+assert.equal(classifyCharacterRef('newface-beach B.jpg'), 'face_closeup');
+assert.equal(classifyCharacterRef('newface-beach A.jpg'), 'scene');
+
+// --- sourcePath / croppedFrom auto-attaches as scene and emits sceneLockText ---
+{
+  const result = buildCharacterConsistencyPack([
+    { path: 'camilla-swimsuit-ref-crop.png', sourcePath: 'camilla-beach-swimsuit-guitar-2026-11-22.png' },
+  ]);
+  assert.equal(result.ok, true);
+  assert.equal(result.pack.scenes.length, 1);
+  assert.equal(result.pack.scenes[0].path, 'camilla-beach-swimsuit-guitar-2026-11-22.png');
+  assert.equal(result.pack.scenes[0].role, 'scene');
+  assert.match(result.pack.sceneLockText, /Scene lock|场景锁定/);
+  assert.match(result.pack.sceneLockText, /Picture /);
+  assert.match(result.pack.sceneLockText, /camilla-beach-swimsuit-guitar-2026-11-22\.png/);
+  assert.match(result.pack.sceneLockText, /indoor gray stage|室内舞台|灰幕/);
+  assert.match(result.pack.sceneLockText, /guitar|吉他|microphone|麦克风/);
+  assert.ok(!result.pack.warnings.some((w) => /裁切/.test(w)));
+}
+
+{
+  const result = buildCharacterConsistencyPack([
+    { path: 'ref-crop.png', croppedFrom: 'scene-wide.jpg' },
+    { path: 'scene-wide.jpg' },
+  ]);
+  assert.equal(result.pack.scenes.length, 1);
+  assert.equal(result.pack.scenes[0].path, 'scene-wide.jpg');
+}
+
+{
+  const onlyFace = buildCharacterConsistencyPack([{ path: 'ref-crop.jpg' }]);
+  assert.equal(onlyFace.ok, true);
+  assert.equal(onlyFace.pack.sceneLockText || '', '');
+  assert.ok(onlyFace.pack.warnings.some((w) => /裁切|场景参考/.test(w)));
+}
+
+{
+  const result = buildCharacterConsistencyPack([
+    { path: 'ref-crop.jpg' },
+    { path: 'scene-wide.jpg' },
+  ]);
+  assert.match(result.pack.sceneLockText, /scene-wide\.jpg/);
+  assert.ok(!result.pack.warnings.some((w) => /裁切/.test(w)));
+  assert.match(formatCharacterPackReport(result), /场景锁定词/);
+}
+
+{
+  const prompt = 'detailed_description:\nshot here\noverall_soundscape:\n音';
+  const ident = 'Identity lock / 人物一致性：Keep the face.';
+  const scene = 'Scene lock / 场景锁定：Keep the beach.';
+  const once = appendIdentityLockToPrompt(prompt, ident, scene);
+  const identAt = once.indexOf(ident);
+  const sceneAt = once.indexOf(scene);
+  const soundAt = once.indexOf('\noverall_soundscape:');
+  assert.ok(identAt >= 0 && sceneAt > identAt && soundAt > sceneAt);
+  assert.equal(appendIdentityLockToPrompt(once, ident, scene), once);
+  const identOnly = appendIdentityLockToPrompt(prompt, ident);
+  assert.ok(!identOnly.includes('Scene lock'));
+  const sceneAdded = appendIdentityLockToPrompt(identOnly, ident, scene);
+  assert.ok(sceneAdded.includes(scene));
+  assert.ok(sceneAdded.indexOf(ident) < sceneAdded.indexOf(scene));
+}
 console.log('test-mv-character-consistency: ok');

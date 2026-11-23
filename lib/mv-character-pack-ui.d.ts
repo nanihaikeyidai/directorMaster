@@ -24,6 +24,7 @@ export type CharacterPackUiPlan<T = Record<string, unknown>> = {
   warnings: string[];
   roles: CharacterPackUiRole[];
   identityLockText: string;
+  sceneLockText: string;
   orderedAssets: T[];
 };
 

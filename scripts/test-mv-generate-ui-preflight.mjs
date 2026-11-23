@@ -7,7 +7,7 @@ import {
   mapUiAccount,
   buildMvGenerateUiManifest,
   planMvGenerateUiPreflight,
-  formatMvGenerateEstimateLabel,
+  formatMvGenerateEstimateLabel, formatGenerateFullMvSuccessNotice,
 } from '../lib/mv-generate-ui-preflight.mjs';
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
@@ -178,7 +178,7 @@ const uiInput = (over = {}) => ({
   const fullStart = page.indexOf('async function generateFullMv(');
   assert.ok(fullStart >= 0, 'missing generateFullMv');
   const fullBody = page.slice(fullStart, page.indexOf('function openBatch(', fullStart));
-  assert.match(fullBody, /预估/, 'generateFullMv success notice must include coin estimate');
+  assert.match(fullBody, /formatGenerateFullMvSuccessNotice\(estimatePlan\)/, 'generateFullMv success notice must use unit-aware helper');
 
   const enqueueStart = page.search(/async function enqueueGeneration\(/);
   assert.ok(enqueueStart >= 0, 'missing enqueueGeneration');
@@ -251,4 +251,21 @@ const uiInput = (over = {}) => ({
   assert.deepEqual(offenders, [], `UI preflight imports node builtins: ${offenders.join(', ')}`);
 }
 
+
+{
+  const pointsPlan = planMvGenerateUiPreflight({
+    segments: [{ duration: 15 }, { duration: 7.5 }],
+    prompts: ['a'.repeat(20), 'b'.repeat(20)],
+    visualAssets: [{ path: 'face.jpg' }, { path: 'scene.jpg' }],
+    account: { coins: 0, points: 540 },
+  });
+  assert.match(formatGenerateFullMvSuccessNotice(pointsPlan), /已自动切成 2 段并生成提示词；预估 540 积分（2 段）；请逐段「通过审核」后再点云端批量生成/);
+  const coinPlan = planMvGenerateUiPreflight({
+    segments: [{ duration: 15 }, { duration: 7.5 }],
+    prompts: ['a'.repeat(20), 'b'.repeat(20)],
+    visualAssets: [{ path: 'face.jpg' }, { path: 'scene.jpg' }],
+    account: { coins: 540 },
+  });
+  assert.match(formatGenerateFullMvSuccessNotice(coinPlan), /已自动切成 2 段并生成提示词；预估 540 币（2 段）；请逐段「通过审核」后再点云端批量生成/);
+}
 console.log('test-mv-generate-ui-preflight ok');

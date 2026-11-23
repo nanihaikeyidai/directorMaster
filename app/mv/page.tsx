@@ -39,7 +39,7 @@ import { parseLyricImportText, planMvLyricImportUi } from "../../lib/mv-lyric-im
 import { computeEnergyHops, mixToMono } from "../../lib/mv-energy-hops.mjs";
 import {
   planMvGenerateUiPreflight,
-  formatMvGenerateEstimateLabel,
+  formatMvGenerateEstimateLabel, formatGenerateFullMvSuccessNotice,
 } from "../../lib/mv-generate-ui-preflight.mjs";
 import {
   CHARACTER_REF_ROLE_LABELS,
@@ -448,6 +448,7 @@ export default function MvStudio() {
         leadSilenceSec: Number(project.leadSilenceSec || 0),
       }),
       characterPackPlan.identityLockText,
+      characterPackPlan.sceneLockText,
     );
   }
   const generationBusy = generationQueue.some((item) => ["queued", "running"].includes(item.status));
@@ -2166,7 +2167,7 @@ export default function MvStudio() {
       setSegmentReviews(resetReviewsForPromptChange([], autoSegments.length));
       setBusy("");
       const estimatePlan = planMvGenerateUiPreflight({ segments: autoSegments, prompts: autoPrompts, visualAssets, account: rhAccount, workflowId: cloudWorkflowId });
-      setNotice(`已自动切成 ${autoSegments.length} 段并生成提示词；预估 ${estimatePlan.estimate.total} 币（${autoSegments.length} 段）；请逐段「通过审核」后再点云端批量生成`);
+      setNotice(formatGenerateFullMvSuccessNotice(estimatePlan));
     } catch (error) {
       setBusy("");
       setNotice(error instanceof Error ? error.message : String(error));

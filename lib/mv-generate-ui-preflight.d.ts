@@ -28,3 +28,4 @@ export function planMvGenerateUiPreflight(opts?: {
 }): MvGeneratePreflight;
 
 export function formatMvGenerateEstimateLabel(plan?: MvGeneratePreflight | null, opts?: { loading?: boolean }): string;
+export function formatGenerateFullMvSuccessNotice(plan: unknown): string;

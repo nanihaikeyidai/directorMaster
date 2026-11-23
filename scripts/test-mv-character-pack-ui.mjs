@@ -167,4 +167,15 @@ function asset(partial) {
   assert.deepEqual(offenders, [], `client page imports node builtins: ${offenders.join(', ')}`);
 }
 
+
+{
+  const plan = planMvCharacterPackUi({
+    visualAssets: [
+      { path: 'camilla-swimsuit-ref-crop.png', sourcePath: 'camilla-beach-swimsuit-guitar-2026-11-22.png' },
+    ],
+  });
+  assert.equal(plan.go, true);
+  assert.match(plan.sceneLockText, /Scene lock|场景锁定/);
+  assert.ok(plan.orderedAssets.some((asset) => String(asset.path).includes('camilla-beach-swimsuit-guitar')));
+}
 console.log('test-mv-character-pack-ui ok');

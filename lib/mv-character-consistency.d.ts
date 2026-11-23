@@ -24,6 +24,8 @@ export type CharacterRefInput = {
   width?: number;
   height?: number;
   faceBox?: CharacterFaceBox;
+  sourcePath?: string;
+  croppedFrom?: string;
 };
 
 export type CharacterRef = {
@@ -32,6 +34,8 @@ export type CharacterRef = {
   width?: number;
   height?: number;
   faceBox?: CharacterFaceBox;
+  sourcePath?: string;
+  croppedFrom?: string;
 };
 
 export type CharacterThreeview = {
@@ -47,6 +51,7 @@ export type CharacterConsistencyPack = {
   scenes: CharacterRef[];
   orderedRefs: CharacterRef[];
   identityLockText: string;
+  sceneLockText: string;
   warnings: string[];
 };
 
@@ -80,6 +85,8 @@ export type VisualAssetInput = {
   width?: number;
   height?: number;
   faceBox?: CharacterFaceBox;
+  sourcePath?: string;
+  croppedFrom?: string;
   [key: string]: unknown;
 };
 
@@ -102,4 +109,5 @@ export function applyCharacterPackToAssets<T extends VisualAssetInput>(
 export function appendIdentityLockToPrompt(
   prompt: string | null | undefined,
   identityLockText?: string | null,
+  sceneLockText?: string | null,
 ): string;
