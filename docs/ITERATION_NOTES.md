@@ -1,3 +1,21 @@
+## 2026-11-24 00:00 Asia/Shanghai — 近脸裁切后的场景锁定
+
+**模块**：MV / 人物一致性与口型流程。11/23 泳装近脸试片保住了银发与泳衣，但迅风自动版没有 prompt 节点，海边和吉他变成了室内灰幕舞台和麦克风。人物包只写锁脸词；beach 文件名未标 role 时也不会分成 scene；只传裁切图时原图场景会丢掉。本夜补场景锁定，并用可写 prompt 的像素幻想跑口型试片。无新曲风。
+
+**验收标准**：见 `docs/superpowers/specs/2026-11-24-mv-scene-lock-design.md`（beach/海边文件名分类为 scene，newface-beach B 仍是近脸；sourcePath/croppedFrom 自动带回场景；sceneLockText 点名 Picture N 并禁止室内灰幕/无依据换麦克风；裁切近脸且无场景时告警；锁词插在 overall_soundscape 之前；库无 node:）。另修 `generateFullMv` 成功提示误写「币」。
+
+**完成**
+- `lib/mv-character-consistency.mjs`：海边文件名分类、裁切原图回挂为 scene、`sceneLockText`、裁切无场景告警、`appendIdentityLockToPrompt` 第三参
+- 透传到 `planMvCharacterPackUi`、`mv-cut`、MV 页 `buildPackedPrompt`
+- `formatGenerateFullMvSuccessNotice`：积分账户写「积分」，纯币账户仍写「币」
+- 测试扩展已接入 `npm test`
+
+**验证**：`npm test` 全绿（exit 0），含扩展后的 `test-mv-character-consistency` / `test-mv-character-pack-ui` / `test-mv-generate-ui-preflight`。
+
+**15s 口型试片**：已跑 **1 次成功**（无技术重试）。人声门禁沿用已验证的卡米拉源曲 176–186s 摘录（活跃比 0.425）。人物主参考为昨夜同一张泳装 `ref-crop`，原图作场景，提示词走 folk-solo v2 并注入身份锁定 + 场景锁定。工作流：像素幻想 MiniMaxH3ReferenceToVideo 2087128116820013058（可写 prompt；迅风自动版仍无 prompt 字段），taskId 2124900188027047937。钱包 325.27→242.99 积分，实扣 chargedPoint 82.28（settleMode=POINT，两路输出只扣一次，约 8.228 积分/秒）。成片已封装原曲摘录音轨：/workspace/camilla-beach-mv/nightly-lipsync/2026-11-24/Camilla-nightly-2026-11-24-pixel-fantasy-swimsuit-176-186-origmux.mp4（1280×736，10.00s）。抽帧（1 fps）：约 0–3s 与 7–10s 是近脸，背景偏暗舞台灯；约 4–6s 明确是白天海边，可见木吉他和浅绿色泳衣，没有麦克风。银发与五官前后一致，多帧开口。镜头按民谣 v2 三拍切了景别，不是整段完全锁死。视频模型 QC 因 resource_exhausted 未跑成，细对口型请看成片。
+
+**下一晚**：收紧特写镜头的场景锁定，避免近脸段落掉回室内暗背景；可选把本夜像素幻想 10s / 82.28 写入计费观测（约 8.228/秒，会抬高该工作流门槛）；open PR 合并卫生仍在（11/15 起分支只有 compare 链接）。
+
 ## 2026-11-23 00:00 Asia/Shanghai — MV 页导入歌词并按语句分段
 
 **模块**：MV / 切镜流程（口型与覆盖流程优化）。11/22 已把 folk-solo/duo 升到 v2，并让 CLI `mv-cut --lyrics` 按语句自动分段；页面仍只有「智能建议切点」，不能导入歌词，也不会写入近景/远景笔记和 `phraseEndsSec`。本夜把同一 planner 接到 MV 页。无新曲风。
