@@ -1,3 +1,20 @@
+# 2026-11-25 00:00 Asia/Shanghai — 特写镜头也锁定场景
+
+**模块**：MV / 人物一致性与口型流程。11/24 像素幻想试片在中景保住了白天海边和木吉他，但紧近脸（约 0–3s、7–10s）又掉回偏暗室内舞台灯。既有 sceneLockText 禁止另造灰幕舞台，却没点名面部大特写的背景仍须是同一场景；民谣 v2 特写镜头只写锁机位与口型。本夜收紧特写场景锁定。无新曲风。
+
+**验收标准**：见 `docs/superpowers/specs/2026-11-25-mv-closeup-scene-lock-design.md`（有场景时 sceneLockText 含 tight facial close-ups / 面部大特写、soft-focus / 可虚化、theatrical stage lighting / 舞台灯、black void / 黑底；无场景仍为空；folk-solo/duo 升至 v3，唱词特写须写背景留下参考场景，无人声段不加这句；库不引入 node:）。
+
+**完成**
+- `lib/mv-character-consistency.mjs`：`buildSceneLockText` 追加特写背景条款
+- `lib/mv-prompt.mjs`：`FOLK_CLOSEUP_SCENE_HOLD` 写入民谣独唱/双人唱词镜头；模板版本 `folk-solo-ref2va-v3` / `folk-duo-ref2va-v3`
+- 标准文档同步；测试扩展已接入 `npm test`
+
+**验证**：`npm test` 全绿（exit 0），含扩展后的 `test-mv-character-consistency` / `test-folk-mv-prompt` / `test-folk-duo-mv-prompt`。
+
+**15s 口型试片**：今晚**跳过**，0 积分消耗。人声与近脸门禁已通过：卡米拉源曲 176–186s 摘录（10.03s，活跃比 0.425）+ 泳装 `ref-crop` 近脸（335×357，score 0.85），场景原图为海边泳装吉他。提示词已按 folk-solo v3 生成并注入身份锁定 + 特写场景锁定，工作流预定像素幻想 `2087128116820013058`。00:07 Asia/Shanghai 只读查询 RunningHub NORMAL 钱包 remainPoint=132.36（remainCoins=0，remainMoney=-0.0130），低于口型预检 15s 门槛 146 积分（按实扣校准），`planLipsyncPreflight` 返回 INSUFFICIENT_COINS，未上传、未创建任务。较 11/24 试片后的 242.99，期间余额已减少约 110.63，原因未在本夜核验。
+
+**下一晚**：钱包达到 146 积分后再用今晚已备好的 v3 提示词跑同一 10s 人声窗，检查紧近脸是否还掉回室内暗背景；可选把 11/24 像素幻想 10s / 82.28 写入计费观测；梅林在本夜检测为在线，可用本机工作流先跑一段完整曲（完整原曲仍在梅林）；open PR 合并卫生仍在（11/15 起分支只有 compare 链接）。
+
 ## 2026-11-24 00:00 Asia/Shanghai — 近脸裁切后的场景锁定
 
 **模块**：MV / 人物一致性与口型流程。11/23 泳装近脸试片保住了银发与泳衣，但迅风自动版没有 prompt 节点，海边和吉他变成了室内灰幕舞台和麦克风。人物包只写锁脸词；beach 文件名未标 role 时也不会分成 scene；只传裁切图时原图场景会丢掉。本夜补场景锁定，并用可写 prompt 的像素幻想跑口型试片。无新曲风。
