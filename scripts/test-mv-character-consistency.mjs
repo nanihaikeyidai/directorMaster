@@ -289,6 +289,10 @@ assert.equal(classifyCharacterRef('newface-beach A.jpg'), 'scene');
   assert.match(result.pack.sceneLockText, /camilla-beach-swimsuit-guitar-2026-11-22\.png/);
   assert.match(result.pack.sceneLockText, /indoor gray stage|室内舞台|灰幕/);
   assert.match(result.pack.sceneLockText, /guitar|吉他|microphone|麦克风/);
+  assert.match(result.pack.sceneLockText, /tight facial close-ups|面部大特写/);
+  assert.match(result.pack.sceneLockText, /soft-focus|可虚化/);
+  assert.match(result.pack.sceneLockText, /theatrical stage lighting|舞台灯/);
+  assert.match(result.pack.sceneLockText, /black void|黑底/);
   assert.ok(!result.pack.warnings.some((w) => /裁切/.test(w)));
 }
 
