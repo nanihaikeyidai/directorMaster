@@ -38,6 +38,8 @@ npm run dev
 
 ## 给接手开发的 AI
 
+当前工作交接（2026-11-24，代码尖端为 `feature/mv-scene-lock`）：见 [docs/2026-11-24-handoff.md](docs/2026-11-24-handoff.md)。
+
 先按顺序阅读：
 
 1. 本 README，了解运行方式、边界和验证命令。
