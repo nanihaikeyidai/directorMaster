@@ -1,3 +1,20 @@
+# 2026-11-26 00:00 Asia/Shanghai — 口型试片按实际时长计门槛
+
+**模块**：MV / 口型流程优化（计费预检）。11/25 已备好 folk-solo v3 提示词与 10s 人声窗，但预检仍按 15s 门槛 146 积分拦截（当时钱包 132.36）。库虽接受 `durationSec`，`planLipsyncPreflight` / CLI 未传入选出的窗口时长，文案也写死「15s」；11/24 像素幻想 10s / 82.28 观测也还没入库。本夜补这两处。无新曲风。
+
+**验收标准**：见 `docs/superpowers/specs/2026-11-26-mv-lipsync-duration-budget-design.md`（种子含 11/24 task `2124900188027047937`；像素幻想取最高观测费率 8.228 积分/秒 ×1.25；15s 门槛 155、10s 门槛 103、15+7.5s 预估 233；预检继承 `trialPlan.durationSec` / `audio.durationSec`；文案使用实际时长；CLI `--duration 10` + 132.36 积分应 go）。
+
+**完成**
+- `lib/mv-rh-cost-calibrate.mjs`：写入 11/24 像素幻想 10s / chargedPoint 82.28 种子观测
+- `lib/mv-lipsync-preflight.mjs`：`planLipsyncPreflight` 默认使用试片窗口时长；余额文案改为「单次 10s/15s 试片门槛」
+- 测试与 design/plan 已更新并接入 `npm test`
+
+**验证**：`npm test` 全绿（exit 0），含更新后的 `test-mv-rh-cost-calibrate` / `test-mv-lipsync-preflight`。
+
+**15s 口型试片**：已跑 **1 次成功**（无技术重试）。人声门禁通过：卡米拉源曲 176–186s 摘录（10.00s，活跃比 0.425）+ 泳装 `ref-crop` 近脸，folk-solo v3 提示词注入身份锁定 + 特写场景锁定。工作流：像素幻想 MiniMaxH3ReferenceToVideo `2087128116820013058`，taskId `2125623468555993090`。钱包 127.09→57.56 积分，实扣 chargedPoint 69.53（settleMode=POINT，两路输出只扣一次，约 6.953 积分/秒，低于 11/24 的 8.228，不抬高最高费率门槛）。若仍按 15s / 155 预检会跳过；按时长预检 10s 门槛为 103，127.09 ≥ 103 才提交。成片已封装原曲摘录音轨：`/workspace/camilla-beach-mv/nightly-lipsync/2026-11-26/Camilla-nightly-2026-11-26-pixel-fantasy-swimsuit-176-186-origmux.mp4`（1280×736，10.00s）。1 fps 抽帧：约 0–3s 与 6–10s 是面部特写，约 3–6s 是半身弹唱可见木吉他；**全部抽帧背景都是白天海边（海水、沙滩、蓝天），紧近脸没有再掉回室内暗舞台灯**，银发与五官前后一致，多帧开口。右侧仍出现话筒支架（参考图里没有），吉他在中景段保留。视频模型 QC 因 resource_exhausted 未跑成，细对口型请看成片。
+
+**下一晚**：本夜试片后余额 57.56，低于 10s 门槛 103，云端试片需先补积分；可用梅林本地工作流按歌词再跑一段；可选把本夜 10s / 69.53 写入观测（低于现有最高费率，不会降低门槛）；继续抑制参考中没有的麦克风；open PR 合并卫生仍在（11/15 起分支多为 compare 链接）。
+
 # 2026-11-25 00:00 Asia/Shanghai — 特写镜头也锁定场景
 
 **模块**：MV / 人物一致性与口型流程。11/24 像素幻想试片在中景保住了白天海边和木吉他，但紧近脸（约 0–3s、7–10s）又掉回偏暗室内舞台灯。既有 sceneLockText 禁止另造灰幕舞台，却没点名面部大特写的背景仍须是同一场景；民谣 v2 特写镜头只写锁机位与口型。本夜收紧特写场景锁定。无新曲风。
