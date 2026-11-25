@@ -113,6 +113,23 @@ const D = '2026-11-18';
   const r3 = run([...common, '--account-json', accRich, '--ledger', ledgerPath]);
   assert.equal(r3.status, 1);
   assert.match(r3.stdout, /DAILY_SUCCESS_REACHED/);
+
+  const PIXEL_ID = '2087128116820013058';
+  const accPointsOk = path.join(dir, 'acc-points-132.json');
+  writeFileSync(accPointsOk, JSON.stringify({ remainCoins: 0, remainMoney: -0.013, remainPoint: 132.36, apiType: 'NORMAL' }));
+  const accPointsShort = path.join(dir, 'acc-points-102.json');
+  writeFileSync(accPointsShort, JSON.stringify({ remainCoins: 0, remainMoney: -0.013, remainPoint: 102, apiType: 'NORMAL' }));
+  const r10 = run([...common, '--duration', '10', '--workflow-id', PIXEL_ID, '--account-json', accPointsOk]);
+  assert.equal(r10.status, 0, r10.stdout + r10.stderr);
+  const parsed10 = JSON.parse(r10.stdout);
+  assert.equal(parsed10.go, true);
+  assert.equal(parsed10.checks.budget.minCoins, 103);
+  assert.match(parsed10.reason, /10s/);
+  const r10no = run([...common, '--duration', '10', '--workflow-id', PIXEL_ID, '--account-json', accPointsShort]);
+  assert.equal(r10no.status, 1, r10no.stdout + r10no.stderr);
+  assert.match(r10no.stdout, /INSUFFICIENT_COINS/);
+  assert.match(r10no.stdout, /单次 10s 试片门槛 103/);
+  assert.doesNotMatch(r10no.stdout, /15s 试片门槛/);
 }
 // 7. browser-safe lib
 {

@@ -89,7 +89,10 @@
 - [x] MV 页「一键云端出完整 MV」/「云端批量生成」接入同一预算预估与硬门禁（本夜 `feature/mv-generate-ui-preflight`，base mv-generate-budget-gate）
 - [x] MV 页人物一致性包预检与应用（`planMvCharacterPackUi` + 角色下拉 / 整理顺序 / 提示词注入 identity lock + 生成与云端硬门禁；本夜 `feature/mv-character-pack-ui`，base mv-generate-ui-preflight）
 - [x] RunningHub 积分余额接入钱包解析、门禁与费用记录（`remainPoint` / `chargedPoint`；本夜 `feature/mv-rh-points-billing`，base mv-character-pack-ui）
-- [ ] 下一晚：用积分跑 15s 试片（prep → preflight → 提交 → finalize）并对照 chargedPoint 校准估算 / open PR 合并卫生
+- [x] 2026-11-22 按实扣 chargedPoint 校准 POINT 预估（像素幻想 15s / 116.28）
+- [x] 2026-11-25 特写镜头场景锁定（folk-solo/duo v3 + sceneLockText）
+- [x] 2026-11-26 口型预检按实际试片窗口时长计门槛，并写入 11/24 像素幻想 10s / 82.28 观测（15s→155，10s→103）
+- [ ] 下一晚：用校准后的 10s 门槛跑 v3 口型试片（若余额不足则走梅林本地工作流）/ open PR 合并卫生
 
 
 ## 管理方式
@@ -100,4 +103,5 @@
 - [x] 2026-11-20 MV 页生成预算预估与硬门禁 `planMvGenerateUiPreflight`（展示预估；入队与 jobs POST 前硬拦；本地批量不走币门禁）
 - [x] 2026-11-21 MV 页人物一致性包预检与应用 `planMvCharacterPackUi`
 - [x] 2026-11-21 RunningHub 积分余额接入 `remainPoint` / `chargedPoint`
-- [ ] 下一晚：用积分跑 15s 试片并对照 chargedPoint 校准估算 / open PR 合并卫生
+- [x] 2026-11-26 口型预检按实际试片窗口时长计门槛 + 11/24 像素幻想 10s / 82.28 种子观测
+- [ ] 下一晚：用校准后的 10s 门槛跑 v3 口型试片或梅林本地工作流 / open PR 合并卫生

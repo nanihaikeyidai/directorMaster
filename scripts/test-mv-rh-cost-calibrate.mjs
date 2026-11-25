@@ -36,7 +36,7 @@ const pointsAccount = (remainPoint) => ({ remainCoins: 0, remainMoney: -0.013, r
 // 1. seed observation and calibrated rates
 {
   assert.equal(DEFAULT_RH_COST_MARGIN, 1.25);
-  assert.equal(SEED_RH_COST_OBSERVATIONS.length, 2);
+  assert.equal(SEED_RH_COST_OBSERVATIONS.length, 3);
   const seed = SEED_RH_COST_OBSERVATIONS[0];
   assert.equal(seed.workflowId, PIXEL_ID);
   assert.equal(seed.durationSec, 15);
@@ -53,6 +53,15 @@ const pointsAccount = (remainPoint) => ({ remainCoins: 0, remainMoney: -0.013, r
   assert.equal(xunfengSeed.source, 'chargedPoint');
   assert.equal(xunfengSeed.taskId, '2124176812794929154');
   assert.equal(xunfengSeed.date, '2026-11-22');
+  const pixel10Seed = SEED_RH_COST_OBSERVATIONS[2];
+  assert.equal(pixel10Seed.workflowId, PIXEL_ID);
+  assert.equal(pixel10Seed.durationSec, 10);
+  assert.equal(pixel10Seed.cost, 82.28);
+  assert.equal(pixel10Seed.source, 'chargedPoint');
+  assert.equal(pixel10Seed.settleMode, 'POINT');
+  assert.equal(pixel10Seed.unit, 'points');
+  assert.equal(pixel10Seed.taskId, '2124900188027047937');
+  assert.equal(pixel10Seed.date, '2026-11-24');
   const xunfengRate = resolveMvCostPerSec({ unit: 'points', workflowId: XUNFENG_ID });
   assert.equal(xunfengRate.source, 'calibrated');
   assert.equal(xunfengRate.maxObservedPerSec, 77.05 / 10);
@@ -63,18 +72,22 @@ const pointsAccount = (remainPoint) => ({ remainCoins: 0, remainMoney: -0.013, r
 
   const rate = resolveMvCostPerSec({ unit: 'points', workflowId: PIXEL_ID });
   assert.equal(rate.source, 'calibrated');
-  assert.equal(rate.observationCount, 1);
-  assert.equal(rate.maxObservedPerSec, 116.28 / 15);
-  assert.equal(rate.coinsPerSec, (116.28 / 15) * 1.25);
+  assert.equal(rate.observationCount, 2);
+  assert.equal(rate.maxObservedPerSec, 82.28 / 10);
+  assert.equal(rate.coinsPerSec, (82.28 / 10) * 1.25);
   assert.equal(rate.margin, 1.25);
   assert.equal(rate.unit, 'points');
   assert.equal(rate.workflowId, PIXEL_ID);
-  assert.equal(Math.ceil(15 * rate.coinsPerSec), 146);
-  assert.equal(Math.ceil(15 * rate.coinsPerSec) + Math.ceil(7.5 * rate.coinsPerSec), 219);
+  assert.equal(Math.ceil(15 * rate.coinsPerSec), 155);
+  assert.equal(Math.ceil(15 * rate.coinsPerSec) + Math.ceil(7.5 * rate.coinsPerSec), 233);
 
   const min = resolveLipsyncMinCost({ unit: 'points', workflowId: PIXEL_ID, durationSec: 15 });
   assert.equal(min.source, 'calibrated');
-  assert.equal(min.minCoins, 146);
+  assert.equal(min.minCoins, 155);
+  const min10 = resolveLipsyncMinCost({ unit: 'points', workflowId: PIXEL_ID, durationSec: 10 });
+  assert.equal(min10.source, 'calibrated');
+  assert.equal(min10.minCoins, 103);
+  assert.equal(min10.durationSec, 10);
 }
 
 // 2. no workflowId / unknown workflowId stay on 24 and 400
@@ -104,48 +117,49 @@ const pointsAccount = (remainPoint) => ({ remainCoins: 0, remainMoney: -0.013, r
   assert.notEqual(plan.estimate.source, 'calibrated');
 }
 
-// 3. generate preflight: pixel + points 219 go / 218 insufficient
+// 3. generate preflight: pixel + points 233 go / 232 insufficient
 {
   const go = planMvGeneratePreflight({
     manifest: manifest(),
-    account: pointsAccount(219),
+    account: pointsAccount(233),
     exists: allExist,
     workflowId: PIXEL_ID,
   });
-  assert.equal(go.estimate.total, 219);
-  assert.deepEqual(go.estimate.perSegment.map((s) => s.coins), [146, 73]);
+  assert.equal(go.estimate.total, 233);
+  assert.deepEqual(go.estimate.perSegment.map((s) => s.coins), [155, 78]);
   assert.equal(go.estimate.source, 'calibrated');
-  assert.equal(go.estimate.observationCount, 1);
+  assert.equal(go.estimate.observationCount, 2);
   assert.equal(go.go, true);
   assert.match(go.reason, /积分/);
 
   const no = planMvGeneratePreflight({
     manifest: manifest(),
-    account: pointsAccount(218),
+    account: pointsAccount(232),
     exists: allExist,
     workflowId: PIXEL_ID,
   });
   assert.equal(no.go, false);
-  assert.equal(no.estimate.total, 219);
+  assert.equal(no.estimate.total, 233);
   assert.ok(no.codes.includes('INSUFFICIENT_COINS'));
-  assert.match(no.reason, /218/);
+  assert.match(no.reason, /232/);
   assert.match(no.reason, /积分/);
 }
 
-// 4. lipsync min: pixel + points 146 go / 145 insufficient; xunfeng 145; unknown stays 400
+// 4. lipsync min: pixel + points 155 go / 154 insufficient; 10s window 103; xunfeng 145; unknown stays 400
 {
-  const go = checkLipsyncBudget({ account: pointsAccount(146), workflowId: PIXEL_ID });
+  const go = checkLipsyncBudget({ account: pointsAccount(155), workflowId: PIXEL_ID });
   assert.equal(go.ok, true);
-  assert.equal(go.minCoins, 146);
-  assert.match(go.reason, /146/);
+  assert.equal(go.minCoins, 155);
+  assert.match(go.reason, /155/);
   assert.match(go.reason, /按实扣校准/);
 
-  const no = checkLipsyncBudget({ account: pointsAccount(145), workflowId: PIXEL_ID });
+  const no = checkLipsyncBudget({ account: pointsAccount(154), workflowId: PIXEL_ID });
   assert.equal(no.ok, false);
   assert.equal(no.code, 'INSUFFICIENT_COINS');
-  assert.equal(no.minCoins, 146);
-  assert.match(no.reason, /145/);
-  assert.match(no.reason, /146/);
+  assert.equal(no.minCoins, 155);
+  assert.match(no.reason, /154/);
+  assert.match(no.reason, /155/);
+  assert.match(no.reason, /15s/);
   assert.match(no.reason, /按实扣校准/);
 
   const xunfengGo = checkLipsyncBudget({ account: pointsAccount(145), workflowId: XUNFENG_ID });
@@ -162,13 +176,54 @@ const pointsAccount = (remainPoint) => ({ remainCoins: 0, remainMoney: -0.013, r
 
   const planned = planLipsyncPreflight({
     trialPlan: { ok: true, reason: 'trial ok', workflowId: PIXEL_ID },
-    account: pointsAccount(146),
+    account: pointsAccount(155),
     ledger: [],
     date: '2026-11-22',
   });
   assert.equal(planned.go, true);
-  assert.equal(planned.checks.budget.minCoins, 146);
+  assert.equal(planned.checks.budget.minCoins, 155);
   assert.match(planned.reason, /按实扣校准/);
+}
+
+
+// 4b. 10s vocal window uses 103-point threshold; copy names actual duration
+{
+  const go10 = checkLipsyncBudget({ account: pointsAccount(132.36), workflowId: PIXEL_ID, durationSec: 10 });
+  assert.equal(go10.ok, true);
+  assert.equal(go10.minCoins, 103);
+  assert.match(go10.reason, /132\.36/);
+  assert.match(go10.reason, /103/);
+  assert.match(go10.reason, /10s/);
+  assert.doesNotMatch(go10.reason, /15s/);
+
+  const no10 = checkLipsyncBudget({ account: pointsAccount(102), workflowId: PIXEL_ID, durationSec: 10 });
+  assert.equal(no10.ok, false);
+  assert.equal(no10.code, 'INSUFFICIENT_COINS');
+  assert.equal(no10.minCoins, 103);
+  assert.match(no10.reason, /单次 10s 试片门槛 103/);
+  assert.doesNotMatch(no10.reason, /15s/);
+
+  const inherited = planLipsyncPreflight({
+    trialPlan: { ok: true, reason: 'trial ok', workflowId: PIXEL_ID, audio: { durationSec: 10 } },
+    account: pointsAccount(132.36),
+    ledger: [],
+    date: '2026-11-26',
+  });
+  assert.equal(inherited.go, true);
+  assert.equal(inherited.checks.budget.minCoins, 103);
+  assert.match(inherited.reason, /10s/);
+
+  const inheritedSkip = planLipsyncPreflight({
+    trialPlan: { ok: true, reason: 'trial ok', workflowId: PIXEL_ID, durationSec: 10 },
+    account: pointsAccount(102),
+    ledger: [],
+    date: '2026-11-26',
+  });
+  assert.equal(inheritedSkip.go, false);
+  assert.ok(inheritedSkip.codes.includes('INSUFFICIENT_COINS'));
+  assert.equal(inheritedSkip.checks.budget.minCoins, 103);
+  assert.match(inheritedSkip.reason, /单次 10s 试片门槛 103/);
+  assert.doesNotMatch(inheritedSkip.reason, /15s/);
 }
 
 // 5. explicit coinsPerSec / minCoins override calibration
@@ -261,19 +316,19 @@ const pointsAccount = (remainPoint) => ({ remainCoins: 0, remainMoney: -0.013, r
   };
   const go = planMvGenerateUiPreflight({
     ...uiInput,
-    account: { coins: 0, points: 219, walletBalance: '-0.013' },
+    account: { coins: 0, points: 233, walletBalance: '-0.013' },
     workflowId: PIXEL_ID,
   });
   assert.equal(go.go, true);
-  assert.equal(go.estimate.total, 219);
+  assert.equal(go.estimate.total, 233);
   assert.equal(go.estimate.source, 'calibrated');
   const goLabel = formatMvGenerateEstimateLabel(go);
-  assert.match(goLabel, /预估 219 积分（2 段，按实扣校准）/);
-  assert.match(goLabel, /钱包 219 积分/);
+  assert.match(goLabel, /预估 233 积分（2 段，按实扣校准）/);
+  assert.match(goLabel, /钱包 233 积分/);
 
   const short = planMvGenerateUiPreflight({
     ...uiInput,
-    account: { coins: 0, points: 218 },
+    account: { coins: 0, points: 232 },
     workflowId: PIXEL_ID,
   });
   assert.equal(short.go, false);
@@ -306,7 +361,7 @@ const pointsAccount = (remainPoint) => ({ remainCoins: 0, remainMoney: -0.013, r
     taskId: 't-higher',
   });
   const rate = resolveMvCostPerSec({ unit: 'points', workflowId: PIXEL_ID, observations: extra });
-  assert.equal(rate.observationCount, 2);
+  assert.equal(rate.observationCount, 3);
   assert.equal(rate.maxObservedPerSec, 200 / 15);
   assert.equal(rate.coinsPerSec, (200 / 15) * 1.25);
   const seededOff = resolveMvCostPerSec({ unit: 'points', workflowId: PIXEL_ID, useSeed: false });
