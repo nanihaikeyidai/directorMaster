@@ -1,3 +1,20 @@
+# 2026-11-27 00:00 Asia/Shanghai — 禁止凭空生成话筒支架
+
+**模块**：MV / 人物一致性与口型流程。11/26 像素幻想试片已保住白天海边与木吉他，紧近脸也没有再掉回室内暗舞台灯，但画面右侧仍出现了参考图里没有的话筒支架。既有 sceneLockText 只禁止在有吉他时「改成手持麦克风」，民谣 v3 特写镜头也没点名支架。本夜收紧道具锁定。无新曲风。
+
+**验收标准**：见 `docs/superpowers/specs/2026-11-27-mv-no-invented-mic-design.md`（有场景时 sceneLockText 含 microphone stand / boom arm / mic hardware / 话筒支架，以及「除非场景参考中可见」；无场景仍为空；folk-solo/duo 升至 v4，唱词特写与全体 continuity 禁止发明话筒支架，无人声段仍不加面部特写留背景句；库不引入 node:；不改钢琴/摇滚/电音/说唱）。
+
+**完成**
+- `lib/mv-character-consistency.mjs`：`buildSceneLockText` 追加禁止凭空添加麦克风、话筒支架、吊杆或其他话筒器材
+- `lib/mv-prompt.mjs`：新增 `FOLK_NO_INVENTED_MIC`，写入特写 hold/camera tail 与 folk-solo/duo continuity；模板版本 `folk-solo-ref2va-v4` / `folk-duo-ref2va-v4`
+- 标准文档同步；测试扩展已接入 `npm test`
+
+**验证**：`npm test` 全绿（exit 0），含扩展后的 `test-mv-character-consistency` / `test-folk-mv-prompt` / `test-folk-duo-mv-prompt`。
+
+**15s 口型试片**：今晚**跳过**，0 积分消耗。人声与近脸门禁已通过：卡米拉源曲 176–186s 摘录（10.00s，活跃比 0.425）+ 泳装 `ref-crop` 近脸。00:24 Asia/Shanghai 只读查询 RunningHub NORMAL 钱包 remainPoint=57.56（remainCoins=0，remainMoney=-0.0130），低于口型预检 10s 门槛 103 积分，`planLipsyncPreflight` 返回 INSUFFICIENT_COINS，未上传、未创建任务。余额与 11/26 试片后一致。本夜未改走梅林本地试片，以免占用显卡、影响已约在 02:00 Asia/Shanghai 的整首 MV 重跑。
+
+**下一晚**：钱包达到 103 积分后再用本夜 v4 提示词跑同一 10s 人声窗，检查话筒支架是否还出现；可选把 11/26 像素幻想 10s / 69.53 写入计费观测（低于现有最高费率，不会降低门槛）；积分不足时再考虑梅林短试片（整首任务已另约 02:00）；open PR 合并卫生仍在（11/15 起分支多为 compare 链接）。
+
 # 2026-11-26 00:00 Asia/Shanghai — 口型试片按实际时长计门槛
 
 **模块**：MV / 口型流程优化（计费预检）。11/25 已备好 folk-solo v3 提示词与 10s 人声窗，但预检仍按 15s 门槛 146 积分拦截（当时钱包 132.36）。库虽接受 `durationSec`，`planLipsyncPreflight` / CLI 未传入选出的窗口时长，文案也写死「15s」；11/24 像素幻想 10s / 82.28 观测也还没入库。本夜补这两处。无新曲风。
