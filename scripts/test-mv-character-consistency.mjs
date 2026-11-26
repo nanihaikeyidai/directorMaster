@@ -293,6 +293,10 @@ assert.equal(classifyCharacterRef('newface-beach A.jpg'), 'scene');
   assert.match(result.pack.sceneLockText, /soft-focus|可虚化/);
   assert.match(result.pack.sceneLockText, /theatrical stage lighting|舞台灯/);
   assert.match(result.pack.sceneLockText, /black void|黑底/);
+  assert.match(result.pack.sceneLockText, /microphone stand|mic stand/);
+  assert.match(result.pack.sceneLockText, /boom arm|mic hardware/);
+  assert.match(result.pack.sceneLockText, /话筒支架/);
+  assert.match(result.pack.sceneLockText, /除非场景参考中可见|除非该器材在场景参考/);
   assert.ok(!result.pack.warnings.some((w) => /裁切/.test(w)));
 }
 

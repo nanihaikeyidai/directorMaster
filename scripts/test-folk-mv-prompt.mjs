@@ -29,7 +29,7 @@ const sections = [
 ];
 
 assert.match(String(FOLK_SOLO_MV_PROMPT_TEMPLATE_VERSION), /^folk-solo-ref2va-/);
-assert.equal(FOLK_SOLO_MV_PROMPT_TEMPLATE_VERSION, 'folk-solo-ref2va-v3');
+assert.equal(FOLK_SOLO_MV_PROMPT_TEMPLATE_VERSION, 'folk-solo-ref2va-v4');
 
 const instrumental = buildFolkSoloMvPrompt({
   projectName: 'Folk Solo Test',
@@ -128,6 +128,8 @@ assert.doesNotMatch(vocal, /【动作类型：场地远景】/);
 assert.ok((vocal.match(/【动作类型：歌手面部特写】/g) || []).length >= 2, 'vocal-active folk-solo should use more than one face close-up');
 assert.match(vocal, /softly visible in the background|referenced scene remaining/i);
 assert.match(vocal, /indoor gray stage|theatrical stage lighting|black studio void/i);
+assert.match(vocal, /microphone stand|mic stand/i);
+assert.match(instrumental, /microphone stand|mic stand/i);
 assert.doesNotMatch(instrumental, /Even in a tight facial close-up|keep the referenced scene softly visible in the background/i);
 assert.match(instrumental, /【动作类型：场地远景】/);
 assert.doesNotMatch(instrumental, /【动作类型：歌手面部特写】/);
