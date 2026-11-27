@@ -1,3 +1,20 @@
+# 2026-11-28 00:00 Asia/Shanghai — 口型试片成片近脸覆盖 QC
+
+**模块**：MV / 口型流程优化。输入门禁（人声活跃比、近脸参考、按时长计积分预检）和锁定词（身份/场景/话筒支架）已齐，但成片仍靠人工抽帧或云端视频模型目检：11/22 迅风试片口型能对上却是中景；11/26 像素幻想约 7/10 秒是特写，视频模型 QC 又因 resource_exhausted 失败。本夜补可重复的成片近脸覆盖检查。无新曲风。
+
+**验收标准**：见 `docs/superpowers/specs/2026-11-28-mv-lipsync-qc-design.md`（`assessOutputFrameCloseUp` 忽略生成帧路径里的 close-up/ref-crop 提示，只认 `faceHeightRatio >= 0.25` 或竖幅 + `centerSkinFraction >= 0.18`；人声默认至少 3 帧且近脸占比 ≥ 0.6，否则 `MISSING_FRAMES` / `LOW_CLOSEUP_COVERAGE`；伴奏/无人声不要求近脸；库不引入 node:；CLI `mv-lipsync-qc --frames-json`）。
+
+**完成**
+- `lib/mv-lipsync-qc.mjs`：`assessOutputFrameCloseUp` + `planLipsyncQc`（默认 `minCloseUpRatio=0.6`、`minFrames=3`、`purpose=vocal`）
+- CLI `mv-lipsync-qc --frames-json`：不通过时 exit 1
+- 测试 `scripts/test-mv-lipsync-qc.mjs` 已接入 `npm test`
+
+**验证**：`npm test` 全绿（exit 0），含新的 `test-mv-lipsync-qc`。用 11/26 试片的抽帧结论（0–2s/6–9s 近脸、3–5s 半身，7/10）走 `planLipsyncQc` 可通过；整段中景样本会被 `LOW_CLOSEUP_COVERAGE` 拦住。本夜未做自动抽帧或人脸检测。
+
+**15s 口型试片**：今晚**跳过**，0 积分消耗。人声与近脸门禁沿用已验证的卡米拉源曲 176–186s 摘录（10.00s，活跃比 0.425）+ 泳装 `ref-crop` 近脸，提示词已是 folk-solo v4。00:36 Asia/Shanghai 只读查询 RunningHub NORMAL 钱包 remainPoint=57.56（remainCoins=0，remainMoney=-0.0130），低于口型预检 10s 门槛 103 积分，未上传、未创建任务。余额与 11/26 试片后、11/27 预检时一致。本夜未改走梅林本地试片，以免占用显卡、影响已约在 01:00 Asia/Shanghai 的分段整首 MV 续跑。
+
+**下一晚**：钱包达到 103 积分后再用 v4 提示词跑同一 10s 人声窗，检查话筒支架是否还出现，并用 `mv-lipsync-qc` 记录近脸覆盖（需提供每帧 `faceHeightRatio` / 肤色信号）；可选把 11/26 像素幻想 10s / 69.53 写入计费观测（低于现有最高费率 8.228，不会降低门槛）；自动抽帧+几何探测可作后续；open PR 合并卫生仍在（11/15 起分支多为 compare 链接）。01:00 的梅林分段整首续跑是另一条定时任务，不在本夜范围。
+
 # 2026-11-27 00:00 Asia/Shanghai — 禁止凭空生成话筒支架
 
 **模块**：MV / 人物一致性与口型流程。11/26 像素幻想试片已保住白天海边与木吉他，紧近脸也没有再掉回室内暗舞台灯，但画面右侧仍出现了参考图里没有的话筒支架。既有 sceneLockText 只禁止在有吉他时「改成手持麦克风」，民谣 v3 特写镜头也没点名支架。本夜收紧道具锁定。无新曲风。
