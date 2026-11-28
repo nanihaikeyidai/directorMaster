@@ -1,3 +1,22 @@
+# 2026-11-29 00:00 Asia/Shanghai — 按人声/伴奏覆盖自动切段（无人声闭口）
+
+**模块**：MV / 口型流程优化。11/28 梅林 SelfLift 三段成片被用户否决：切点按显存而不是人声/伴奏划分，口型对不上原曲，而且没有人声时嘴巴还在动。仓库已有按歌词句界分段的 planLyricPhraseSegments，但没有完整歌词、只有人声活跃图时，无法排出「人声近景对口型 / 伴奏远景闭口不对脸」的切段。本夜补这一块。无新曲风。
+
+**验收标准**：见 docs/superpowers/specs/2026-11-29-mv-vocal-coverage-design.md（planVocalCoverageSegments：至少 2 秒的无人声区为 instrumental-wide，direction 含闭口且不对脸；短于 2 秒的空隙并入相邻人声段；连续人声超过 15 秒且没有呼吸空隙才按上限切开并标记 cutReason max-duration；regionsFromEnergyHops / regionsFromVocalMap 无 node:；CLI mv-vocal-plan；mv-cut 省略 --cuts 且提供 --vocal-map、无 --lyrics 时走该规划器；共用 instrumentalCoverageNote 补上闭口约束）。
+
+**完成**
+- lib/mv-vocal-coverage.mjs：planVocalCoverageSegments、regionsFromVocalMap、regionsFromEnergyHops
+- instrumentalCoverageNote() 改为「不对歌手脸；嘴巴自然闭合，不要做演唱口型」
+- CLI mv-vocal-plan --map|--hops-json，以及 mv-cut --vocal-map
+- 夹具 examples/mv-vocal-map-camilla.json（2026-11-28 卡米拉能量图）
+- 测试 scripts/test-mv-vocal-coverage.mjs 已接入 npm test
+
+**验证**：npm test 全绿（exit 0），含新的 test-mv-vocal-coverage 与既有 test-mv-lyric-segments。用卡米拉夹具跑 mv-vocal-plan 得到 18 段：前奏 0–7.010s、181.900–185.120s（3.22s）与尾奏 214.920–223.360s 为伴奏远景闭口段；其余 15 段为人声近景，均不超过 15s；短于 2s 的呼吸空隙不单独成段。规划结果副本写在 /workspace/camilla-beach-mv/selflift-2026-11-27/vocal-coverage-plan-2026-11-29.json，供 01:00 梅林整首重跑使用（若显存需要更短，可把 --max-segment 调到 12）。
+
+**15s 口型试片**：今晚**跳过**，0 积分消耗。人声与近脸门禁仍可沿用已验证的卡米拉源曲 176–186s 摘录（10.00s，活跃比 0.425）+ 泳装 ref-crop 近脸，提示词已是 folk-solo v4。00:13 Asia/Shanghai 只读查询 RunningHub NORMAL 钱包 remainPoint=57.56（remainCoins=0，remainMoney=-0.0130），低于口型预检 10s 门槛 103 积分，未上传、未创建任务。余额与 11/26 试片后、11/27 与 11/28 预检时一致。本夜未改走梅林本地试片，以免占用显卡、影响已约在 01:00 Asia/Shanghai 的整首 MV 修正重跑。
+
+**下一晚**：钱包达到 103 积分后再用 v4 提示词跑同一 10s 人声窗，检查话筒支架是否还出现，并用 mv-lipsync-qc 记录近脸覆盖；可选把 11/26 像素幻想 10s / 69.53 写入计费观测（低于现有最高费率 8.228，不会降低门槛）；01:00 梅林重跑应使用本夜人声覆盖切段（伴奏段闭口不对脸，成片封装原曲）；open PR 合并卫生仍在（11/15 起分支多为 compare 链接）。可选后续：MV 页导入 vocal-map、以及超长连续人声在 15s 上限内尽量落在更靠近呼吸点的位置。
+
 # 2026-11-28 00:00 Asia/Shanghai — 口型试片成片近脸覆盖 QC
 
 **模块**：MV / 口型流程优化。输入门禁（人声活跃比、近脸参考、按时长计积分预检）和锁定词（身份/场景/话筒支架）已齐，但成片仍靠人工抽帧或云端视频模型目检：11/22 迅风试片口型能对上却是中景；11/26 像素幻想约 7/10 秒是特写，视频模型 QC 又因 resource_exhausted 失败。本夜补可重复的成片近脸覆盖检查。无新曲风。

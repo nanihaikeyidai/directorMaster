@@ -24,10 +24,10 @@
 - Test: `scripts/test-mv-vocal-coverage.mjs`
 - Fixture: `examples/mv-vocal-map-camilla.json`
 
-- [ ] **Step 1: Write the failing test**
-- [ ] **Step 2: Run test to verify it fails**
-- [ ] **Step 3: Write minimal implementation**
-- [ ] **Step 4: Re-run the test and confirm it passes.**
+- [x] **Step 1: Write the failing test**
+- [x] **Step 2: Run test to verify it fails**
+- [x] **Step 3: Write minimal implementation**
+- [x] **Step 4: Re-run the test and confirm it passes.**
 
 ### Task 2: CLI `mv-vocal-plan` + `mv-cut --vocal-map`
 
@@ -35,7 +35,7 @@
 - Modify: `cli/director-master.mjs`、`package.json`
 - Test: `scripts/test-mv-vocal-coverage.mjs`（spawn CLI）
 
-- [ ] **Step 1: Write the failing CLI / mv-cut assertions**
-- [ ] **Step 2: Run tests to verify they fail**
-- [ ] **Step 3: Implement the command and wire `npm test`.**
-- [ ] **Step 4: `npm test` 全绿后提交。**
+- [x] **Step 1: Write the failing CLI / mv-cut assertions**
+- [x] **Step 2: Run tests to verify they fail**
+- [x] **Step 3: Implement the command and wire `npm test`.**
+- [x] **Step 4: `npm test` 全绿后提交。**

@@ -94,7 +94,8 @@
 - [x] 2026-11-26 口型预检按实际试片窗口时长计门槛，并写入 11/24 像素幻想 10s / 82.28 观测（15s→155，10s→103）
 - [x] 2026-11-27 禁止凭空生成话筒支架（sceneLockText + folk-solo/duo v4）
 - [x] 2026-11-28 口型试片成片近脸覆盖 QC（`planLipsyncQc` + CLI `mv-lipsync-qc`）
-- [ ] 下一晚：钱包仍为 57.56，低于 10s 门槛 103；补积分后用 folk-solo v4 复跑 10s 人声窗查话筒支架，并用 `mv-lipsync-qc` 记近脸覆盖；可选写入 11/26 的 10s / 69.53 观测（不降门槛）/ 自动抽帧探测 / open PR 合并卫生
+- [x] 2026-11-29 按人声/伴奏覆盖自动切段 + 无人声闭口笔记（planVocalCoverageSegments + CLI mv-vocal-plan + mv-cut --vocal-map）
+- [ ] 下一晚：余额 57.56 不足云端试片，补积分后用 v4 复跑 10s 窗查话筒支架并用 mv-lipsync-qc 记覆盖；01:00 梅林重跑使用本夜 vocal-coverage 切段；可选写入 10s / 69.53 观测 / open PR 合并卫生
 
 
 ## 管理方式
@@ -108,4 +109,5 @@
 - [x] 2026-11-26 口型预检按实际试片窗口时长计门槛 + 11/24 像素幻想 10s / 82.28 种子观测
 - [x] 2026-11-27 禁止凭空生成话筒支架（sceneLockText + folk-solo/duo v4）
 - [x] 2026-11-28 口型试片成片近脸覆盖 QC（`planLipsyncQc` + CLI `mv-lipsync-qc`）
-- [ ] 下一晚：余额 57.56 不足云端试片，补积分后用 v4 复跑 10s 窗查话筒支架并用 `mv-lipsync-qc` 记覆盖；可选写入 10s / 69.53 观测 / open PR 合并卫生
+- [x] 2026-11-29 按人声/伴奏覆盖自动切段 + 无人声闭口笔记（planVocalCoverageSegments + CLI mv-vocal-plan + mv-cut --vocal-map）
+- [ ] 下一晚：余额 57.56 不足云端试片，补积分后用 v4 复跑 10s 窗查话筒支架并用 mv-lipsync-qc 记覆盖；01:00 梅林重跑使用本夜 vocal-coverage 切段；可选写入 10s / 69.53 观测 / open PR 合并卫生
